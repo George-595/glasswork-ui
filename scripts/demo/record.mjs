@@ -80,6 +80,20 @@ async function glide(x, y, steps = 45) {
   await page.mouse.move(x, y, { steps });
 }
 
+/** Move the pointer onto an element, as a person would, then click it. */
+async function press(locator) {
+  const target = locator.filter({ visible: true }).first();
+  await target.scrollIntoViewIfNeeded();
+  const box = await target.boundingBox();
+  if (box) await glide(box.x + box.width / 2, box.y + box.height / 2, 28);
+  await target.click();
+}
+
+/** A sidebar link by its name. */
+function nav(name) {
+  return page.getByRole('navigation').getByRole('link', { name, exact: true });
+}
+
 /** Scroll a heading to the top of the view, smoothly, and let it settle. */
 async function scrollToHeading(name) {
   const heading = page.getByRole('heading', { name, exact: true }).first();
@@ -98,35 +112,34 @@ async function sweep(locator, count = 4) {
   }
 }
 
-await page.goto(`${BASE}/login`);
+// the first look is set before anything loads; after that the tour switches skin and mode with
+// the app's own controls, and moves with the sidebar, so the page never reloads (a reload in dev
+// mode shows the raw page for a moment before its styles arrive)
+await context.addCookies([{ name: 'ui-theme', value: 'dark.glass.tide.dark', url: BASE }]);
+await page.goto(`${BASE}/`);
 await look('glass', 'dark');
+await page.reload();
+await page.waitForLoadState('load');
+await glide(WIDTH * 0.3, HEIGHT * 0.4, 1);
+await pause(2500);
+mark('start'); // the film is cut from here
 
 await scene('glass sign-in', async () => {
-  await page.reload();
-  await page.waitForLoadState('load');
-  await glide(WIDTH * 0.3, HEIGHT * 0.4, 1);
-  await pause(1500);
   await glide(WIDTH * 0.7, HEIGHT * 0.55, 70);
-  await pause(1200);
+  await pause(800);
 });
 
 await scene('sign in', async () => {
   // the sign-in page offers the public dev login as a button: on film, a click reads better than
   // typing, and typing is slow while the glass renders in software on a runner with no GPU
-  const fill = page.getByRole('button', { name: 'Fill dev login' });
-  const box = await fill.boundingBox();
-  if (box) await glide(box.x + box.width / 2, box.y + box.height / 2, 35);
-  await fill.click();
-  await pause(900);
-  const submit = page.getByRole('button', { name: 'Sign in' });
-  const target = await submit.boundingBox();
-  if (target) await glide(target.x + target.width / 2, target.y + target.height / 2, 30);
-  await submit.click();
-  await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 15000 });
+  await press(page.getByRole('button', { name: 'Fill dev login' }));
+  await pause(700);
+  await press(page.getByRole('button', { name: 'Sign in' }));
+  await page.getByRole('heading', { name: 'Overview' }).first().waitFor({ timeout: 20000 });
 });
 
 // if the form could not be used, sign in the way the browser checks do, so the tour goes on
-if (new URL(page.url()).pathname.startsWith('/login')) {
+if (!(await page.getByRole('heading', { name: 'Overview' }).count())) {
   mark('sign in through the API');
   const status = await page.evaluate(
     (body) =>
@@ -139,60 +152,72 @@ if (new URL(page.url()).pathname.startsWith('/login')) {
   );
   console.log(`  status ${status}`);
   await page.goto(`${BASE}/`);
+  await page.getByRole('heading', { name: 'Overview' }).first().waitFor({ timeout: 30000 });
 }
 
 await scene('dashboard arrives (frost)', async () => {
-  await pause(5200);
+  await pause(4500);
 });
 
 await scene('pointer light on the figures', async () => {
   await sweep(page.locator('.ui-kpi-fx'));
-  await pause(800);
+  await pause(600);
 });
 
-await scene('graphs in enterprise light (plotter)', async () => {
-  await look('enterprise', 'light');
-  await page.goto(`${BASE}/graphs`);
-  await pause(5500);
+await scene('switch to enterprise light', async () => {
+  await press(page.getByRole('radio', { name: 'Enterprise' }));
+  await pause(1200);
+  await press(page.getByRole('button', { name: 'Switch to light mode' }));
+  await pause(1200);
+});
+
+await scene('graphs arrive (plotter)', async () => {
+  await press(nav('Graphs'));
+  await pause(5000);
 });
 
 await scene('the reveal in each look', async () => {
-  await page.goto(`${BASE}/kit`);
-  await pause(1200);
+  await press(nav('Kit'));
+  await pause(1500);
   await scrollToHeading('Data visualisation');
-  await page.getByRole('button', { name: 'Replay' }).first().click();
-  await pause(3600);
-  await page.getByRole('button', { name: "With the agent's notes" }).first().click();
-  await pause(4600);
+  await press(page.getByRole('button', { name: 'Replay' }).first());
+  await pause(3400);
+  await press(page.getByRole('button', { name: "With the agent's notes" }).first());
+  await pause(4400);
 });
 
-await scene('cards and tiles in glass dark', async () => {
-  await look('glass', 'dark');
-  await page.reload();
+await scene('switch to glass dark', async () => {
+  await press(page.getByRole('radio', { name: 'Glass' }));
+  await pause(1200);
+  await press(page.getByRole('button', { name: 'Switch to dark mode' }));
   await pause(1500);
+});
+
+await scene('cards and tiles', async () => {
   await scrollToHeading('Cards and tiles');
   await sweep(page.locator('.ui-kpi-fx'), 3);
-  await pause(1000);
+  await pause(800);
 });
 
 await scene('sea glass', async () => {
   await scrollToHeading('Sea glass');
   await glide(WIDTH * 0.35, HEIGHT * 0.5, 40);
   await glide(WIDTH * 0.65, HEIGHT * 0.45, 60);
-  await pause(2200);
+  await pause(2000);
 });
 
 await scene('the assistant (draft)', async () => {
-  await page.goto(`${BASE}/assistant`);
-  await pause(1500);
-  await page.getByRole('button', { name: 'Show example conversation' }).click();
-  await pause(5000);
+  await press(nav('Assistant'));
+  await pause(1200);
+  await press(page.getByRole('button', { name: 'Show example conversation' }));
+  await pause(4800);
 });
 
 await scene('glass light', async () => {
-  await look('glass', 'light');
-  await page.goto(`${BASE}/`);
-  await pause(5500);
+  await press(page.getByRole('button', { name: 'Switch to light mode' }));
+  await pause(800);
+  await press(nav('Home'));
+  await pause(5000);
 });
 
 mark('end');
