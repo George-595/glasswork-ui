@@ -160,7 +160,7 @@ await page.evaluate(() => {
 });
 await page.reload();
 await slowAnimations();
-await button('Fill dev login').waitFor();
+await page.getByLabel('Email').waitFor();
 await page.mouse.move(pointer.x, pointer.y);
 await pause(2500); // the sea glass settles before the film starts
 mark('start');
@@ -171,8 +171,16 @@ await scene('glass sign-in', async () => {
 });
 
 await scene('sign in', async () => {
-  await press(button('Fill dev login'));
-  await pause(600);
+  // the public dev login (a built app shows no "Fill dev login" button; the dev server accepts it)
+  for (const [label, text] of [
+    ['Email', 'admin@example.test'],
+    ['Password', 'adminpassword'],
+  ]) {
+    const field = page.getByLabel(label, { exact: true });
+    await press(field);
+    await field.pressSequentially(text, { delay: 45 * SLOW });
+    await pause(250);
+  }
   await press(button('Sign in'));
   await arrive('Overview');
 });
