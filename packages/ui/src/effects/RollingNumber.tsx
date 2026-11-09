@@ -119,7 +119,8 @@ export function RollingNumber({
   // the figure the reels start from: `from` the first time, then whatever was last shown
   const [origin, setOrigin] = useState(() => format(from));
   const [phase, setPhase] = useState<Phase>('settled');
-  const [seen, setSeen] = useState(false);
+  // with no IntersectionObserver (an old browser, a test DOM) the figure counts as seen at once
+  const [seen, setSeen] = useState(() => typeof IntersectionObserver !== 'function');
   const shown = useRef(finalText);
 
   // wind back before the first paint (client renders only; the server shows the settled figure)
@@ -137,10 +138,6 @@ export function RollingNumber({
   useEffect(() => {
     const el = ref.current;
     if (!moving || seen || !el) return;
-    if (typeof IntersectionObserver !== 'function') {
-      setSeen(true);
-      return;
-    }
     const io = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {

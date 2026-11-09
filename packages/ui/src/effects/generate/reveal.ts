@@ -914,7 +914,8 @@ function finish(run: Run) {
 
 /** Show every element being generated at once, as it is. */
 export function skipAllGenerations() {
-  for (const run of [...runs]) finish(run);
+  // finish() takes each run out of the set; a Set iterates safely past a deleted entry
+  for (const run of runs) finish(run);
   queue.length = 0;
 }
 
