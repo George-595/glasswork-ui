@@ -49,7 +49,9 @@ function findShell() {
       }
     }
   }
-  throw new Error('no chrome-headless-shell: run `npx playwright-core install chromium-headless-shell`');
+  throw new Error(
+    'no chrome-headless-shell: run `npx playwright-core install chromium-headless-shell`',
+  );
 }
 
 // ─── the browser and a DevTools connection ───
@@ -166,7 +168,6 @@ await page('Emulation.setEmulatedMedia', {
 
 // ─── frames ───
 
-
 /** Draw one frame, 1/30 s after the last; keep it when the film is rolling (and `keep`). */
 async function frame(keep = true) {
   ticks += STEP;
@@ -185,7 +186,10 @@ async function frame(keep = true) {
   if (result.screenshotData) last = result.screenshotData;
   if (!last) return;
   filmed += 1;
-  writeFileSync(join(FRAMES, `${String(filmed).padStart(5, '0')}.jpg`), Buffer.from(last, 'base64'));
+  writeFileSync(
+    join(FRAMES, `${String(filmed).padStart(5, '0')}.jpg`),
+    Buffer.from(last, 'base64'),
+  );
 }
 
 /** Let `ms` of the page's time pass. */
@@ -257,7 +261,13 @@ async function press(selector, name) {
   if (!at) throw new Error(`no ${selector} "${name}" on screen`);
   await moveTo(at.x, at.y);
   for (const type of ['mousePressed', 'mouseReleased']) {
-    await page('Input.dispatchMouseEvent', { type, x: at.x, y: at.y, button: 'left', clickCount: 1 });
+    await page('Input.dispatchMouseEvent', {
+      type,
+      x: at.x,
+      y: at.y,
+      button: 'left',
+      clickCount: 1,
+    });
     await frame();
   }
 }
