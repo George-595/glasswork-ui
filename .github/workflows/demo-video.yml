@@ -1,6 +1,7 @@
 # demo-video — run by hand: starts the base app (in-memory SQLite, the public dev login), films
 # the guided tour in scripts/demo/record.mjs, and pushes the film to the `demo-recording` branch
-# (replaced on every run) as WebM, where it is encoded for the README.
+# (replaced on every run), where it is picked up for the README. The tour is drawn frame by
+# frame (scripts/demo/record.mjs), so it is smooth however slow the runner is.
 name: Demo video
 
 on:
@@ -12,7 +13,7 @@ permissions:
 jobs:
   record:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -31,17 +32,25 @@ jobs:
       - name: Warm up the routes
         run: |
           for r in /login / /graphs /kit /assistant; do curl -s -o /dev/null "http://127.0.0.1:5173$r"; done
-      # playwright records video through its own ffmpeg build
-      - run: npx --no-install playwright-core install ffmpeg
+      # the frame-by-frame recorder needs chrome-headless-shell; ffmpeg turns its frames into a film
+      - run: npx --no-install playwright-core install chromium-headless-shell
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Film the tour
         run: node scripts/demo/record.mjs
-        env:
-          CHROME_PATH: /usr/bin/google-chrome
+      - name: Encode
+        run: |
+          ffmpeg -y -loglevel error -framerate 30 -i demo-out/frames/%05d.jpg -c:v libx264 \
+            -preset slow -crf 18 -pix_fmt yuv420p -movflags +faststart demo-out/demo.mp4
+          rm -rf demo-out/frames
+          ls -la demo-out
       # pushed even when filming failed: its screenshots and the server log say why
       - name: Push the film to the demo-recording branch
         if: always()
         run: |
-          mkdir /tmp/film && cp -r demo-out/. /tmp/film/ 2>/dev/null || true
+          mkdir -p /tmp/film/samples
+          cp demo-out/*.mp4 demo-out/*.json /tmp/film/ 2>/dev/null || true
+          # when encoding did not happen: every 90th frame, to see how far it got
+          ls demo-out/frames/*.jpg 2>/dev/null | awk 'NR % 90 == 1' | xargs -r cp -t /tmp/film/samples/
           cp dev.log /tmp/film/dev.log
           cd /tmp/film
           git init -q -b demo-recording
