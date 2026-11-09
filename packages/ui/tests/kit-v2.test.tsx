@@ -853,7 +853,9 @@ describe('KpiTile', () => {
   it('has the decorative pointer light, whose layers stay out of the accessibility tree', () => {
     render(<KpiTile label="Orders" value={12} />);
     expect($$('.ui-kpi-fx')).toHaveLength(1);
-    for (const layer of $$('.ui-kpi-fx > .ui-pl-glow, .ui-kpi-fx > .ui-pl-rim, .ui-kpi-fx > .ui-pl-sheen')) {
+    for (const layer of $$(
+      '.ui-kpi-fx > .ui-pl-glow, .ui-kpi-fx > .ui-pl-rim, .ui-kpi-fx > .ui-pl-sheen',
+    )) {
       expect(layer.getAttribute('aria-hidden')).toBe('true');
     }
   });
