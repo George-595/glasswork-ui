@@ -32,6 +32,8 @@ const context = await browser.newContext({
   recordVideo: { dir: OUT, size: { width: WIDTH, height: HEIGHT } },
 });
 const page = await context.newPage();
+// a step that cannot happen should cost seconds, not half a minute of film
+page.setDefaultTimeout(8000);
 const started = Date.now();
 const timeline = [];
 const pause = (ms) => page.waitForTimeout(ms);
@@ -49,6 +51,9 @@ async function scene(name, run) {
     await run();
   } catch (error) {
     console.warn(`  scene "${name}" skipped: ${error instanceof Error ? error.message : error}`);
+    const file = `failed-${timeline.length}.png`;
+    await page.screenshot({ path: join(OUT, file) }).catch(() => {});
+    console.warn(`  page: ${page.url()} (screenshot ${file})`);
   }
 }
 
@@ -96,7 +101,7 @@ await look('glass', 'dark');
 
 await scene('glass sign-in', async () => {
   await page.reload();
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
   await glide(WIDTH * 0.3, HEIGHT * 0.4, 1);
   await pause(1500);
   await glide(WIDTH * 0.7, HEIGHT * 0.55, 70);
@@ -114,6 +119,22 @@ await scene('sign in', async () => {
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 15000 });
 });
+
+// if the form could not be used, sign in the way the browser checks do, so the tour goes on
+if (new URL(page.url()).pathname.startsWith('/login')) {
+  mark('sign in through the API');
+  const status = await page.evaluate(
+    (body) =>
+      fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      }).then((r) => r.status),
+    { email: 'admin@example.test', password: 'adminpassword' },
+  );
+  console.log(`  status ${status}`);
+  await page.goto(`${BASE}/`);
+}
 
 await scene('dashboard arrives (frost)', async () => {
   await pause(5200);

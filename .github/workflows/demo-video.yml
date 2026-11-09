@@ -1,6 +1,6 @@
 # demo-video — run by hand: starts the base app (in-memory SQLite, the public dev login), films
 # the guided tour in scripts/demo/record.mjs, and pushes the film to the `demo-recording` branch
-# (replaced on every run), where it is picked up for the README.
+# (replaced on every run) as WebM, where it is encoded for the README.
 name: Demo video
 
 on:
@@ -37,14 +37,11 @@ jobs:
         run: node scripts/demo/record.mjs
         env:
           CHROME_PATH: /usr/bin/google-chrome
-      - name: Encode
-        run: |
-          ffmpeg -y -loglevel error -i demo-out/demo.webm -c:v libx264 -preset slow -crf 18 \
-            -pix_fmt yuv420p -movflags +faststart demo-out/demo.mp4
-          ls -la demo-out
+      # pushed even when filming failed: its screenshots and the server log say why
       - name: Push the film to the demo-recording branch
+        if: always()
         run: |
-          mkdir /tmp/film && cp demo-out/demo.mp4 demo-out/timeline.json /tmp/film/
+          mkdir /tmp/film && cp -r demo-out/. /tmp/film/ 2>/dev/null || true
           cp dev.log /tmp/film/dev.log
           cd /tmp/film
           git init -q -b demo-recording
