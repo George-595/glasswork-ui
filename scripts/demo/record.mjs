@@ -1,320 +1,86 @@
-// record — films the guided tour of the base app for the README, frame by frame: the glass
-// sign-in, the dashboard as its data arrives, the reveal in each look, the pointer light, sea
-// glass and the assistant, in both skins and both modes.
+// record — films the guided tour of the base app for the README: the glass sign-in, the
+// dashboard as its data arrives, the reveal in each look, the pointer light, sea glass and the
+// assistant, in both skins and both modes.
 //
 //   npm run build -w @apps/base-app                       # film the built app, not the dev server
 //   (cd base-app && SERVE_DIST=true node server/main.ts)  # http://127.0.0.1:8787, dev login, demo data
-//   npx playwright-core install chromium-headless-shell   # once
-//   BASE_URL=http://127.0.0.1:8787 node scripts/demo/record.mjs   # demo-out/frames/*.jpg, 30 fps
-//   ffmpeg -framerate 30 -i demo-out/frames/%05d.jpg -c:v libx264 -crf 18 -pix_fmt yuv420p demo.mp4
+//   BASE_URL=http://127.0.0.1:8787 node scripts/demo/record.mjs
+//   ffmpeg -ss <start> -i demo-out/demo.webm -vf "setpts=PTS/8,fps=30" -c:v libx264 -crf 18 demo.mp4
 //
-// Why frame by frame: a machine without a GPU cannot draw the glass skin in real time, so a
-// screen recording stutters. chrome-headless-shell can be driven one frame at a time instead
-// (HeadlessExperimental.beginFrame with --deterministic-mode): the page's clock moves exactly
-// 1/30 s per frame and nothing runs in between, however long a frame takes to draw. Every
-// transition, shader and reveal comes out at its true speed, smoothly.
+// Slow motion: a machine without a GPU cannot draw the glass skin in real time, so a plain
+// screen recording stutters. Here the page runs SLOW times slower than life (default 8): every
+// clock it reads (performance.now, Date.now, animation-frame times, timers) is slowed by a
+// script that runs before the app, and CSS transitions and animations by Chrome's own playback
+// rate. The browser has SLOW times as long to draw each frame of every animation, and the
+// recording is sped back up by the same factor afterwards (timeline.json gives the factor and
+// where the film starts). Nothing about loading changes, so the app behaves exactly as it does
+// for a person.
 //
-// It talks to Chrome over the DevTools protocol directly (Node's WebSocket): Playwright's own
-// waiting would hang, since nothing on the page runs until a frame is asked for. Each scene is
-// tried on its own, so a moved button costs that scene, not the film. HEADLESS_SHELL points at
-// the browser (default: Playwright's install), BASE_URL at the app, DEMO_OUT at the output.
-import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
+// Each scene is tried on its own, so a moved button costs that scene, not the film. Sign-in uses
+// the public dev login. BASE_URL points it at the app, DEMO_OUT at the output folder.
+import { mkdirSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { chromium } from 'playwright-core';
+import { defaultChrome } from '../../packages/ui/scripts/browser.mjs';
 
-const BASE = (process.env.BASE_URL ?? 'http://127.0.0.1:5173').replace(/\/+$/, '');
+const BASE = (process.env.BASE_URL ?? 'http://127.0.0.1:8787').replace(/\/+$/, '');
 const OUT = process.env.DEMO_OUT ?? 'demo-out';
-const FRAMES = join(OUT, 'frames');
+const SLOW = Number(process.env.DEMO_SLOW ?? 8);
 const WIDTH = 1440;
 const HEIGHT = 900;
-const FPS = 30;
-const STEP = 1000 / FPS;
-const PORT = Number(process.env.DEMO_CDP_PORT ?? 9347);
+mkdirSync(OUT, { recursive: true });
 
-/** Playwright's chrome-headless-shell, newest first. */
-function findShell() {
-  if (process.env.HEADLESS_SHELL) return process.env.HEADLESS_SHELL;
-  const root = join(homedir(), '.cache', 'ms-playwright');
-  const builds = existsSync(root)
-    ? readdirSync(root)
-        .filter((name) => name.startsWith('chromium_headless_shell-'))
-        .sort()
-        .reverse()
-    : [];
-  for (const build of builds) {
-    for (const folder of readdirSync(join(root, build))) {
-      for (const exe of ['chrome-headless-shell', 'headless_shell']) {
-        const path = join(root, build, folder, exe);
-        if (existsSync(path)) return path;
-      }
-    }
-  }
-  throw new Error(
-    'no chrome-headless-shell: run `npx playwright-core install chromium-headless-shell`',
-  );
+/** Runs in the page before any of its own code: every clock it can read goes SLOW times slower. */
+function slowClocks(slow) {
+  const realNow = performance.now.bind(performance);
+  const start = realNow();
+  const scaled = (t) => start + (t - start) / slow;
+  performance.now = () => scaled(realNow());
+  const realDateNow = Date.now;
+  const dateStart = realDateNow();
+  Date.now = () => dateStart + (realDateNow() - dateStart) / slow;
+  const raf = window.requestAnimationFrame.bind(window);
+  window.requestAnimationFrame = (callback) => raf((t) => callback(scaled(t)));
+  const timeout = window.setTimeout.bind(window);
+  window.setTimeout = (fn, ms, ...args) => timeout(fn, (Number(ms) || 0) * slow, ...args);
+  const interval = window.setInterval.bind(window);
+  window.setInterval = (fn, ms, ...args) => interval(fn, (Number(ms) || 0) * slow, ...args);
 }
 
-// ─── the browser and a DevTools connection ───
-
-rmSync(FRAMES, { recursive: true, force: true });
-mkdirSync(FRAMES, { recursive: true });
-const profile = join(tmpdir(), `demo-profile-${process.pid}`);
-const chrome = spawn(
-  findShell(),
-  [
-    `--remote-debugging-port=${PORT}`,
-    `--user-data-dir=${profile}`,
-    '--deterministic-mode',
-    '--enable-begin-frame-control',
-    '--run-all-compositor-stages-before-draw',
-    '--disable-threaded-animation',
-    '--disable-threaded-scrolling',
-    '--disable-checker-imaging',
-    '--disable-image-animation-resync',
-    '--enable-surface-synchronization',
-    '--hide-scrollbars',
-    // CI runners (Ubuntu 24.04) refuse Chrome's sandbox to a downloaded build; Playwright drops it too
-    '--no-sandbox',
-    '--ignore-gpu-blocklist',
-    '--enable-unsafe-swiftshader',
-    `--window-size=${WIDTH},${HEIGHT}`,
-    'about:blank',
-  ],
-  { stdio: ['ignore', 'ignore', 'pipe'] },
-);
-let chromeLog = '';
-chrome.stderr.on('data', (chunk) => {
-  chromeLog = (chromeLog + chunk).slice(-4000);
+const browser = await chromium.launch({
+  headless: true,
+  executablePath: defaultChrome(),
+  args: ['--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'],
 });
-
-async function browserSocket() {
-  for (let i = 0; i < 100; i++) {
-    try {
-      const res = await fetch(`http://127.0.0.1:${PORT}/json/version`);
-      return (await res.json()).webSocketDebuggerUrl;
-    } catch {
-      await new Promise((r) => setTimeout(r, 200));
-    }
-  }
-  throw new Error(`chrome-headless-shell did not open its DevTools port:\n${chromeLog}`);
-}
-
-const ws = new WebSocket(await browserSocket());
-await new Promise((resolve, reject) => {
-  ws.onopen = resolve;
-  ws.onerror = () => reject(new Error('could not open the DevTools socket'));
-});
-let nextId = 0;
-const pending = new Map();
-ws.onmessage = (event) => {
-  const msg = JSON.parse(String(event.data));
-  const waiting = msg.id !== undefined ? pending.get(msg.id) : undefined;
-  if (!waiting) return;
-  pending.delete(msg.id);
-  if (msg.error) waiting.reject(new Error(`${waiting.method}: ${msg.error.message}`));
-  else waiting.resolve(msg.result);
-};
-function cdp(method, params = {}, sessionId) {
-  const id = ++nextId;
-  ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }));
-  return new Promise((resolve, reject) => pending.set(id, { resolve, reject, method }));
-}
-
-let ticks = 10_000; // the page's clock, ms
-let filmed = 0;
-let last = '';
-let filming = false;
-const timeline = [];
-
-const { targetId } = await cdp('Target.createTarget', {
-  url: 'about:blank',
-  width: WIDTH,
-  height: HEIGHT,
-  enableBeginFrameControl: true,
-});
-const { sessionId } = await cdp('Target.attachToTarget', { targetId, flatten: true });
-/** A call on the page. Some (an evaluate, an input event, a navigation) can only finish once a
-    frame is drawn, and nothing is drawn unless asked: while one waits, frames are drawn, unfilmed. */
-async function page(method, params) {
-  const call = cdp(method, params, sessionId);
-  if (method === 'HeadlessExperimental.beginFrame') return call;
-  let done = false;
-  call.then(
-    () => {
-      done = true;
-    },
-    () => {
-      done = true;
-    },
-  );
-  for (;;) {
-    await Promise.race([call, new Promise((r) => setTimeout(r, 1000))]);
-    if (done) return call;
-    await frame(false);
-  }
-}
-await page('Page.enable');
-await page('Runtime.enable');
-await page('Network.enable');
-await page('Emulation.setDeviceMetricsOverride', {
-  width: WIDTH,
-  height: HEIGHT,
+const context = await browser.newContext({
+  viewport: { width: WIDTH, height: HEIGHT },
   deviceScaleFactor: 1,
-  mobile: false,
+  colorScheme: 'dark',
+  reducedMotion: 'no-preference',
+  recordVideo: { dir: OUT, size: { width: WIDTH, height: HEIGHT } },
 });
-await page('Emulation.setEmulatedMedia', {
-  features: [{ name: 'prefers-color-scheme', value: 'dark' }],
-});
+await context.addInitScript(slowClocks, SLOW);
+const page = await context.newPage();
+page.setDefaultTimeout(15000 * SLOW);
+page.setDefaultNavigationTimeout(60000);
+const cdp = await context.newCDPSession(page);
 
-// ─── frames ───
-
-/** Draw one frame, 1/30 s after the last; keep it when the film is rolling (and `keep`). */
-async function frame(keep = true) {
-  ticks += STEP;
-  const shoot = filming && keep;
-  const result = await cdp(
-    'HeadlessExperimental.beginFrame',
-    {
-      frameTimeTicks: ticks,
-      interval: STEP,
-      ...(shoot ? { screenshot: { format: 'jpeg', quality: 92 } } : {}),
-    },
-    sessionId,
-  );
-  if (!shoot) return;
-  // a frame with nothing new on screen comes back without an image: repeat the last one
-  if (result.screenshotData) last = result.screenshotData;
-  if (!last) return;
-  filmed += 1;
-  writeFileSync(
-    join(FRAMES, `${String(filmed).padStart(5, '0')}.jpg`),
-    Buffer.from(last, 'base64'),
-  );
+/** CSS transitions and animations go as slow as the clocks (set again after a navigation). */
+async function slowAnimations() {
+  await cdp.send('Animation.enable');
+  await cdp.send('Animation.setPlaybackRate', { playbackRate: 1 / SLOW });
 }
 
+const opened = Date.now();
+const timeline = [];
+/** Film seconds: the page's time, which runs SLOW times slower than the recording's. */
+const filmTime = () => (Date.now() - opened) / 1000 / SLOW;
 /** Let `ms` of the page's time pass. */
-async function pause(ms) {
-  for (let i = 0; i < Math.round(ms / STEP); i++) await frame();
-}
-
-/** Run an expression in the page and return its value. */
-async function js(expression) {
-  const { result, exceptionDetails } = await page('Runtime.evaluate', {
-    expression,
-    returnByValue: true,
-    awaitPromise: true,
-  });
-  if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? 'script error');
-  return result.value;
-}
-
-/** Keep drawing frames until the expression is true, or give up after `ms` of page time. */
-async function until(expression, ms = 15000) {
-  for (let t = 0; t < ms; t += STEP) {
-    if (await js(`Boolean(${expression})`)) return;
-    await frame();
-  }
-  throw new Error(`timed out waiting for ${expression}`);
-}
-
-// the page-side finders: an element by its role and its text, whichever is on screen
-const FIND = `
-  window.__demo = {
-    visible: (el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; },
-    text: (el) => (el.getAttribute('aria-label') || el.textContent || '').replace(/\\s+/g, ' ').trim(),
-    find(selector, name) {
-      return [...document.querySelectorAll(selector)].find((el) => this.visible(el) && this.text(el) === name) ?? null;
-    },
-    box(selector, name) {
-      const el = this.find(selector, name);
-      if (!el) return null;
-      el.scrollIntoView({ block: 'nearest' });
-      const r = el.getBoundingClientRect();
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-    },
-  };`;
-const BUTTON = 'button, [role="button"]';
-const RADIO = '[role="radio"], [role="tab"], button';
-const NAV = 'nav a';
-const HEADING = 'h1, h2, h3, h4';
-const quote = (s) => JSON.stringify(s);
-
-// ─── the pointer ───
-
-let pointer = { x: WIDTH * 0.3, y: HEIGHT * 0.4 };
-async function moveTo(x, y, ms = 700) {
-  const from = pointer;
-  const n = Math.max(1, Math.round(ms / STEP));
-  for (let i = 1; i <= n; i++) {
-    const q = i / n;
-    const e = q < 0.5 ? 2 * q * q : 1 - (-2 * q + 2) ** 2 / 2; // ease in and out
-    pointer = { x: from.x + (x - from.x) * e, y: from.y + (y - from.y) * e };
-    await page('Input.dispatchMouseEvent', { type: 'mouseMoved', x: pointer.x, y: pointer.y });
-    await frame();
-  }
-}
-
-/** Glide to the element and click it, as a person would. */
-async function press(selector, name) {
-  await js(FIND);
-  const at = await js(`__demo.box(${quote(selector)}, ${quote(name)})`);
-  if (!at) throw new Error(`no ${selector} "${name}" on screen`);
-  await moveTo(at.x, at.y);
-  for (const type of ['mousePressed', 'mouseReleased']) {
-    await page('Input.dispatchMouseEvent', {
-      type,
-      x: at.x,
-      y: at.y,
-      button: 'left',
-      clickCount: 1,
-    });
-    await frame();
-  }
-}
-
-/** Sweep the pointer across the first few elements matching a selector. */
-async function sweep(selector, count = 4) {
-  const boxes = await js(
-    `[...document.querySelectorAll(${quote(selector)})].slice(0, ${count}).map((el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; }).filter((b) => b.w > 0 && b.y > 0 && b.y < innerHeight)`,
-  );
-  for (const b of boxes) {
-    await moveTo(b.x + b.w * 0.2, b.y + b.h * 0.45, 350);
-    await moveTo(b.x + b.w * 0.85, b.y + b.h * 0.6, 650);
-  }
-}
-
-/** Scroll a heading to the top of the view, smoothly, and let it settle. */
-async function scrollToHeading(name) {
-  await js(FIND);
-  const found = await js(
-    `(() => { const h = __demo.find(${quote(HEADING)}, ${quote(name)}); if (h) h.scrollIntoView({ behavior: 'smooth', block: 'start' }); return !!h; })()`,
-  );
-  if (!found) throw new Error(`no heading "${name}"`);
-  await pause(1200);
-}
-
-/** After a click that changes the route: draw frames off camera until the page's heading is
-    there (its code arriving is not worth watching), then roll the film again. */
-async function arrive(heading, ms = 60000) {
-  const rolling = filming;
-  filming = false;
-  try {
-    await until(
-      `[...document.querySelectorAll('h1')].some((h) => h.textContent.trim() === ${quote(heading)})`,
-      ms,
-    );
-  } finally {
-    filming = rolling;
-  }
-}
-
-// ─── scenes ───
+const pause = (ms) => page.waitForTimeout(ms * SLOW);
 
 function mark(name) {
-  const at = filmed / FPS;
-  timeline.push({ name, at });
-  console.log(`${at.toFixed(1).padStart(6)}s  ${name}`);
+  timeline.push({ name, at: filmTime() });
+  console.log(`${filmTime().toFixed(1).padStart(6)}s  ${name}`);
 }
 
 async function scene(name, run) {
@@ -323,46 +89,109 @@ async function scene(name, run) {
     await run();
   } catch (error) {
     console.warn(`  scene "${name}" skipped: ${error instanceof Error ? error.message : error}`);
+    const file = `failed-${timeline.length}.png`;
+    await page.screenshot({ path: join(OUT, file) }).catch(() => {});
+    console.warn(`  page: ${page.url()} (screenshot ${file})`);
   }
 }
 
-const onHome = `document.querySelector('h1')?.textContent?.includes('Overview')`;
+// ─── the pointer, in page time ───
+
+let pointer = { x: WIDTH * 0.3, y: HEIGHT * 0.4 };
+async function moveTo(x, y, ms = 700) {
+  const from = pointer;
+  const steps = Math.max(1, Math.round(ms / 33));
+  for (let i = 1; i <= steps; i++) {
+    const q = i / steps;
+    const e = q < 0.5 ? 2 * q * q : 1 - (-2 * q + 2) ** 2 / 2; // ease in and out
+    pointer = { x: from.x + (x - from.x) * e, y: from.y + (y - from.y) * e };
+    await page.mouse.move(pointer.x, pointer.y);
+    await pause(33);
+  }
+}
+
+/** Glide to the element and click it, as a person would. */
+async function press(locator) {
+  const target = locator.filter({ visible: true }).first();
+  await target.scrollIntoViewIfNeeded();
+  const box = await target.boundingBox();
+  if (box) await moveTo(box.x + box.width / 2, box.y + box.height / 2);
+  await target.click();
+}
+
+/** A sidebar link by its name. */
+const nav = (name) => page.getByRole('navigation').getByRole('link', { name, exact: true });
+const button = (name) => page.getByRole('button', { name, exact: true });
+
+/** Sweep the pointer across the first few elements matching a selector. */
+async function sweep(selector, count = 4) {
+  const items = page.locator(selector);
+  const n = Math.min(count, await items.count());
+  for (let i = 0; i < n; i++) {
+    const box = await items.nth(i).boundingBox();
+    if (!box || box.y < 0 || box.y > HEIGHT) continue;
+    await moveTo(box.x + box.width * 0.2, box.y + box.height * 0.45, 350);
+    await moveTo(box.x + box.width * 0.85, box.y + box.height * 0.6, 650);
+  }
+}
+
+/** Scroll a heading to the top of the view, smoothly, and let it settle. */
+async function scrollToHeading(name) {
+  const heading = page.getByRole('heading', { name, exact: true }).first();
+  await heading.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  await pause(1200);
+}
+
+/** Wait for a page's main heading after a route change. */
+const arrive = (name) =>
+  page.getByRole('heading', { level: 1, name, exact: true }).first().waitFor();
+
+// ─── the tour ───
 
 // the first look is set before anything loads; after that the tour switches skin and mode with
 // the app's own controls and moves by the sidebar, so the page never reloads
-await page('Network.setCookie', { name: 'ui-theme', value: 'dark.glass.tide.dark', url: BASE });
-await page('Page.navigate', { url: `${BASE}/` });
-await until(`document.readyState === 'complete' && document.querySelector('form')`, 60000);
-await js(
-  `localStorage.setItem('ui-skin', 'glass'); localStorage.setItem('ui-theme', 'dark'); localStorage.removeItem('ui:lowpower:lag'); localStorage.removeItem('ui:seaglass:verdict');`,
-);
-await pause(2500); // the sea glass settles before the film rolls
-await page('Input.dispatchMouseEvent', { type: 'mouseMoved', x: pointer.x, y: pointer.y });
-filming = true;
+await context.addCookies([{ name: 'ui-theme', value: 'dark.glass.tide.dark', url: BASE }]);
+await page.goto(`${BASE}/`);
+await page.evaluate(() => {
+  localStorage.setItem('ui-skin', 'glass');
+  localStorage.setItem('ui-theme', 'dark');
+  localStorage.removeItem('ui:lowpower:lag');
+  localStorage.removeItem('ui:seaglass:verdict');
+});
+await page.reload();
+await slowAnimations();
+await button('Fill dev login').waitFor();
+await page.mouse.move(pointer.x, pointer.y);
+await pause(2500); // the sea glass settles before the film starts
+mark('start');
 
 await scene('glass sign-in', async () => {
-  await pause(600);
   await moveTo(WIDTH * 0.7, HEIGHT * 0.55, 1600);
   await pause(400);
 });
 
 await scene('sign in', async () => {
-  await press(BUTTON, 'Fill dev login');
+  await press(button('Fill dev login'));
   await pause(600);
-  await press(BUTTON, 'Sign in');
-  await until(onHome, 20000);
+  await press(button('Sign in'));
+  await arrive('Overview');
 });
 
-if (!(await js(onHome))) {
+if (!(await page.getByRole('heading', { level: 1, name: 'Overview' }).count())) {
   mark('sign in through the API');
-  filming = false;
-  await js(
-    `fetch('/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'admin@example.test', password: 'adminpassword' }) }).then((r) => r.status)`,
+  const status = await page.evaluate(
+    (body) =>
+      fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      }).then((r) => r.status),
+    { email: 'admin@example.test', password: 'adminpassword' },
   );
-  await page('Page.navigate', { url: `${BASE}/` });
-  await until(`document.readyState === 'complete'`, 60000);
-  filming = true;
-  await until(onHome, 30000);
+  console.log(`  status ${status}`);
+  await page.goto(`${BASE}/`);
+  await slowAnimations();
+  await arrive('Overview');
 }
 
 await scene('dashboard arrives (frost)', async () => {
@@ -375,33 +204,33 @@ await scene('pointer light on the figures', async () => {
 });
 
 await scene('switch to enterprise light', async () => {
-  await press(RADIO, 'Enterprise');
+  await press(page.getByRole('radio', { name: 'Enterprise' }));
   await pause(1000);
-  await press(BUTTON, 'Switch to light mode');
+  await press(button('Switch to light mode'));
   await pause(1000);
 });
 
 await scene('graphs arrive (plotter)', async () => {
-  await press(NAV, 'Graphs');
+  await press(nav('Graphs'));
   await arrive('Graphs');
   await pause(4800);
 });
 
 await scene('the reveal in each look', async () => {
-  await press(NAV, 'Kit');
+  await press(nav('Kit'));
   await arrive('Kit');
   await pause(800);
   await scrollToHeading('Data visualisation');
-  await press(BUTTON, 'Replay');
+  await press(button('Replay'));
   await pause(3400);
-  await press(BUTTON, "With the agent's notes");
+  await press(button("With the agent's notes"));
   await pause(4300);
 });
 
 await scene('switch to glass dark', async () => {
-  await press(RADIO, 'Glass');
+  await press(page.getByRole('radio', { name: 'Glass' }));
   await pause(1000);
-  await press(BUTTON, 'Switch to dark mode');
+  await press(button('Switch to dark mode'));
   await pause(1300);
 });
 
@@ -419,24 +248,34 @@ await scene('sea glass', async () => {
 });
 
 await scene('the assistant (draft)', async () => {
-  await press(NAV, 'Assistant');
+  await press(nav('Assistant'));
   await arrive('Assistant');
   await pause(800);
-  await press(BUTTON, 'Show example conversation');
+  await press(button('Show example conversation'));
   await pause(4600);
 });
 
 await scene('glass light', async () => {
-  await press(BUTTON, 'Switch to light mode');
+  await press(button('Switch to light mode'));
   await pause(700);
-  await press(NAV, 'Home');
+  await press(nav('Home'));
   await arrive('Overview');
   await pause(4800);
 });
 
 mark('end');
-writeFileSync(join(OUT, 'timeline.json'), `${JSON.stringify(timeline, null, 2)}\n`);
-console.log(`wrote ${filmed} frames (${(filmed / FPS).toFixed(1)}s) to ${FRAMES}`);
-ws.close();
-chrome.kill();
-rmSync(profile, { recursive: true, force: true });
+const video = page.video();
+await context.close();
+await browser.close();
+const recorded = video
+  ? await video.path()
+  : join(OUT, readdirSync(OUT).find((f) => f.endsWith('.webm')) ?? '');
+renameSync(recorded, join(OUT, 'demo.webm'));
+const start = timeline.find((t) => t.name === 'start')?.at ?? 0;
+writeFileSync(
+  join(OUT, 'timeline.json'),
+  `${JSON.stringify({ slow: SLOW, startSeconds: start * SLOW, scenes: timeline }, null, 2)}\n`,
+);
+console.log(
+  `wrote ${join(OUT, 'demo.webm')} (slowed ${SLOW}x; the film starts ${(start * SLOW).toFixed(1)}s in)`,
+);
