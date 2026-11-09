@@ -3,7 +3,7 @@
 **A React component kit with two skins, and a full-stack app template built on it.**
 By [George Allan](https://github.com/George-595).
 
-<!-- demo: the film goes here -->
+<a href="docs/demo/tour.mp4"><img src="docs/demo/loop.webp" width="100%" alt="Glasswork UI in motion: a glass dashboard arriving through frost, charts drawn by a pen plotter in the enterprise skin, and the assistant drafting a card. Select to watch the full tour." /></a>
 
 Glasswork is the UI I build my own apps with: an enterprise skin that stays calm and a glass skin
 that uses a real liquid-glass material over a living backdrop, each in light and dark, every

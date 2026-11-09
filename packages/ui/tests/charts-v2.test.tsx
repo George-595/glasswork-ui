@@ -309,7 +309,8 @@ describe('axis helpers', () => {
     const short = defaultXFormat(['2026-09-02', '2026-09-30']);
     expect(short('2026-09-02')).toBe('2 Sept');
     const long = defaultXFormat(['2025-01-15', '2026-09-15']);
-    expect(long('2026-09-15')).toBe('Sept 26');
+    // newer locale data (CLDR 49, Node 26) writes the year as ’26
+    expect(long('2026-09-15')).toMatch(/^Sept ’?26$/);
     expect(defaultXFormat(['Mon', 'Tue'])('Mon')).toBe('Mon');
     expect(allIsoDates(['2026-09-02', '2026-09-03T10:00:00Z'])).toBe(true);
     expect(allIsoDates(['2026-09-02', 'Mon'])).toBe(false);

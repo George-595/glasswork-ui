@@ -95,7 +95,8 @@ describe('fake data: metrics', () => {
   it('returns monthly signups as labels in the en-GB short form', () => {
     const rows = getMonthlySignups();
     expect(rows).toHaveLength(12);
-    expect(rows.at(-1)?.label).toBe('Oct 26');
+    // newer locale data (CLDR 49, Node 26) writes the year as ’26
+    expect(rows.at(-1)?.label).toMatch(/^Oct ’?26$/);
   });
 });
 

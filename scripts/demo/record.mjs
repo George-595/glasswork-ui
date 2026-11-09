@@ -113,10 +113,16 @@ async function moveTo(x, y, ms = 700) {
 /** Glide to the element and click it, as a person would. */
 async function press(locator) {
   const target = locator.filter({ visible: true }).first();
-  await target.scrollIntoViewIfNeeded();
-  const box = await target.boundingBox();
-  if (box) await moveTo(box.x + box.width / 2, box.y + box.height / 2);
-  await target.click();
+  let box = await target.boundingBox();
+  // only scroll for something really off screen: asked to scroll to a sticky header's control,
+  // the browser snaps the page to where that control sits in the flow, a jump in the film
+  if (!box || box.y < 0 || box.y + box.height > HEIGHT) {
+    await target.scrollIntoViewIfNeeded();
+    box = await target.boundingBox();
+  }
+  if (!box) throw new Error('nothing to press');
+  await moveTo(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.click(pointer.x, pointer.y);
 }
 
 /** A sidebar link by its name. */
