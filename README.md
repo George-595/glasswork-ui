@@ -3,7 +3,26 @@
 **A React component kit with two skins, and a full-stack app template built on it.**
 By [George Allan](https://github.com/George-595).
 
-<a href="docs/demo/tour.mp4"><img src="docs/demo/loop.webp" width="100%" alt="Glasswork UI in motion: a glass dashboard arriving through frost, charts drawn by a pen plotter in the enterprise skin, and the assistant drafting a card. Select to watch the full tour." /></a>
+<table>
+  <tr>
+    <td width="50%"><a href="docs/demo/frost.webp"><img src="docs/demo/frost.webp" alt="A glass dashboard crystallising out of frost as its data arrives." /></a><br /><b>Frost.</b> Data arrives in the glass skin.</td>
+    <td width="50%"><a href="docs/demo/plotter.webp"><img src="docs/demo/plotter.webp" alt="A pen plotter drawing the charts in the enterprise skin." /></a><br /><b>Pen plotter.</b> The same arrival in the enterprise skin.</td>
+  </tr>
+  <tr>
+    <td><a href="docs/demo/draft.webp"><img src="docs/demo/draft.webp" alt="A chart drawn on a drafting table, then developed into the real card." /></a><br /><b>Drafting table.</b> A card is drawn, then developed.</td>
+    <td><a href="docs/demo/agent-notes.webp"><img src="docs/demo/agent-notes.webp" alt="The drafting reveal with a spec sheet of the agent's notes beside it." /></a><br /><b>The agent's notes.</b> Its spec sheet, written as it draws.</td>
+  </tr>
+  <tr>
+    <td><a href="docs/demo/assistant.webp"><img src="docs/demo/assistant.webp" alt="The assistant answering and drafting an action card for approval." /></a><br /><b>The assistant.</b> It drafts, and asks before it acts.</td>
+    <td><a href="docs/demo/odometer.webp"><img src="docs/demo/odometer.webp" alt="Figures rolling into place, digit by digit, on odometer reels." /></a><br /><b>Odometer.</b> Each digit rolls in on its own reel.</td>
+  </tr>
+  <tr>
+    <td><a href="docs/demo/pointer-light.webp"><img src="docs/demo/pointer-light.webp" alt="A soft light following the pointer across the figure tiles." /></a><br /><b>Pointer light.</b> Tiles catch the light as you pass.</td>
+    <td><a href="docs/demo/frost-light.webp"><img src="docs/demo/frost-light.webp" alt="The frost arrival in the light glass theme." /></a><br /><b>Light mode.</b> Every effect works in all four themes.</td>
+  </tr>
+</table>
+
+<a href="docs/demo/tour.mp4"><b>Watch the full tour</b></a> (93 seconds, both skins and both modes).
 
 Glasswork is the UI I build my own apps with: an enterprise skin that stays calm and a glass skin
 that uses a real liquid-glass material over a living backdrop, each in light and dark, every

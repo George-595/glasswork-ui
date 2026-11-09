@@ -83,6 +83,14 @@ function mark(name) {
   console.log(`${filmTime().toFixed(1).padStart(6)}s  ${name}`);
 }
 
+const clips = [];
+/** A stretch worth its own short film: timeline.json says where each one starts and ends. */
+async function clip(name, run) {
+  const start = filmTime();
+  await run();
+  clips.push({ name, start, end: filmTime() });
+}
+
 async function scene(name, run) {
   mark(name);
   try {
@@ -209,12 +217,14 @@ if (!(await page.getByRole('heading', { level: 1, name: 'Overview' }).count())) 
 }
 
 await scene('dashboard arrives (frost)', async () => {
-  await pause(4200);
+  await clip('frost', () => pause(6500));
 });
 
 await scene('pointer light on the figures', async () => {
-  await sweep('.ui-kpi-fx');
-  await pause(500);
+  await clip('pointer-light', async () => {
+    await sweep('.ui-kpi-fx');
+    await pause(900);
+  });
 });
 
 await scene('switch to enterprise light', async () => {
@@ -225,9 +235,11 @@ await scene('switch to enterprise light', async () => {
 });
 
 await scene('graphs arrive (plotter)', async () => {
-  await press(nav('Graphs'));
-  await arrive('Graphs');
-  await pause(4800);
+  await clip('plotter', async () => {
+    await press(nav('Graphs'));
+    await arrive('Graphs');
+    await pause(8000);
+  });
 });
 
 await scene('the reveal in each look', async () => {
@@ -235,10 +247,15 @@ await scene('the reveal in each look', async () => {
   await arrive('Kit');
   await pause(800);
   await scrollToHeading('Data visualisation');
-  await press(button('Replay'));
-  await pause(3400);
-  await press(button("With the agent's notes"));
-  await pause(4300);
+  const looks = page.getByRole('radiogroup', { name: 'Drawn as' });
+  await clip('draft', async () => {
+    await press(looks.getByRole('radio', { name: 'Draft', exact: true }));
+    await pause(5500);
+  });
+  await clip('agent-notes', async () => {
+    await press(button("With the agent's notes"));
+    await pause(7000);
+  });
 });
 
 await scene('switch to glass dark', async () => {
@@ -254,27 +271,43 @@ await scene('cards and tiles', async () => {
   await pause(600);
 });
 
+await scene('the odometer', async () => {
+  await scrollToHeading('Effects');
+  await clip('odometer', async () => {
+    // the kit page's last Replay is the odometer's
+    await press(page.getByRole('button', { name: 'Replay', exact: true }).last());
+    await pause(3500);
+  });
+});
+
 await scene('sea glass', async () => {
   await scrollToHeading('Sea glass');
-  await moveTo(WIDTH * 0.4, HEIGHT * 0.55, 900);
-  await moveTo(WIDTH * 0.62, HEIGHT * 0.45, 1300);
-  await pause(1500);
+  await clip('sea-glass', async () => {
+    await moveTo(WIDTH * 0.4, HEIGHT * 0.55, 1200);
+    await moveTo(WIDTH * 0.62, HEIGHT * 0.45, 1800);
+    await moveTo(WIDTH * 0.45, HEIGHT * 0.7, 1800);
+    await pause(1500);
+  });
 });
 
 await scene('the assistant (draft)', async () => {
   await press(nav('Assistant'));
   await arrive('Assistant');
   await pause(800);
-  await press(button('Show example conversation'));
-  await pause(4600);
+  await clip('assistant', async () => {
+    await press(button('Show example conversation'));
+    await pause(7000);
+  });
 });
 
 await scene('glass light', async () => {
   await press(button('Switch to light mode'));
   await pause(700);
-  await press(nav('Home'));
-  await arrive('Overview');
-  await pause(4800);
+  await clip('frost-light', async () => {
+    await press(nav('Home'));
+    await arrive('Overview');
+    await pause(7000);
+  });
 });
 
 mark('end');
@@ -288,7 +321,7 @@ renameSync(recorded, join(OUT, 'demo.webm'));
 const start = timeline.find((t) => t.name === 'start')?.at ?? 0;
 writeFileSync(
   join(OUT, 'timeline.json'),
-  `${JSON.stringify({ slow: SLOW, startSeconds: start * SLOW, scenes: timeline }, null, 2)}\n`,
+  `${JSON.stringify({ slow: SLOW, startSeconds: start * SLOW, scenes: timeline, clips }, null, 2)}\n`,
 );
 console.log(
   `wrote ${join(OUT, 'demo.webm')} (slowed ${SLOW}x; the film starts ${(start * SLOW).toFixed(1)}s in)`,
