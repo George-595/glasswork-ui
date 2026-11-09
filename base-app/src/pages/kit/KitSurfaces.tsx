@@ -34,8 +34,8 @@ import {
   Stack,
   StatTile,
   Text,
-  toast,
   Tooltip,
+  toast,
 } from '~/core/ui';
 import { DEMO_TREND, DEMO_TREND_DOWN } from './demo-data';
 import { KitBlock, KitSection, useKitLoading } from './KitParts';
