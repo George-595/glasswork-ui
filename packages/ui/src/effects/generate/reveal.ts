@@ -608,7 +608,6 @@ function buildDraft({ el, M, layer, prev, texts, steps, done, room }: DraftInput
     ? steps
     : ['Measuring', 'Drafting the structure', 'Placing the content'];
 
-  let develop = -1;
   // from here the element is hidden by a closed mask, not by its opacity: it is there (a tall
   // feed is never left at opacity 0) but nothing of it shows until the develop opens the mask
   const CLOSED = 'linear-gradient(transparent, transparent)';
@@ -698,7 +697,6 @@ function buildDraft({ el, M, layer, prev, texts, steps, done, room }: DraftInput
         ring.setAttribute('cy', String(round1(cy)));
         ring.setAttribute('r', String(round1(Math.max(0, R - soft * 0.45))));
         ring.setAttribute('opacity', String(Math.round(Math.sin(Math.PI * q) * 70) / 100));
-        develop = q;
       }
 
       if (specRows.length) {
