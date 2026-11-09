@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@apps/colors": "0.1.0",
-    "@tanstack/charts": "1.1.0",
+    "@tanstack/charts": "1.2.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "motion": "14.9.0",
