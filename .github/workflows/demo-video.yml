@@ -1,7 +1,7 @@
-# demo-video — run by hand: starts the base app (in-memory SQLite, the public dev login), films
-# the guided tour in scripts/demo/record.mjs, and pushes the film to the `demo-recording` branch
-# (replaced on every run), where it is picked up for the README. The tour is drawn frame by
-# frame (scripts/demo/record.mjs), so it is smooth however slow the runner is.
+# demo-video — run by hand: builds and starts the base app (in-memory SQLite, the public dev
+# login), films the guided tour in scripts/demo/record.mjs, and pushes the film to the
+# `demo-recording` branch (replaced on every run), where it is picked up for the README. The
+# tour is drawn frame by frame, so it is smooth however slow the runner is.
 name: Demo video
 
 on:
@@ -20,23 +20,27 @@ jobs:
         with:
           node-version: '24'
       - run: npm ci --no-audit --no-fund
+      # the built app, served the way production serves it (a few bundled files, not the dev
+      # server's hundreds of modules, which a frame-by-frame film would watch arrive one by one),
+      # but in development: the demo data and the public dev login are there
+      - run: npm run build --workspace @apps/base-app
       - name: Start the app
+        working-directory: base-app
         run: |
-          npm run dev > dev.log 2>&1 &
+          SERVE_DIST=true node server/main.ts > ../dev.log 2>&1 &
           for i in $(seq 1 90); do
-            curl -sf http://127.0.0.1:5173/login > /dev/null && exit 0
+            curl -sf http://127.0.0.1:8787/login > /dev/null && exit 0
             sleep 2
           done
-          cat dev.log
+          cat ../dev.log
           exit 1
-      - name: Warm up the routes
-        run: |
-          for r in /login / /graphs /kit /assistant; do curl -s -o /dev/null "http://127.0.0.1:5173$r"; done
       # the frame-by-frame recorder needs chrome-headless-shell; ffmpeg turns its frames into a film
       - run: npx --no-install playwright-core install chromium-headless-shell
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Film the tour
         run: node scripts/demo/record.mjs
+        env:
+          BASE_URL: http://127.0.0.1:8787
       - name: Encode
         run: |
           ffmpeg -y -loglevel error -framerate 30 -i demo-out/frames/%05d.jpg -c:v libx264 \

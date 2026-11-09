@@ -2,9 +2,10 @@
 // sign-in, the dashboard as its data arrives, the reveal in each look, the pointer light, sea
 // glass and the assistant, in both skins and both modes.
 //
-//   npm run dev                                           # the app on http://127.0.0.1:5173
+//   npm run build -w @apps/base-app                       # film the built app, not the dev server
+//   (cd base-app && SERVE_DIST=true node server/main.ts)  # http://127.0.0.1:8787, dev login, demo data
 //   npx playwright-core install chromium-headless-shell   # once
-//   node scripts/demo/record.mjs                          # demo-out/frames/*.jpg, 30 fps
+//   BASE_URL=http://127.0.0.1:8787 node scripts/demo/record.mjs   # demo-out/frames/*.jpg, 30 fps
 //   ffmpeg -framerate 30 -i demo-out/frames/%05d.jpg -c:v libx264 -crf 18 -pix_fmt yuv420p demo.mp4
 //
 // Why frame by frame: a machine without a GPU cannot draw the glass skin in real time, so a
@@ -293,6 +294,21 @@ async function scrollToHeading(name) {
   await pause(1200);
 }
 
+/** After a click that changes the route: draw frames off camera until the page's heading is
+    there (its code arriving is not worth watching), then roll the film again. */
+async function arrive(heading, ms = 60000) {
+  const rolling = filming;
+  filming = false;
+  try {
+    await until(
+      `[...document.querySelectorAll('h1')].some((h) => h.textContent.trim() === ${quote(heading)})`,
+      ms,
+    );
+  } finally {
+    filming = rolling;
+  }
+}
+
 // ─── scenes ───
 
 function mark(name) {
@@ -367,12 +383,14 @@ await scene('switch to enterprise light', async () => {
 
 await scene('graphs arrive (plotter)', async () => {
   await press(NAV, 'Graphs');
+  await arrive('Graphs');
   await pause(4800);
 });
 
 await scene('the reveal in each look', async () => {
   await press(NAV, 'Kit');
-  await pause(1200);
+  await arrive('Kit');
+  await pause(800);
   await scrollToHeading('Data visualisation');
   await press(BUTTON, 'Replay');
   await pause(3400);
@@ -402,7 +420,8 @@ await scene('sea glass', async () => {
 
 await scene('the assistant (draft)', async () => {
   await press(NAV, 'Assistant');
-  await pause(1000);
+  await arrive('Assistant');
+  await pause(800);
   await press(BUTTON, 'Show example conversation');
   await pause(4600);
 });
@@ -411,6 +430,7 @@ await scene('glass light', async () => {
   await press(BUTTON, 'Switch to light mode');
   await pause(700);
   await press(NAV, 'Home');
+  await arrive('Overview');
   await pause(4800);
 });
 
