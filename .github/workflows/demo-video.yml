@@ -31,6 +31,8 @@ jobs:
       - name: Warm up the routes
         run: |
           for r in /login / /graphs /kit /assistant; do curl -s -o /dev/null "http://127.0.0.1:5173$r"; done
+      # playwright records video through its own ffmpeg build
+      - run: npx --no-install playwright-core install ffmpeg
       - name: Film the tour
         run: node scripts/demo/record.mjs
         env:
