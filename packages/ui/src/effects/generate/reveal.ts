@@ -609,6 +609,12 @@ function buildDraft({ el, M, layer, prev, texts, steps, done, room }: DraftInput
     : ['Measuring', 'Drafting the structure', 'Placing the content'];
 
   let develop = -1;
+  // from here the element is hidden by a closed mask, not by its opacity: it is there (a tall
+  // feed is never left at opacity 0) but nothing of it shows until the develop opens the mask
+  const CLOSED = 'linear-gradient(transparent, transparent)';
+  es.opacity = prev.opacity;
+  es.maskImage = CLOSED;
+  es.setProperty('-webkit-mask-image', CLOSED);
   return {
     frame(p: number) {
       // the sheet comes up, and goes as the element develops; whatever is left beyond the
@@ -693,7 +699,7 @@ function buildDraft({ el, M, layer, prev, texts, steps, done, room }: DraftInput
         ring.setAttribute('r', String(round1(Math.max(0, R - soft * 0.45))));
         ring.setAttribute('opacity', String(Math.round(Math.sin(Math.PI * q) * 70) / 100));
         develop = q;
-      } else if (develop < 0) es.opacity = '0';
+      }
 
       if (specRows.length) {
         for (const row of specRows) {
@@ -907,6 +913,13 @@ function finish(run: Run) {
   run.stage = null;
   restore(run.el, run.saved);
   runs.delete(run);
+  // nothing left to draw: let the pending frame go, so a frame that never comes (a hidden tab,
+  // a test's fake clock) can never hold back the next run
+  if (!runs.size) {
+    queue.length = 0;
+    if (frameId && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frameId);
+    frameId = 0;
+  }
   if (byElement.get(run.el) === run) byElement.delete(run.el);
   run.resolve();
   run.o.onDone?.(run.el);

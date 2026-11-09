@@ -352,10 +352,12 @@ describe('Timeline', () => {
 describe('KpiTile countUp', () => {
   it('counts up by default and shows the figure at once with countUp={false}', () => {
     render(<KpiTile label="Revenue" value={1234} />);
-    expect($$('.ui-fx-countup')).toHaveLength(1);
-    expect($$('.ui-fx-countup .ui-sr-only')[0]?.textContent).toBe('1,234');
+    const rolls = $$('.ui-kpi-value .ui-roll');
+    expect(rolls).toHaveLength(1);
+    const roll = rolls[0] as Element;
+    expect((roll.querySelector('.ui-sr-only') ?? roll).textContent).toBe('1,234');
     render(<KpiTile label="Revenue" value={1234} countUp={false} />);
-    expect($$('.ui-fx-countup')).toHaveLength(0);
+    expect($$('.ui-kpi-value .ui-roll')).toHaveLength(0);
     expect($$('.ui-kpi-value')[0]?.textContent).toBe('1,234');
   });
 });

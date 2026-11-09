@@ -835,19 +835,14 @@ describe('KpiTile', () => {
     expect($$('.ui-skeleton').length).toBeGreaterThan(2);
   });
 
-  it('counts a whole number up through whole numbers only (never "1.434" on the way to 2)', () => {
-    vi.useFakeTimers();
+  it('rolls a figure in on whole digits only (never "1.434" on the way to 2)', () => {
     render(<KpiTile label="Delivered" value={2} />);
-    const digits = $('.ui-fx-countup-digits');
-    const seen = new Set<string>();
-    for (let i = 0; i < 120; i++) {
-      act(() => {
-        vi.advanceTimersByTime(16);
-      });
-      seen.add(digits.textContent ?? '');
-    }
-    expect([...seen].every((t) => /^\d+$/.test(t))).toBe(true);
-    expect(digits.textContent).toBe('2');
+    const roll = $('.ui-kpi-value .ui-roll');
+    // read as the final figure from the first render, while its reels move or once they settle
+    expect((roll.querySelector('.ui-sr-only') ?? roll).textContent).toBe('2');
+    // an odometer's reels only ever carry whole digits
+    const faces = [...roll.querySelectorAll('.ui-roll-digit')].map((d) => d.textContent ?? '');
+    expect(faces.every((t) => /^\d$/.test(t))).toBe(true);
     // a figure with decimals keeps them, and large ones are grouped
     render(<KpiTile label="Rate" value={12.5} countUp={false} />);
     expect($('.ui-kpi-value').textContent).toBe('12.5');
@@ -855,10 +850,12 @@ describe('KpiTile', () => {
     expect($('.ui-kpi-value').textContent).toBe('18,647');
   });
 
-  it('has the decorative glare and spotlight layers, which stay out of the accessibility tree', () => {
+  it('has the decorative pointer light, whose layers stay out of the accessibility tree', () => {
     render(<KpiTile label="Orders" value={12} />);
-    expect($$('.ui-kpi-fx')).toHaveLength(2);
-    expect($('.ui-kpi-fx').getAttribute('data-motion')).toBeDefined();
+    expect($$('.ui-kpi-fx')).toHaveLength(1);
+    for (const layer of $$('.ui-kpi-fx > .ui-pl-glow, .ui-kpi-fx > .ui-pl-rim, .ui-kpi-fx > .ui-pl-sheen')) {
+      expect(layer.getAttribute('aria-hidden')).toBe('true');
+    }
   });
 });
 
