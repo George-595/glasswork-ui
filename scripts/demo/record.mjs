@@ -71,6 +71,8 @@ const chrome = spawn(
     '--disable-image-animation-resync',
     '--enable-surface-synchronization',
     '--hide-scrollbars',
+    // CI runners (Ubuntu 24.04) refuse Chrome's sandbox to a downloaded build; Playwright drops it too
+    '--no-sandbox',
     '--ignore-gpu-blocklist',
     '--enable-unsafe-swiftshader',
     `--window-size=${WIDTH},${HEIGHT}`,
@@ -78,6 +80,10 @@ const chrome = spawn(
   ],
   { stdio: ['ignore', 'ignore', 'pipe'] },
 );
+let chromeLog = '';
+chrome.stderr.on('data', (chunk) => {
+  chromeLog = (chromeLog + chunk).slice(-4000);
+});
 
 async function browserSocket() {
   for (let i = 0; i < 100; i++) {
@@ -88,7 +94,7 @@ async function browserSocket() {
       await new Promise((r) => setTimeout(r, 200));
     }
   }
-  throw new Error('chrome-headless-shell did not open its DevTools port');
+  throw new Error(`chrome-headless-shell did not open its DevTools port:\n${chromeLog}`);
 }
 
 const ws = new WebSocket(await browserSocket());
