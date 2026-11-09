@@ -16,7 +16,6 @@
 // axe-core and playwright-core are devDependencies of this app.
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { join } from 'node:path';
 import { defaultChrome, localBrowser, Stagehand } from './browser.mjs';
 
 const require = createRequire(import.meta.url);

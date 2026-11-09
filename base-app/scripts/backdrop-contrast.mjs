@@ -10,7 +10,6 @@
 // background pixels in its box, shot with every glyph made transparent (the
 // 5% of pixels nearest the text colour: the worst case). Reports the worst frame. Exits 1 if any falls below 4.5:1
 // (3:1 for large text). Pure Node: PNGs are decoded with zlib, no dependency.
-import { join } from 'node:path';
 import { inflateSync } from 'node:zlib';
 import { defaultChrome, localBrowser, Stagehand } from './browser.mjs';
 
