@@ -22,8 +22,8 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { LINK_TARGET, TARGET, touchTargets } from './touch-targets.mjs';
 import { defaultChrome, localBrowser, Stagehand } from './browser.mjs';
+import { LINK_TARGET, TARGET, touchTargets } from './touch-targets.mjs';
 
 const pkg = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const out = join(pkg, '.a11y');

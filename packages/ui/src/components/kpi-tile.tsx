@@ -147,10 +147,7 @@ export function KpiTile({
             {href ? (
               <a
                 href={href}
-                className={cn(
-                  stretch,
-                  'text-fg-subtle no-underline hover:text-fg hover:underline',
-                )}
+                className={cn(stretch, 'text-fg-subtle no-underline hover:text-fg hover:underline')}
               >
                 {labelText}
               </a>

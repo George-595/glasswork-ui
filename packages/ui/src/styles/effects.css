@@ -215,8 +215,20 @@
   position: relative;
   overflow: hidden;
   text-align: center;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 2%, currentColor 17%, currentColor 83%, transparent 98%);
-  mask-image: linear-gradient(to bottom, transparent 2%, currentColor 17%, currentColor 83%, transparent 98%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 2%,
+    currentColor 17%,
+    currentColor 83%,
+    transparent 98%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 2%,
+    currentColor 17%,
+    currentColor 83%,
+    transparent 98%
+  );
 }
 .ui-roll-strip {
   display: flex;
@@ -292,7 +304,11 @@
       var(--pl-glow),
       transparent 70%
     ),
-    radial-gradient(var(--pl-r, 240px) circle at var(--pl-x) var(--pl-y), var(--pl-glow), transparent 72%);
+    radial-gradient(
+      var(--pl-r, 240px) circle at var(--pl-x) var(--pl-y),
+      var(--pl-glow),
+      transparent 72%
+    );
   opacity: 0;
   transition: opacity 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -311,7 +327,11 @@
       var(--pl-rim),
       transparent 70%
     ),
-    radial-gradient(calc(var(--pl-r, 240px) * 0.85) circle at var(--pl-x) var(--pl-y), var(--pl-rim), transparent 72%);
+    radial-gradient(
+      calc(var(--pl-r, 240px) * 0.85) circle at var(--pl-x) var(--pl-y),
+      var(--pl-rim),
+      transparent 72%
+    );
   -webkit-mask:
     linear-gradient(currentColor 0 0) content-box,
     linear-gradient(currentColor 0 0);
@@ -511,7 +531,7 @@
   border-radius: 10px;
   background: var(--gen-surface);
   box-shadow: var(--elev-2);
-  font: 11px/1.75 var(--gen-font);
+  font: 11px / 1.75 var(--gen-font);
   color: var(--gen-muted);
   white-space: pre;
   overflow: hidden;
@@ -535,7 +555,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font: 500 12px/1 var(--gen-font);
+  font: 500 12px / 1 var(--gen-font);
   color: var(--gen-muted);
   white-space: nowrap;
 }

@@ -1,6 +1,6 @@
-import type { MountBackground } from './types';
 import { mountShaderScene } from './gl';
 import { NOISE } from './noise';
+import type { MountBackground } from './types';
 import { WASH } from './wash';
 
 /* Hive — a honeycomb that breathes.

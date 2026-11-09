@@ -196,11 +196,14 @@ function lineBoxes(node: Element, left: number, top: number) {
   return lines;
 }
 
-function measure(el: HTMLElement, o: Required<Pick<GenerateOptions, 'maxParts' | 'keys'>> & {
-  traceSvg: boolean;
-  title?: string | null;
-  code?: readonly string[] | null;
-}): Measured {
+function measure(
+  el: HTMLElement,
+  o: Required<Pick<GenerateOptions, 'maxParts' | 'keys'>> & {
+    traceSvg: boolean;
+    title?: string | null;
+    code?: readonly string[] | null;
+  },
+): Measured {
   const root = el.getBoundingClientRect();
   const { left, top } = root;
   const w = root.width;
@@ -293,8 +296,7 @@ function measure(el: HTMLElement, o: Required<Pick<GenerateOptions, 'maxParts' |
     .map(([, i]) => i);
 
   headings = headings.slice(0, 1);
-  const title =
-    o.title ?? el.getAttribute('aria-label') ?? headings[0] ?? el.tagName.toLowerCase();
+  const title = o.title ?? el.getAttribute('aria-label') ?? headings[0] ?? el.tagName.toLowerCase();
   const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
   const spec = o.code?.length
     ? [...o.code]
@@ -422,12 +424,7 @@ function buildDraft({ el, M, layer, prev, texts, steps, done, room }: DraftInput
   }
 
   const strokes: Stroke[] = [];
-  const stroke = (
-    node: SVGElement,
-    from: number,
-    to: number,
-    pts?: Point[],
-  ): Stroke => {
+  const stroke = (node: SVGElement, from: number, to: number, pts?: Point[]): Stroke => {
     node.setAttribute('pathLength', '1');
     node.setAttribute('stroke-dasharray', '1 1');
     node.setAttribute('stroke-dashoffset', '1');
@@ -443,10 +440,22 @@ function buildDraft({ el, M, layer, prev, texts, steps, done, room }: DraftInput
     if (!p) return;
     const at = 0.04 + i * 0.035;
     const lines: [Point, Point][] = [
-      [[p.x, p.y], [-ROOM, p.y]],
-      [[p.x + p.w, p.y], [w + ROOM, p.y]],
-      [[p.x, p.y], [p.x, -ROOM]],
-      [[p.x, p.y + p.h], [p.x, h + ROOM]],
+      [
+        [p.x, p.y],
+        [-ROOM, p.y],
+      ],
+      [
+        [p.x + p.w, p.y],
+        [w + ROOM, p.y],
+      ],
+      [
+        [p.x, p.y],
+        [p.x, -ROOM],
+      ],
+      [
+        [p.x, p.y + p.h],
+        [p.x, h + ROOM],
+      ],
     ];
     lines.forEach(([a, b], j) => {
       const node = svg('path', { d: pathOf([a, b]) }, cons);
@@ -474,7 +483,11 @@ function buildDraft({ el, M, layer, prev, texts, steps, done, room }: DraftInput
   shapes.forEach((ip, i) => {
     const node = svg(
       ip.tag as 'path',
-      { ...ip.attrs, transform: `matrix(${ip.m.join(' ')})`, 'vector-effect': 'non-scaling-stroke' },
+      {
+        ...ip.attrs,
+        transform: `matrix(${ip.m.join(' ')})`,
+        'vector-effect': 'non-scaling-stroke',
+      },
       marks,
     );
     const from = 0.32 + (shapes.length > 1 ? (i / (shapes.length - 1)) * 0.26 : 0);
@@ -482,7 +495,14 @@ function buildDraft({ el, M, layer, prev, texts, steps, done, room }: DraftInput
   });
 
   // 5. text: a bar per line, growing from where the line starts
-  const bars: { node: SVGRectElement; x: number; w: number; from: number; to: number; shown: number }[] = [];
+  const bars: {
+    node: SVGRectElement;
+    x: number;
+    w: number;
+    from: number;
+    to: number;
+    shown: number;
+  }[] = [];
   const barGroup = svg('g', { class: 'ui-gen-bars' }, sheet);
   const textLines = parts.flatMap((p) => (p.kind === 'text' ? (p.lines ?? []) : []));
   textLines.forEach((l, i) => {
@@ -559,7 +579,8 @@ function buildDraft({ el, M, layer, prev, texts, steps, done, room }: DraftInput
     // beside the element where the page has room (right first), else under it, else not at all
     const SHEET = 236;
     const side = room.right >= SHEET ? 'right' : room.left >= SHEET ? 'left' : null;
-    sheetPanel.style.left = side === 'right' ? `${w + 16}px` : side === 'left' ? `${-SHEET}px` : '0px';
+    sheetPanel.style.left =
+      side === 'right' ? `${w + 16}px` : side === 'left' ? `${-SHEET}px` : '0px';
     sheetPanel.style.top = side ? '0px' : `${h + 44}px`;
     if (!side && room.below < 160) sheetPanel.style.display = 'none';
     const head2 = document.createElement('div');
@@ -583,7 +604,9 @@ function buildDraft({ el, M, layer, prev, texts, steps, done, room }: DraftInput
     layer.appendChild(box);
     ticker = { box, text, current: -2 };
   }
-  const allSteps = steps.length ? steps : ['Measuring', 'Drafting the structure', 'Placing the content'];
+  const allSteps = steps.length
+    ? steps
+    : ['Measuring', 'Drafting the structure', 'Placing the content'];
 
   let develop = -1;
   return {
@@ -682,7 +705,8 @@ function buildDraft({ el, M, layer, prev, texts, steps, done, room }: DraftInput
         }
       }
       if (ticker) {
-        const i = p >= D0 ? -1 : Math.min(allSteps.length - 1, Math.floor((p / D0) * allSteps.length));
+        const i =
+          p >= D0 ? -1 : Math.min(allSteps.length - 1, Math.floor((p / D0) * allSteps.length));
         if (i !== ticker.current) {
           ticker.current = i;
           ticker.text.textContent = i < 0 ? done : (allSteps[i] ?? '');
@@ -746,7 +770,9 @@ function loop(now: number) {
 
 function reducedMotion() {
   try {
-    return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return (
+      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
   } catch {
     return false;
   }
@@ -809,8 +835,10 @@ function build(run: Run, now: number) {
       run.stage = buildAscii(el, M, layer, look, run.D, run.saved, seed);
       run.ascii = true;
     } else {
-      const hostWidth = run.host === document.body ? document.documentElement.clientWidth : run.host.clientWidth;
-      const hostHeight = run.host === document.body ? document.documentElement.scrollHeight : run.host.scrollHeight;
+      const hostWidth =
+        run.host === document.body ? document.documentElement.clientWidth : run.host.clientWidth;
+      const hostHeight =
+        run.host === document.body ? document.documentElement.scrollHeight : run.host.scrollHeight;
       const draft = buildDraft({
         el,
         M,
@@ -918,7 +946,7 @@ export function generate(el: HTMLElement, options: GenerateOptions = {}): Genera
     o: options,
     D,
     saved,
-    host: (el.parentElement?.closest<HTMLElement>('[data-generate-host]') ?? document.body),
+    host: el.parentElement?.closest<HTMLElement>('[data-generate-host]') ?? document.body,
     layer: null,
     stage: null,
     ascii: false,

@@ -41,7 +41,9 @@
 .ui-kpi-fx > :is(.ui-pl-glow, .ui-pl-rim, .ui-pl-sheen) {
   display: none;
 }
-:root[data-skin="glass"] .ui-kpi-fx:not([data-motion="off"]) > :is(.ui-pl-glow, .ui-pl-rim, .ui-pl-sheen) {
+:root[data-skin="glass"]
+  .ui-kpi-fx:not([data-motion="off"])
+  > :is(.ui-pl-glow, .ui-pl-rim, .ui-pl-sheen) {
   display: block;
 }
 @media (prefers-reduced-motion: reduce) {

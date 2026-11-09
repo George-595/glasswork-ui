@@ -35,7 +35,6 @@ const SETTLE_MS = 6000;
 const IDLE_MS = 2500;
 const ROUTES = ['/', '/table'];
 
-
 /** A minimal CDP client over the browser's debugging port (Stagehand has no raw CDP call). */
 async function cdpClient(port) {
   const targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json();

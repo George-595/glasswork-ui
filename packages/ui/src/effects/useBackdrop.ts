@@ -33,11 +33,7 @@ import { SHADER_PRESETS } from './shaders/presets';
 export type { Backdrop } from '../theme/themeCookie';
 export { DEFAULT_BACKDROP, isBackdrop } from '../theme/themeCookie';
 
-export const BACKDROPS = [
-  'tide',
-  'hive',
-  ...SHADER_PRESETS,
-] as const satisfies readonly Backdrop[];
+export const BACKDROPS = ['tide', 'hive', ...SHADER_PRESETS] as const satisfies readonly Backdrop[];
 export const BACKDROP_KEY = 'ui-backdrop';
 
 /** Set once a choice is made in this page, so a blocked store still works. */

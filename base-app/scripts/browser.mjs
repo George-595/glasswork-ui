@@ -45,7 +45,15 @@ function tabOf(page) {
 export const localBrowser = {
   /** Launch Chrome with one context sized and touch-enabled as asked. `port` opens the
       DevTools protocol on that port (perf-glass reads compositor frames through it). */
-  async launch({ headless = true, executablePath, viewport, deviceScaleFactor, hasTouch, args = [], port } = {}) {
+  async launch({
+    headless = true,
+    executablePath,
+    viewport,
+    deviceScaleFactor,
+    hasTouch,
+    args = [],
+    port,
+  } = {}) {
     const browser = await chromium.launch({
       headless,
       executablePath,

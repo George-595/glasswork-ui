@@ -103,11 +103,7 @@ export default function KitPage() {
     <Page
       eyebrow="Design system"
       title="Kit"
-      description={
-        <>
-          Every component in @apps/ui, in the states you will meet it.
-        </>
-      }
+      description={<>Every component in @apps/ui, in the states you will meet it.</>}
       actions={
         <Cluster gap={3}>
           <SegmentedControl

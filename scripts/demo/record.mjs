@@ -173,7 +173,9 @@ mark('end');
 const video = page.video();
 await context.close();
 await browser.close();
-const recorded = video ? await video.path() : join(OUT, readdirSync(OUT).find((f) => f.endsWith('.webm')) ?? '');
+const recorded = video
+  ? await video.path()
+  : join(OUT, readdirSync(OUT).find((f) => f.endsWith('.webm')) ?? '');
 renameSync(recorded, join(OUT, 'demo.webm'));
 writeFileSync(join(OUT, 'timeline.json'), `${JSON.stringify(timeline, null, 2)}\n`);
 console.log(`wrote ${join(OUT, 'demo.webm')}`);

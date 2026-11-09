@@ -274,7 +274,11 @@ describe('PointerLight', () => {
   });
 
   it('draws the card surface when asked', () => {
-    const el = render(<PointerLight id="pl" surface>Card</PointerLight>);
+    const el = render(
+      <PointerLight id="pl" surface>
+        Card
+      </PointerLight>,
+    );
     expect(el.querySelector('#pl')?.classList.contains('ui-card')).toBe(true);
   });
 });
