@@ -1,0 +1,22 @@
+{"time":"2026-11-09T18:07:19.838Z","level":"info","msg":"config","NODE_ENV":"development","API_HOST":"set","ADMIN_EMAIL":"set","ADMIN_PASSWORD":"dev default","API_PORT":"set","DATABASE_URL":"sqlite::memory:","ALLOWED_ORIGINS":"set","APP_BASE_URL":"http://localhost:5173","UPLOADS_DIR":"./data/uploads","LLM_PROVIDER":"set","LLM_TIMEOUT_MS":"set","ANTHROPIC_API_KEY":"missing","ANTHROPIC_MODEL":"set","ANTHROPIC_FALLBACKS":"set","GEMINI_API_KEY":"missing","GEMINI_MODEL":"set","MAIL_TRANSPORT":"log","MAIL_FROM":"set","RESEND_API_KEY":"missing"}
+{"time":"2026-11-09T18:07:19.849Z","level":"info","msg":"migrations","applied":["001_baseline","002_agent","003_view_as"],"driver":"sqlite"}
+{"time":"2026-11-09T18:07:19.984Z","level":"info","msg":"seed","tables":["users","transactions","audit_events","activity","revenue_daily","kpis","signups_monthly","notifications"],"admin":"created"}
+
+╔════════════════════════════════════╗
+║ DEV ADMIN LOGIN (development only) ║
+║ email:     admin@example.test      ║
+║ password:  adminpassword           ║
+╚════════════════════════════════════╝
+
+{"time":"2026-11-09T18:07:19.990Z","level":"info","msg":"mail: log transport. Emails are recorded, not sent: read them on the admin Mail page."}
+{"time":"2026-11-09T18:07:20.004Z","level":"info","msg":"listening","url":"http://127.0.0.1:8787","servesClient":true,"ssr":"dist"}
+{"time":"2026-11-09T18:07:21.592Z","level":"info","msg":"request","requestId":"7e9a0c81-c8a0-4182-abb0-eef409bb6493","method":"GET","path":"/login","status":200,"ms":295}
+{"time":"2026-11-09T18:07:52.266Z","level":"info","msg":"request","requestId":"3700d450-b9a2-4faf-b499-0f9362775dfc","method":"GET","path":"/","status":200,"ms":48}
+{"time":"2026-11-09T18:07:52.392Z","level":"info","msg":"request","requestId":"18befc85-d72b-4ab5-ba1e-7861fe21b108","method":"GET","path":"/assets/rolldown-runtime-XKyaHtl9.js","status":200,"ms":4}
+{"time":"2026-11-09T18:07:52.393Z","level":"info","msg":"request","requestId":"ec12ec04-a311-48c0-b306-751ac44c52f1","method":"GET","path":"/assets/index-CuomjOcQ.js","status":200,"ms":5}
+{"time":"2026-11-09T18:07:52.393Z","level":"info","msg":"request","requestId":"18d08752-3ec9-4523-8aa9-b90314d311fa","method":"GET","path":"/assets/index-Bp1u6sy-.css","status":200,"ms":5}
+{"time":"2026-11-09T18:07:52.394Z","level":"info","msg":"request","requestId":"3fb84edd-f721-41c8-a5c3-64da015fd114","method":"GET","path":"/assets/react-CccVFQFD.js","status":200,"ms":6}
+{"time":"2026-11-09T18:07:52.394Z","level":"info","msg":"request","requestId":"e6430500-240e-4b10-b2c7-644f65bb81e9","method":"GET","path":"/assets/cn-CMqPnnoY.js","status":200,"ms":5}
+{"time":"2026-11-09T18:07:52.864Z","level":"info","msg":"request","requestId":"b33f7a21-a24e-4583-ba4c-96bfb6601049","method":"GET","path":"/api/auth/me","status":200,"ms":1}
+{"time":"2026-11-09T18:08:09.989Z","level":"info","msg":"request","requestId":"06238a74-1e31-4dbe-bed6-dd0ae58e1252","method":"GET","path":"/","status":200,"ms":29}
+{"time":"2026-11-09T18:08:20.678Z","level":"info","msg":"request","requestId":"3ec15247-3635-4c35-a8fe-752229612739","method":"GET","path":"/api/auth/me","status":200,"ms":2}
