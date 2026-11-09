@@ -76,6 +76,7 @@ export function mountShaderScene(
   gl.attachShader(program, fs);
   gl.linkProgram(program);
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return null;
+  // biome-ignore lint/correctness/useHookAtTopLevel: WebGL's useProgram, not a React hook
   gl.useProgram(program);
 
   // one triangle larger than the screen: no seam down the middle, three vertices

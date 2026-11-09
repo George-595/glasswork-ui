@@ -227,8 +227,12 @@ export function RollingNumber({
 }
 
 /** One reel's face: 0–9, TURNS times. Built once; every reel shares the same children. */
-const STRIP = Array.from({ length: 10 * TURNS }, (_, i) => (
-  <span key={i} className="ui-roll-digit">
-    {i % 10}
+const STRIP_CELLS = Array.from({ length: 10 * TURNS }, (_, i) => ({
+  id: `turn${Math.floor(i / 10)}-digit${i % 10}`,
+  digit: i % 10,
+}));
+const STRIP = STRIP_CELLS.map((cell) => (
+  <span key={cell.id} className="ui-roll-digit">
+    {cell.digit}
   </span>
 ));
