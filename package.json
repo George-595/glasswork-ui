@@ -1,0 +1,49 @@
+{
+  "name": "@apps/root",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Glasswork UI: the component kit and the base app every new app starts from.",
+  "workspaces": [
+    "packages/*",
+    "base-app"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace @apps/base-app",
+    "build": "npm run build --workspace @apps/base-app",
+    "lint": "oxlint",
+    "format": "biome format --write . && npm run format --workspace @apps/base-app",
+    "check": "biome check . && node scripts/check-oxlint-mirror.mjs && oxlint packages && npm run check:colours && npm run check:pages && npm run check:craft && npm run check:colors --workspace @apps/colors && npm run check --workspace @apps/base-app",
+    "check:colours": "node scripts/check-colours.mjs --no-legacy",
+    "check:pages": "node scripts/check-pages.mjs --strict",
+    "check:craft": "node scripts/check-craft.mjs --strict",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "node --test scripts/*.test.mjs && npm run test --workspaces --if-present",
+    "a11y": "npm run check:a11y --workspaces --if-present",
+    "verify": "npm run check && npm run check:deps && npm run typecheck && npm run test && npm run a11y && npm run check:budget",
+    "check:budget": "npm run check:budget --workspace @apps/base-app",
+    "check:deps": "node base-app/scripts/check-release-age.mjs",
+    "start": "npm run start --workspace @apps/base-app"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@tailwindcss/node": "4.3.3",
+    "@tailwindcss/oxide": "4.3.3",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "axe-core": "4.13.0",
+    "jsdom": "30.1.3",
+    "oxlint": "1.88.0",
+    "playwright-core": "1.63.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "7.0.2",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}

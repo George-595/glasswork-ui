@@ -1,0 +1,31 @@
+# bootstrap — run by hand after a dependency is added to a package.json or a file is edited
+# where neither npm nor biome could run: brings the lockfile up to date (still under the 7-day
+# quarantine in .npmrc), applies biome's formatting and safe fixes, and commits the result.
+name: Bootstrap
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - run: npm install --no-audit --no-fund
+      - run: npx --no-install biome check --write . || true
+      - run: npm run format --workspace @apps/base-app || true
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && echo 'nothing to commit' && exit 0
+          git commit -m 'bootstrap: lockfile and formatting'
+          git push

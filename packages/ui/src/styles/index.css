@@ -1,0 +1,18 @@
+/* @apps/ui — the one stylesheet an app imports: `import '@apps/ui/styles.css'`.
+   The app compiles it with Tailwind v4 (@tailwindcss/vite), which scans this
+   package's sources for the shadcn components' classes. Order matters:
+   Tailwind and the token theme, enterprise tokens, the glass overrides, then
+   the component styles. */
+@import "tailwindcss" source(none);
+@import "@apps/colors/colors.css";
+@import "@apps/colors/theme.css";
+@import "./theme.css";
+@import "./tokens.css";
+@import "./glass.css";
+@import "./components.css";
+@import "./controls.css";
+@import "./effects.css";
+@import "./liquid-glass.css";
+
+/* Tailwind scans this package for the components' classes */
+@source "../";

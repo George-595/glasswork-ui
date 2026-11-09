@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["vite/client"],
+    "paths": {
+      "~/*": ["./src/*"]
+    },
+    "allowImportingTsExtensions": true
+  },
+  "include": ["src", "shared", "lib", "fixtures"],
+  "exclude": ["src/**/*.node.test.ts", "src/**/*.node.ts"]
+}

@@ -1,0 +1,114 @@
+/* ============================================================================
+   @apps/ui — the non-colour tokens: radii, spacing, motion, type, elevation, the
+   focus ring and the glass material's filters.
+
+   NO COLOURS HERE. Every colour is a role from @apps/colors (packages/colors), imported
+   before this file by index.css; this file only composes roles (the focus ring is
+   var(--canvas) + var(--focus), elevation is the role shadows). The no-colour check fails
+   on any colour value in the kit.
+
+   Theme switches:  <html data-theme="light|dark">  (absent = system preference)
+   Skin switches:   <html data-skin="enterprise|glass">  (absent = enterprise)
+============================================================================ */
+
+:root {
+  /* focus ring: a canvas gap, then the focus colour, so it meets 3:1 on anything */
+  --ring: 0 0 0 2px var(--canvas), 0 0 0 4px var(--focus);
+
+  /* ---- Radii ------------------------------------------------------------ */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+  --r-pill: 999px;
+
+  /* ---- Spacing scale (4px base) ---------------------------------------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  /* ---- Motion ----------------------------------------------------------- */
+  /* Legacy shorthands (duration + easing), kept for site/app CSS. They are
+     built on the --dur-* / --ease-* tokens below, so reduced motion zeroes
+     them too. New code uses the split tokens. */
+  --t-fast: var(--dur-fast) ease;
+  --t-base: var(--dur-base) ease;
+  --t-slow: var(--dur-slow) var(--ease-out);
+
+  /* ---- Type families ---------------------------------------------------- */
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, monospace;
+
+  /* ---- Type scale (semantic) ------------------------------------------- */
+  --t-display: 680 clamp(34px, 5vw, 52px) / 1.04 var(--font-sans);
+  --t-h1: 680 clamp(26px, 3.5vw, 38px) / 1.08 var(--font-sans);
+  --t-h2: 640 clamp(21px, 2.4vw, 27px) / 1.15 var(--font-sans);
+  --t-h3: 600 18px / 1.25 var(--font-sans);
+  --t-body: 400 15px / 1.55 var(--font-sans);
+  --t-small: 400 13px / 1.5 var(--font-sans);
+  --t-label: 600 11px / 1 var(--font-sans); /* + letter-spacing .14em, uppercase */
+  --t-mono: 430 13px / 1.5 var(--font-mono);
+}
+
+/* ---- @apps/ui additions (same in every skin unless glass overrides) ---- */
+:root {
+  /* backdrop-filter for content surfaces (cards, tiles, controls, tables). `none` in every
+     skin: content scrolls with the page, and a backdrop filter on moving content is re-run
+     for every scrolled frame (ENGINEERING.md §5). An app that really wants frost on a
+     surface of its own sets this itself. */
+  --surface-filter: none;
+  /* backdrop-filter for FIXED chrome only (top bar, sidebar, sheet and dialog panels,
+     menus, popovers, tooltips, toasts); glass turns it on, the solid fallbacks and the
+     low-power path turn it off or down (see glass.css) */
+  --chrome-filter: none;
+  /* backdrop-filter for the scrim; the scrim dims, it does not blur, in every skin */
+  --scrim-filter: none;
+}
+
+/* ---- Elevation (S2) -----------------------------------------------------
+   One ladder of box-shadows, built on the skin's own --shadow-* and
+   --glass-rim, so it changes per skin AND mode with no per-skin rule here:
+     --elev-0   flat on the page: just the glass rim (nothing in enterprise)
+     --elev-1   resting card, tile, table
+     --elev-2   lifted: menu, popover, tooltip, toast, bulk bar
+     --elev-3   modal: dialog, sheet
+     --elev-card the role a card plays; glass lifts it one step for depth
+   Components use these, never a literal shadow. The focus ring is separate
+   (--ring) and always replaces the elevation while focused. */
+:root {
+  --elev-0: var(--glass-rim);
+  --elev-1: var(--glass-rim), var(--shadow-sm);
+  --elev-2: var(--glass-rim), var(--shadow-md);
+  --elev-3: var(--glass-rim), var(--shadow-lg);
+  --elev-card: var(--elev-1);
+  --elev-inset: var(--shadow-inset);
+  /* the focus ring for controls inside a scroller or clipped box, where the
+     outer two-layer --ring would be cut off: the same two layers, inside */
+  --ring-inset: inset 0 0 0 1px var(--canvas), inset 0 0 0 3px var(--focus);
+}
+
+/* ---- Motion (S2) ---------------------------------------------------------
+   Three durations and four curves. Reduced motion zeroes the durations, so
+   anything built on them stops moving with no per-component rule. */
+:root {
+  --dur-fast: 120ms; /* hover, press, colour changes */
+  --dur-base: 180ms; /* toggles, thumbs, exits */
+  --dur-slow: 280ms; /* entrances: dialog, sheet, toast */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* things arriving */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1); /* things leaving */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* things travelling */
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1); /* a small overshoot */
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+  }
+}

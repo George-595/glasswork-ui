@@ -1,0 +1,40 @@
+{
+  "name": "@apps/ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Glasswork UI: React components on its own design tokens, two skins (enterprise, glass), light and dark, WCAG 2.2 AA.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles/index.css",
+    "./tokens.css": "./src/styles/tokens.css"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run",
+    "check:a11y": "node scripts/a11y-check.mjs",
+    "build:css": "node scripts/build-css.mjs"
+  },
+  "peerDependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "dependencies": {
+    "@apps/colors": "0.1.0",
+    "@tanstack/charts": "1.1.0",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "motion": "14.9.0",
+    "radix-ui": "1.8.1",
+    "shaders": "4.0.6",
+    "tailwind-merge": "3.7.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/node": "4.3.3",
+    "@tailwindcss/oxide": "4.3.3",
+    "tailwindcss": "4.3.3"
+  }
+}

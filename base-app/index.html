@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- No Referer leaves this app: emailed links keep their one-time token in the #fragment (never sent), and this keeps even the path private. static.ts sends the same as a header in production. -->
+    <meta name="referrer" content="no-referrer" />
+    <title>Base app</title>
+    <link rel="icon" href="data:," type="image/svg+xml" />
+    <!-- Runs before anything is drawn. 1) An old `/#/table?x=1` address goes to its real path
+         (`/table?x=1`; a one-time `token` moves into the #fragment so no server ever sees it): same
+         rules as core/router/legacy.ts. 2) The theme: a server renders <html> from the `ui-theme`
+         cookie; 'system' is settled by the device here, and a browser with no cookie yet (first visit,
+         or a static host) reads localStorage as it always did, so the page never flashes the wrong look. -->
+    <script>
+      (() => {
+        try {
+          const h = location.hash;
+          if (h.startsWith('#/')) {
+            const q = h.indexOf('?');
+            const path = (q < 0 ? h : h.slice(0, q)).slice(1).replace(/\/+$/, '') || '/';
+            const params = new URLSearchParams(q < 0 ? '' : h.slice(q + 1));
+            const token = params.get('token');
+            params.delete('token');
+            const search = params.toString();
+            location.replace(
+              path + (search ? `?${search}` : '') + (token === null ? '' : `#token=${encodeURIComponent(token)}`),
+            );
+            return;
+          }
+          const root = document.documentElement;
+          const light = matchMedia('(prefers-color-scheme: light)').matches;
+          if (!/(?:^|;\s*)ui-theme=/.test(document.cookie)) {
+            const m = localStorage.getItem('ui-theme');
+            const s = localStorage.getItem('ui-skin');
+            root.dataset.theme = m === 'light' || m === 'dark' ? m : light ? 'light' : 'dark';
+            root.dataset.skin = s === 'glass' ? 'glass' : 'enterprise';
+          } else if (root.dataset.themeMode === 'system') {
+            root.dataset.theme = light ? 'light' : 'dark';
+          }
+        } catch {
+          /* storage, cookies or matchMedia blocked: the page's own look applies */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <!--app-state-->
+    <div id="root"><!--app-html--></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

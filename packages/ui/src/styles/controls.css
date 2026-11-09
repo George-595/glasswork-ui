@@ -1,0 +1,51 @@
+/* ============================================================================
+   @apps/ui — interactive controls: Switch, Tabs, Menu, Tooltip, DataTable.
+
+   They are shadcn/Radix components styled with Tailwind utilities on the
+   tokens (src/components/ui/*), so the glass skin reaches them through the
+   colour roles, the material tokens and LiquidGlass. What is left here cannot be a utility on the component.
+============================================================================ */
+
+/* Server-rendered open overlays (Menu / Tooltip with defaultOpen). Radix
+   positions them on the client; in static HTML they render in place, and
+   Popper's wrapper would park them off screen (fixed, translate -200%)
+   until it measures. Place them under / over their trigger instead, as the
+   wrapper's inline style can only be beaten with !important. */
+[data-radix-popper-content-wrapper]:has(> .ui-menu[data-static]) {
+  position: absolute !important;
+  top: calc(100% + 4px) !important;
+  left: 0 !important;
+  transform: none !important;
+}
+[data-radix-popper-content-wrapper]:has(> .ui-menu[data-static][data-align="end"]) {
+  left: auto !important;
+  right: 0 !important;
+}
+[data-radix-popper-content-wrapper]:has(> .ui-tooltip[data-static]) {
+  position: absolute !important;
+  top: auto !important;
+  bottom: calc(100% + 6px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+[data-radix-popper-content-wrapper]:has(> .ui-tooltip[data-static][data-side="bottom"]) {
+  top: calc(100% + 6px) !important;
+  bottom: auto !important;
+}
+
+/* ---- KpiTile pointer light ----------------------------------------------
+   The tile wraps its content in PointerLight (src/effects). The light is decorative and
+   belongs to the glass skin: enterprise keeps the calm card, so its layers are hidden unless
+   <html data-skin="glass">. Under reduced motion PointerLight draws no layers at all, and
+   effects.css hides them too, so this rule must not bring them back. */
+.ui-kpi-fx > :is(.ui-pl-glow, .ui-pl-rim, .ui-pl-sheen) {
+  display: none;
+}
+:root[data-skin="glass"] .ui-kpi-fx:not([data-motion="off"]) > :is(.ui-pl-glow, .ui-pl-rim, .ui-pl-sheen) {
+  display: block;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-skin="glass"] .ui-kpi-fx > :is(.ui-pl-glow, .ui-pl-rim, .ui-pl-sheen) {
+    display: none;
+  }
+}

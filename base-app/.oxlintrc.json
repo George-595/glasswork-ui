@@ -1,0 +1,348 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // MIRRORED: "plugins", "categories", "rules" and the "**/scripts/**" override are
+  // the general rules, kept identical in the workspace root's .oxlintrc.json (one folder up;
+  // an exported copy has no mirror). ignorePatterns and the other overrides differ on
+  // purpose. Edit both files; the root's scripts/check-oxlint-mirror.mjs catches drift.
+  "plugins": ["typescript", "react", "jsx-a11y", "import", "unicorn", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    "react/react-in-jsx-scope": "off",
+    "import/no-cycle": "error",
+    "typescript/no-explicit-any": "error",
+    "no-console": [
+      "warn",
+      {
+        "allow": ["warn", "error", "info"]
+      }
+    ],
+    "import/no-unassigned-import": [
+      "warn",
+      {
+        "allow": ["**/*.css"]
+      }
+    ],
+    "jsx-a11y/prefer-tag-over-role": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/scripts/**"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["src/app/**", "src/main.tsx"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@apps/ui"],
+                "message": "Import UI from ~/core/ui. See apps/ENGINEERING.md §2."
+              },
+              {
+                "group": ["**/server/**", "pg", "mysql2", "node:*"],
+                "message": "The client never imports server code. See apps/ENGINEERING.md §2."
+              },
+              {
+                "group": ["**/fixtures", "**/fixtures/**"],
+                "message": "Client code gets data from the API (~/core/api), never from fixtures/. Tests may use fixtures. See apps/ENGINEERING.md §2."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/pages/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@apps/ui"],
+                "message": "Pages import UI from ~/core/ui. See apps/ENGINEERING.md §2."
+              },
+              {
+                "group": ["~/app", "~/app/**", "**/app/**", "~/pages/**"],
+                "message": "Pages never import app/ or other pages. See apps/ENGINEERING.md §2."
+              },
+              {
+                "group": ["**/server/**", "pg", "mysql2", "node:*"],
+                "message": "The client never imports server code. See apps/ENGINEERING.md §2."
+              },
+              {
+                "group": ["**/fixtures", "**/fixtures/**"],
+                "message": "Client code gets data from the API (~/core/api), never from fixtures/. Tests may use fixtures. See apps/ENGINEERING.md §2."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/core/utils/**",
+        "src/core/config/**",
+        "src/core/router/**",
+        "src/core/hooks/**",
+        "src/core/api/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@apps/ui", "~/core/ui", "~/core/ui/**"],
+                "message": "Only core/ui touches the UI kit. See apps/ENGINEERING.md §2."
+              },
+              {
+                "group": ["**/server/**", "pg", "mysql2", "node:*"],
+                "message": "The client never imports server code. See apps/ENGINEERING.md §2."
+              },
+              {
+                "group": ["**/fixtures", "**/fixtures/**"],
+                "message": "Client code gets data from the API (~/core/api), never from fixtures/. Tests may use fixtures. See apps/ENGINEERING.md §2."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/core/ui/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/server/**", "pg", "mysql2"],
+                "message": "The client never imports server code. See apps/ENGINEERING.md §2."
+              },
+              {
+                "group": ["**/fixtures", "**/fixtures/**"],
+                "message": "Client code gets data from the API (~/core/api), never from fixtures/. Tests may use fixtures. See apps/ENGINEERING.md §2."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/server/**", "pg", "mysql2"],
+                "message": "Client tests never import server code. See apps/ENGINEERING.md §2."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["lib/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "~/**",
+                  "**/src/**",
+                  "**/server/**",
+                  "**/fixtures/**",
+                  "react",
+                  "react-dom",
+                  "@apps/ui",
+                  "node:*",
+                  "pg",
+                  "mysql2"
+                ],
+                "message": "lib/ is pure, environment-free code: it imports nothing outside lib/. See apps/ENGINEERING.md §2."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["fixtures/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "~/**",
+                  "**/src/**",
+                  "**/server/**",
+                  "react",
+                  "react-dom",
+                  "@apps/ui",
+                  "node:*",
+                  "pg",
+                  "mysql2"
+                ],
+                "message": "fixtures/ imports only lib/ and shared/. See apps/ENGINEERING.md §2."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["shared/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["*", "./*", "../*", "**"],
+                "message": "shared/ is type-only and imports nothing. See apps/ENGINEERING.md §2."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["server/main.ts", "server/config/**", "server/testing.ts", "server/*.test.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["react", "react-dom", "react/*", "@apps/ui", "~/**", "**/src/**"],
+                "message": "The server never imports client code. See apps/ENGINEERING.md §2."
+              }
+            ]
+          }
+        ],
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["server/routes/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["react", "react-dom", "react/*", "@apps/ui", "~/**", "**/src/**"],
+                "message": "The server never imports client code. See apps/ENGINEERING.md §2."
+              },
+              {
+                "group": [
+                  "**/repositories/**",
+                  "**/infra/db/**",
+                  "**/infra/llm/**",
+                  "**/fixtures/**",
+                  "pg",
+                  "mysql2"
+                ],
+                "message": "Routes call services only: no repositories, no database, no LLM client. See apps/ENGINEERING.md §2 (routes → services → repositories → DbClient)."
+              }
+            ]
+          }
+        ],
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["server/services/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["react", "react-dom", "react/*", "@apps/ui", "~/**", "**/src/**"],
+                "message": "The server never imports client code. See apps/ENGINEERING.md §2."
+              },
+              {
+                "group": ["**/routes/**", "**/infra/http/**"],
+                "message": "Services know nothing about HTTP. See apps/ENGINEERING.md §2 (routes → services → repositories → DbClient)."
+              }
+            ]
+          }
+        ],
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["server/repositories/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["react", "react-dom", "react/*", "@apps/ui", "~/**", "**/src/**"],
+                "message": "The server never imports client code. See apps/ENGINEERING.md §2."
+              },
+              {
+                "group": [
+                  "**/routes/**",
+                  "**/services/**",
+                  "**/infra/http/**",
+                  "**/infra/llm/**",
+                  "**/fixtures/**"
+                ],
+                "message": "Repositories hold SQL only; they call nothing above them. See apps/ENGINEERING.md §2 (routes → services → repositories → DbClient)."
+              }
+            ]
+          }
+        ],
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["server/infra/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["react", "react-dom", "react/*", "@apps/ui", "~/**", "**/src/**"],
+                "message": "The server never imports client code. See apps/ENGINEERING.md §2."
+              },
+              {
+                "group": [
+                  "**/routes/**",
+                  "**/services/**",
+                  "**/repositories/**",
+                  "**/config/**",
+                  "**/fixtures/**"
+                ],
+                "message": "infra/* is the bottom layer: it never imports the app. See apps/ENGINEERING.md §2 (routes → services → repositories → DbClient)."
+              }
+            ]
+          }
+        ],
+        "no-console": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["**/dist/**", "**/node_modules/**", "**/.a11y/**", "vendor/**"]
+}

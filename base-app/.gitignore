@@ -1,0 +1,18 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+# secrets live in env only, never in a tracked file
+.env
+.env.*
+!.env.example
+# local SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite-*
+.data/
+# uploaded files (UPLOADS_DIR default)
+/data/uploads/
+# Vercel CLI link
+.vercel

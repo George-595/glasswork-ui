@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "jsx": "preserve",
+    "types": ["node"],
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "server",
+    "fixtures",
+    "lib",
+    "shared",
+    "scripts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "src/**/*.node.test.ts",
+    "src/**/*.node.ts"
+  ]
+}

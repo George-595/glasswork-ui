@@ -1,0 +1,75 @@
+/* ============================================================================
+   @apps/ui — Liquid Glass refraction (src/glass/LiquidGlass.tsx).
+
+   Applies only while a surface is in data-lg="refract": glass skin, Chromium,
+   no reduced transparency, no forced colours, maps ready. The backdrop-filter
+   url() and the map images are inline styles set by the component; this file
+   places the two layers it adds beneath the content:
+
+     .ui-lg-fill  the surface's own fill token, masked to thin out across the
+                  rim band only, so the refraction shows at the edge while
+                  text inside keeps exactly the AA fill glass.css specifies;
+     .ui-lg-shade upstream's dark side rim: an alpha mask painted in `lens-shade`;
+     .ui-lg-light upstream's specular highlight: an alpha mask painted in `lens-light`,
+                  over the shade.
+
+   Every other mode (plain / solid / blur) draws nothing from here: the
+   element keeps its own CSS, i.e. enterprise, the solid fallback or the
+   CSS blur material of glass.css. Roles and effects only (the fill is a surface
+   role, the rim the lens-* effects).
+============================================================================ */
+
+/* The layers are absolutely placed; a surface that is already positioned
+   (sticky topbar, fixed drawer) keeps its own position, and a modal
+   <dialog> keeps the UA's fixed positioning. */
+@layer base {
+  /* in the base layer so a surface's own `sticky` / `fixed` utility wins over this default */
+  :where(.ui-lg[data-lg="refract"]:not(dialog)) {
+    position: relative;
+  }
+}
+
+.ui-lg[data-lg="refract"] {
+  /* The fill moves into .ui-lg-fill; the backdrop-filter is inline. */
+  background: transparent;
+  isolation: isolate;
+}
+
+.ui-lg-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ui-lg-layer {
+  position: absolute;
+  /* The maps cover the border box plus 2px a side. */
+  inset: -2px;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.ui-lg-fill {
+  background: var(--lg-fill, var(--surface));
+}
+/* The rim colours are painted as a one-stop gradient, not a background-color: the mask makes
+   them a thin rim, but contrast checkers ignore masks and would read a solid background-color
+   as an opaque wall behind the text. An image is left for review instead (§14). */
+.ui-lg-shade {
+  background-image: linear-gradient(var(--lens-shade), var(--lens-shade));
+}
+.ui-lg-light {
+  background-image: linear-gradient(var(--lens-light), var(--lens-light));
+}
+
+/* the three masked layers share one mask placement */
+.ui-lg-fill,
+.ui-lg-shade,
+.ui-lg-light {
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}

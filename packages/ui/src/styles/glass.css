@@ -1,0 +1,76 @@
+/* ============================================================================
+   @apps/ui — the GLASS skin's material, without colour.   <html data-skin="glass">
+
+   The material follows Glass HQ's Liquid Glass "regular" material
+   (https://github.com/Glass-HQ/liquid-glass, MIT, (c) 2026 Glass HQ — see
+   ../../THIRD_PARTY_NOTICES.md): a 7.33px backdrop blur with a tone lift. Its COLOURS
+   (the 0.65 / 0.72 fills, the rim, the backdrop wash, the scrim) are roles in
+   @apps/colors, retuned there for WCAG 2.2 AA against the worst point of the backdrop;
+   this file only switches the filters on and lifts a card one elevation step.
+
+   WHERE THE BLUR GOES (ENGINEERING.md §5, the performance rules). A backdrop filter is
+   re-run by the GPU whenever what is behind it changes, so it is spent only where text really
+   passes underneath a surface or the surface is fixed:
+
+     --chrome-filter   fixed chrome: the top bar, the sidebar and drawer, the sheet and
+                       dialog panels, menus, popovers, tooltips, toasts. On.
+     --surface-filter  cards, tiles, buttons, inputs, tables, badges: content that scrolls
+                       with the page. Off. They keep the translucent role fill, the rim and
+                       the elevation shadow, which over the page's smooth backdrop wash look
+                       the same as the blurred fill did.
+     --scrim-filter    the dim behind a sheet or dialog. Off: the scrim colour alone dims.
+
+   Low power (<html data-power="low", effects/lowPower.ts): the chrome blur is lighter, and
+   the panels that sit over the whole page (sheet, dialog, command palette) drop it for their
+   solid role (see sheet.tsx and dialog.tsx).
+
+   Fallbacks: prefers-reduced-transparency, forced-colors and browsers without
+   backdrop-filter get no blur (the colour roles fall back to solid surfaces in
+   @apps/colors at the same time).
+============================================================================ */
+
+:root[data-skin="glass"] {
+  /* blur(7.33px) = the regular material; saturate/brightness = its tone lift */
+  --chrome-filter: blur(7.33px) saturate(140%) brightness(1.04);
+  /* a card floats a step higher than in enterprise: depth is the material */
+  --elev-card: var(--elev-2);
+}
+
+:root[data-skin="glass"][data-theme="light"] {
+  --chrome-filter: blur(7.33px) saturate(160%) brightness(1.02);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-skin="glass"]:not([data-theme="dark"]) {
+    --chrome-filter: blur(7.33px) saturate(160%) brightness(1.02);
+  }
+}
+
+/* a phone or other low-power device: a lighter blur on the chrome that is left (same
+   specificity as the light blocks above, later, and before the solid fallbacks, which win) */
+:root[data-skin="glass"][data-power="low"] {
+  --chrome-filter: blur(6px);
+}
+
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  :root[data-skin="glass"]:is([data-theme], :not([data-theme])) {
+    --surface-filter: none;
+    --chrome-filter: none;
+    --scrim-filter: none;
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root[data-skin="glass"]:is([data-theme], :not([data-theme])) {
+    --surface-filter: none;
+    --chrome-filter: none;
+    --scrim-filter: none;
+  }
+}
+
+/* Low power: the panels that sit over the whole page paint their solid role, with no blur at
+   all (the mobile drawer already does). Unlayered, so it outranks the utilities. The refracting
+   dialog layers never exist here: low power is not `refract` (src/glass/environment.ts). */
+:root[data-skin="glass"][data-power="low"] :is(.ui-sheet, .ui-dialog, .ui-palette, .ui-toast) {
+  background-color: var(--surface-solid);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}

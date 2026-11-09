@@ -1,0 +1,32 @@
+# What `vercel` (the CLI) must NOT upload. With a .vercelignore present the CLI ignores
+# .gitignore, and its built-in list skips .env.local but not .env, so secrets and local data
+# have to be named here. Keep it in step with .gitignore and .dockerignore:
+# `npm run check:ignore` fails when a secret or data pattern of .gitignore is missing below.
+
+# not part of the app
+docs
+.claude
+**/*.test.ts
+**/*.test.tsx
+
+# secrets: they live in Vercel's environment variables, never in an upload
+.env
+.env.*
+!.env.example
+
+# local databases and uploaded files
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite*
+.data/
+/data/uploads/
+/data
+
+# build output and tooling: Vercel installs and builds from source itself
+/dist
+node_modules
+coverage
+*.tsbuildinfo
+.vercel

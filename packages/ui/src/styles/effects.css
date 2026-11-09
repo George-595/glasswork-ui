@@ -1,0 +1,568 @@
+/* ============================================================================
+   @apps/ui — effects (src/effects/): the glass backdrops, the pointer light, the rolling
+   figure and the generation reveal. Roles only: no colour value,
+   no colour maths (the washes, the shader palette and the scrim are roles in @apps/colors).
+
+   Motion never costs access (ENGINEERING.md §5): every animation here stops
+   under prefers-reduced-motion, and the components also skip their JS loops.
+============================================================================ */
+
+/* ---- Effect tuning (per mode) ------------------------------------------
+   How strongly the animated background shows (an opacity, not a colour). It is tuned so text
+   sitting straight on the page (no surface) keeps 4.5:1 over the busiest frame; glass
+   surfaces carry their own fill on top of it. */
+:root {
+  --ui-fx-bg-opacity: 0.35;
+}
+:root[data-theme="light"] {
+  --ui-fx-bg-opacity: 0.15;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --ui-fx-bg-opacity: 0.15;
+  }
+}
+
+/* ---- AnimatedBackground ------------------------------------------------ */
+.ui-fx-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  /* the static form: shown before the scene loads, under reduced motion,
+     and when WebGL is unavailable */
+  background-color: var(--canvas);
+  background-image:
+    radial-gradient(70% 60% at 10% 0%, var(--backdrop-1), transparent 72%),
+    radial-gradient(60% 55% at 92% 18%, var(--backdrop-3), transparent 70%),
+    radial-gradient(75% 60% at 60% 100%, var(--backdrop-2), transparent 72%);
+}
+
+/* reduced transparency: the plain page colour, nothing behind the surfaces */
+.ui-fx-bg[data-view="solid"] {
+  background-image: none;
+}
+
+.ui-fx-bg > canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity var(--t-slow);
+}
+
+.ui-fx-bg[data-live] > canvas {
+  opacity: var(--ui-fx-bg-opacity);
+}
+
+/* The app root paints an opaque page colour; make it a stacking context so
+   the fixed background (z-index -1) sits above that colour and below the
+   content. */
+.ui-app:has(> .ui-fx-bg) {
+  isolation: isolate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-fx-bg > canvas {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .ui-fx-bg {
+    display: none;
+  }
+}
+
+/* ---- Shader backdrops (src/effects/shaders/) ----------------------------
+   ShaderBackdrop / ShaderAccent: a WebGPU scene from the `shaders` package over a static
+   gradient of the backdrop roles. Text sitting straight on the page keeps 4.5:1 over the
+   busiest frame because (1) the scene's colours are the shader-* roles, already mixed toward
+   the page (@apps/colors), (2) the canvas is faded to --ui-shader-opacity times the
+   `intensity` prop (--ui-shader-intensity) and (3) the `shader-scrim` role is laid over it.
+   Raise the scrim role, never the contrast of the scene, if a preset ever needs more. */
+:root {
+  --ui-shader-opacity: 0.9;
+}
+:root[data-theme="light"] {
+  --ui-shader-opacity: 0.85;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --ui-shader-opacity: 0.85;
+  }
+}
+
+.ui-shader {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  /* the static form: the first paint, reduced motion, a second instance and
+     every failure; the scene fades in above it */
+  background-color: var(--canvas);
+  background-image:
+    radial-gradient(70% 60% at 12% 0%, var(--backdrop-1), transparent 72%),
+    radial-gradient(60% 55% at 90% 20%, var(--backdrop-3), transparent 70%),
+    radial-gradient(75% 60% at 55% 100%, var(--backdrop-2), transparent 72%);
+}
+
+/* reduced transparency: the plain page colour, nothing behind the surfaces */
+.ui-shader[data-view="solid"] {
+  background-image: none;
+}
+
+.ui-shader-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity var(--t-slow);
+}
+.ui-shader-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.ui-shader[data-live] > .ui-shader-canvas {
+  opacity: calc(var(--ui-shader-opacity) * var(--ui-shader-intensity, 1));
+}
+
+/* the contrast scrim, over the canvas (the full-page backdrop only: an accent is small,
+   edge-faded and sits over the page's own surface, so a page-coloured scrim would only
+   darken what is behind it) */
+.ui-shader[data-view="live"]:not(.ui-shader-accent)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--shader-scrim);
+}
+
+.ui-app:has(> .ui-shader) {
+  isolation: isolate;
+}
+
+/* ShaderAccent: bounded to its host, fading out toward the edges */
+.ui-shader-host {
+  position: relative;
+  isolation: isolate;
+}
+/* an accent stands down over an animated page backdrop (the glass skin's): the backdrop
+   already moves, and a second scene over it only muddies it. Hidden, it is off-screen to
+   its IntersectionObserver, so its scene unmounts and frees the GPU */
+.ui-app:has(.ui-fx-bg, .ui-shader:not(.ui-shader-accent)) .ui-shader-accent {
+  display: none;
+}
+.ui-shader.ui-shader-accent {
+  position: absolute;
+  border-radius: inherit;
+  /* a mask reads alpha only: currentColor is just "opaque" */
+  -webkit-mask-image: radial-gradient(ellipse at center, currentColor 25%, transparent 80%);
+  mask-image: radial-gradient(ellipse at center, currentColor 25%, transparent 80%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-shader-canvas {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .ui-shader {
+    display: none;
+  }
+}
+
+/* ---- RollingNumber (src/effects/RollingNumber.tsx) -----------------------
+   Each digit is a reel: a strip of 0–9 two turns long inside a window one line tall. The
+   component sets each strip's step (a translateY in % of the strip) and its time and wait
+   (--roll-time, --roll-wait); this sheet owns the easing, the window and the fades. The window's top and bottom sixth fade
+   (a mask, so it follows the text colour and needs no colour of its own): a digit passing
+   through is softened away at the edges, a settled digit sits in the clear middle. */
+.ui-roll {
+  display: inline-block;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.ui-roll-figure {
+  display: inline-flex;
+  align-items: flex-start;
+}
+.ui-roll-reel,
+.ui-roll-sep,
+.ui-roll-digit {
+  display: inline-block;
+  height: 1lh;
+  line-height: inherit;
+  vertical-align: top;
+}
+@supports not (height: 1lh) {
+  .ui-roll-reel,
+  .ui-roll-sep,
+  .ui-roll-digit {
+    height: 1.2em;
+    line-height: 1.2em;
+  }
+}
+.ui-roll-reel {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 2%, currentColor 17%, currentColor 83%, transparent 98%);
+  mask-image: linear-gradient(to bottom, transparent 2%, currentColor 17%, currentColor 83%, transparent 98%);
+}
+.ui-roll-strip {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+.ui-roll-digit {
+  display: block;
+}
+/* rolling: the reels travel and land with the smallest overshoot, like a wheel on a detent,
+   and each digit brightens from half light as it settles */
+.ui-roll[data-phase="rolling"] .ui-roll-strip {
+  transition: transform var(--roll-time) cubic-bezier(0.16, 1.04, 0.3, 1) var(--roll-wait);
+  animation: ui-roll-land var(--roll-time) cubic-bezier(0.2, 0.7, 0.2, 1) var(--roll-wait) both;
+}
+@keyframes ui-roll-land {
+  from {
+    opacity: 0.4;
+  }
+  65% {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* places the start figure did not have, and the separators, fade in at the start */
+.ui-roll-reel[data-arrives],
+.ui-roll-sep {
+  transition: opacity 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.ui-roll[data-phase="wound"] .ui-roll-reel[data-arrives],
+.ui-roll[data-phase="wound"] .ui-roll-sep {
+  opacity: 0;
+  transition: none;
+}
+.ui-roll[data-phase="wound"] .ui-roll-strip {
+  transition: none;
+  animation: none;
+}
+
+/* ---- PointerLight (src/effects/PointerLight.tsx) ---------------------------
+   Three decorative layers under the content: a pool of the glow role at the pointer, the rim
+   (the card's edge, cut out of a disc of the rim role by a mask, so only the edge nearest the
+   pointer catches light) and a one-shot sheen. The component moves --pl-x / --pl-y; nothing
+   here loops. */
+.ui-pl {
+  --pl-x: 50%;
+  --pl-y: 50%;
+  --pl-glow: var(--spotlight);
+  --pl-rim: var(--glare);
+  position: relative;
+  isolation: isolate;
+}
+.ui-pl > :not(.ui-pl-glow, .ui-pl-rim, .ui-pl-sheen) {
+  position: relative;
+  z-index: 1;
+}
+.ui-pl-glow,
+.ui-pl-rim,
+.ui-pl-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.ui-pl-glow {
+  /* a wide pool and a brighter heart, both of the glow role */
+  background:
+    radial-gradient(
+      calc(var(--pl-r, 240px) * 0.45) circle at var(--pl-x) var(--pl-y),
+      var(--pl-glow),
+      transparent 70%
+    ),
+    radial-gradient(var(--pl-r, 240px) circle at var(--pl-x) var(--pl-y), var(--pl-glow), transparent 72%);
+  opacity: 0;
+  transition: opacity 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ui-pl-rim {
+  inset: -1px;
+  padding: 1.5px;
+  /* the edge nearest the pointer catches the light twice over: a hot spot and a wider arc */
+  background:
+    radial-gradient(
+      calc(var(--pl-r, 240px) * 0.4) circle at var(--pl-x) var(--pl-y),
+      var(--pl-rim),
+      transparent 70%
+    ),
+    radial-gradient(
+      calc(var(--pl-r, 240px) * 0.4) circle at var(--pl-x) var(--pl-y),
+      var(--pl-rim),
+      transparent 70%
+    ),
+    radial-gradient(calc(var(--pl-r, 240px) * 0.85) circle at var(--pl-x) var(--pl-y), var(--pl-rim), transparent 72%);
+  -webkit-mask:
+    linear-gradient(currentColor 0 0) content-box,
+    linear-gradient(currentColor 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(currentColor 0 0) content-box exclude,
+    linear-gradient(currentColor 0 0);
+  opacity: 0;
+  transition: opacity 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ui-pl[data-lit] > .ui-pl-glow,
+.ui-pl[data-lit] > .ui-pl-rim {
+  opacity: 1;
+}
+.ui-pl-sheen {
+  /* a broad soft band with a bright core, both of the rim role, crossing once */
+  background-image:
+    linear-gradient(108deg, transparent 44%, var(--pl-rim) 50%, transparent 56%),
+    linear-gradient(108deg, transparent 44%, var(--pl-rim) 50%, transparent 56%),
+    linear-gradient(108deg, transparent 30%, var(--pl-rim) 50%, transparent 70%);
+  background-size: 260% 100%;
+  background-repeat: no-repeat;
+  animation: ui-pl-sheen 950ms cubic-bezier(0.22, 0.8, 0.24, 1) both;
+}
+@keyframes ui-pl-sheen {
+  from {
+    background-position: 140% 0;
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  to {
+    background-position: -40% 0;
+    opacity: 0;
+  }
+}
+
+/* ---- Sweep: a band of light crossing text (TextShimmer) ------------------ */
+@keyframes ui-fx-sweep {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+/* ---- Motion never costs access ----------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .ui-pl-glow,
+  .ui-pl-rim,
+  .ui-pl-sheen {
+    display: none;
+  }
+  .ui-roll-strip,
+  .ui-roll-reel,
+  .ui-roll-sep {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* forced colours: the light layers would paint over the system colours */
+@media (forced-colors: active) {
+  .ui-pl-glow,
+  .ui-pl-rim,
+  .ui-pl-sheen {
+    display: none;
+  }
+}
+
+/* ---- Generate (src/effects/generate) -------------------------------------
+   The overlay generate() draws over an element as it arrives. `draft` is a drafting table:
+   hairlines and bars in the subtle ink, the pen, the dimensions and the ring of light in the
+   brand colour, and the real UI brings the rest of the colour as it develops in. `ascii` draws
+   on a canvas with the --gen-ascii-* roles (ascii.ts). Roles only. */
+:root {
+  --gen-line: var(--fg-subtle); /* the sheet, construction lines, text bars */
+  --gen-strong: var(--fg-muted); /* box outlines, marks, crop marks */
+  --gen-outline: var(--fg); /* the element's own outline */
+  --gen-pen: var(--brand); /* the pen, the dimensions, the ring */
+  --gen-surface: var(--surface-solid); /* chips and the spec sheet */
+  --gen-text: var(--fg);
+  --gen-muted: var(--fg-muted);
+  --gen-font: var(--font-mono);
+  /* render ascii: the plot's (enterprise) inks and the frost's (glass) prism */
+  --gen-ascii-ink: var(--fg-muted); /* struck outlines and fills */
+  --gen-ascii-text: var(--fg); /* struck text and chart marks */
+  --gen-ascii-paper: var(--fg-subtle); /* graph paper, rulers */
+  --gen-ascii-hot: var(--brand); /* wet ink, the pen, a crystallising glyph, the light band */
+  --gen-ascii-prism-a: var(--brand);
+  --gen-ascii-prism-b: var(--info);
+}
+
+/* the overlay sits exactly over the element, above the page, and never takes input */
+.ui-gen {
+  position: absolute;
+  z-index: 15; /* over the content, under the sticky top bar (20) and the drawer */
+  pointer-events: none;
+}
+.ui-gen-ascii {
+  position: absolute;
+}
+/* the frost glows */
+.ui-gen-ascii--frost {
+  filter: drop-shadow(0 0 4px var(--gen-ascii-prism-a));
+}
+
+/* draft: one SVG, a little larger than the element (reveal.ts ROOM) */
+.ui-gen-draft {
+  position: absolute;
+  overflow: visible;
+  color: var(--gen-text); /* the dissolve mask's opaque stop */
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ui-gen-grid line {
+  stroke: var(--gen-line);
+  stroke-width: 0.5;
+  stroke-opacity: 0.2;
+}
+.ui-gen-cons path {
+  stroke: var(--gen-line);
+  stroke-width: 0.75;
+  stroke-opacity: 0.45;
+}
+.ui-gen-ink path {
+  stroke: var(--gen-strong);
+  stroke-width: 1.25;
+}
+.ui-gen-ink .ui-gen-outline {
+  stroke: var(--gen-outline);
+  stroke-opacity: 0.7;
+  stroke-width: 1.5;
+}
+.ui-gen-marks > * {
+  fill: var(--gen-line);
+  fill-opacity: 0;
+  stroke: var(--gen-strong);
+  stroke-width: 1.25;
+  transition: fill-opacity 360ms var(--ease-out);
+}
+.ui-gen-marks > [data-in] {
+  fill-opacity: 0.16;
+}
+.ui-gen-bars rect {
+  fill: var(--gen-line);
+  fill-opacity: 0.4;
+}
+.ui-gen-dims path {
+  stroke: var(--gen-pen);
+  stroke-width: 1;
+  stroke-opacity: 0.75;
+}
+.ui-gen-dims .ui-gen-ticks {
+  stroke-width: 1.25;
+}
+.ui-gen-chip {
+  fill: var(--gen-surface);
+  stroke: var(--gen-pen);
+  stroke-opacity: 0.45;
+  stroke-width: 0.75;
+}
+.ui-gen-figure {
+  fill: var(--gen-pen);
+  stroke: none;
+  font: 600 9.5px var(--gen-font);
+  font-variant-numeric: tabular-nums;
+}
+.ui-gen-crops path {
+  stroke: var(--gen-strong);
+  stroke-width: 1.25;
+}
+.ui-gen-pen-halo {
+  fill: var(--gen-pen);
+  fill-opacity: 0.22;
+}
+.ui-gen-pen-tip {
+  fill: var(--gen-pen);
+  stroke: var(--gen-surface);
+  stroke-width: 1.25;
+}
+.ui-gen-ring {
+  stroke: var(--gen-pen);
+  stroke-width: 1.5;
+  stroke-opacity: 0.6;
+}
+
+/* skeleton-texts: the spec sheet beside the element and the step line under it */
+.ui-gen-sheet {
+  position: absolute;
+  width: 220px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--gen-surface);
+  box-shadow: var(--elev-2);
+  font: 11px/1.75 var(--gen-font);
+  color: var(--gen-muted);
+  white-space: pre;
+  overflow: hidden;
+}
+.ui-gen-sheet-head {
+  margin-bottom: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  color: var(--gen-text);
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.ui-gen-sheet-row {
+  min-height: 1.75em;
+}
+.ui-gen-ticker {
+  position: absolute;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 500 12px/1 var(--gen-font);
+  color: var(--gen-muted);
+  white-space: nowrap;
+}
+.ui-gen-ticker i {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--gen-line);
+  border-top-color: var(--gen-pen);
+  border-radius: 50%;
+  animation: ui-gen-turn 800ms linear infinite;
+}
+.ui-gen-ticker[data-done] {
+  color: var(--gen-text);
+}
+.ui-gen-ticker[data-done] i {
+  border-color: var(--gen-pen);
+  background: var(--gen-pen);
+  animation: none;
+}
+@keyframes ui-gen-turn {
+  to {
+    transform: rotate(1turn);
+  }
+}
+/* generate() fades the element in instead under reduced motion; nothing of this is built */
+@media (prefers-reduced-motion: reduce) {
+  .ui-gen {
+    display: none;
+  }
+}

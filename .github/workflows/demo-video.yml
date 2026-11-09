@@ -1,0 +1,53 @@
+# demo-video — run by hand: starts the base app (in-memory SQLite, the public dev login), films
+# the guided tour in scripts/demo/record.mjs, and pushes the film to the `demo-recording` branch
+# (replaced on every run), where it is picked up for the README.
+name: Demo video
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - run: npm ci --no-audit --no-fund
+      - name: Start the app
+        run: |
+          npm run dev > dev.log 2>&1 &
+          for i in $(seq 1 90); do
+            curl -sf http://127.0.0.1:5173/login > /dev/null && exit 0
+            sleep 2
+          done
+          cat dev.log
+          exit 1
+      - name: Warm up the routes
+        run: |
+          for r in /login / /graphs /kit /assistant; do curl -s -o /dev/null "http://127.0.0.1:5173$r"; done
+      - name: Film the tour
+        run: node scripts/demo/record.mjs
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+      - name: Encode
+        run: |
+          ffmpeg -y -loglevel error -i demo-out/demo.webm -c:v libx264 -preset slow -crf 18 \
+            -pix_fmt yuv420p -movflags +faststart demo-out/demo.mp4
+          ls -la demo-out
+      - name: Push the film to the demo-recording branch
+        run: |
+          mkdir /tmp/film && cp demo-out/demo.mp4 demo-out/timeline.json /tmp/film/
+          cp dev.log /tmp/film/dev.log
+          cd /tmp/film
+          git init -q -b demo-recording
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -q -m "demo film from ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" demo-recording

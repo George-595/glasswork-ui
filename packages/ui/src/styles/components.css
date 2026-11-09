@@ -1,0 +1,276 @@
+/* ============================================================================
+   @apps/ui — component styles. The shadcn-style components (src/components,
+   src/nav) style themselves with Tailwind utility classes on the token theme
+   (theme.css) and cva variants; this file holds only what a class string
+   cannot: the app root, the shared helpers, the `glass` variant and the glass
+   material parts the components' classes read, the keyframes, and the
+   forced-colours rules. Tokens only: no colour literals.
+
+   Every component keeps a stable `ui-*` class on its root as a hook for app
+   CSS; variants are also mirrored as data attributes (data-variant,
+   data-size, data-direction, data-orientation).
+
+   A11y floor kept from @mylife/ui: 24x24px minimum targets (WCAG 2.5.8),
+   the solid two-layer --ring on :focus-visible, --border-input on inputs
+   (>= 3:1, WCAG 1.4.11). Colours are roles only (@apps/colors).
+============================================================================ */
+
+/* ---- App root: page colour, type, and the skin's backdrop -------------- */
+.ui-app {
+  min-height: 100dvh;
+  background-color: var(--canvas);
+  background-image: var(--app-backdrop);
+  background-attachment: fixed;
+  color: var(--fg);
+  font: var(--t-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---- Focus is never left under a bar (WCAG 2.4.11, Focus Not Obscured) ----
+   Moving focus scrolls the control to the screen's edge, which is exactly where the sticky top
+   bar and the phone's bottom bars sit. scroll-padding makes the browser stop short of them.
+   The bottom bars (tab bar, a flow's action bar, a pinned bulk or save bar) each report their
+   height as --ui-bottom-inset on <html> (lib/bottom-inset.ts); the top bar is the app shell's
+   56px, plus a little air. */
+html {
+  scroll-padding-bottom: calc(var(--ui-bottom-inset, 0px) + 8px);
+}
+html:has(.ui-topbar) {
+  scroll-padding-top: 4rem;
+}
+
+.ui-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ui-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+/* ---- The glass skin, for the components' classes ------------------------
+   `glass:` applies a utility only under <html data-skin="glass">, e.g.
+   `glass-chrome` is the CSS material's backdrop blur for FIXED chrome (top
+   bar, sidebar, sheet and dialog panels, menus, popovers, tooltips,
+   toasts); it reads --chrome-filter, which is `none` outside glass and in
+   the solid fallbacks, so it is safe to use unconditionally. `glass-blur`
+   reads --surface-filter, which is `none` in every skin: content that
+   scrolls gets no backdrop filter (ENGINEERING.md §5). Where a surface is
+   refracting (data-lg="refract", src/glass) the inline SVG backdrop-filter
+   replaces both. */
+@custom-variant glass (&:where([data-skin="glass"], [data-skin="glass"] *));
+
+@utility glass-blur {
+  -webkit-backdrop-filter: var(--surface-filter);
+  backdrop-filter: var(--surface-filter);
+}
+@utility glass-chrome {
+  -webkit-backdrop-filter: var(--chrome-filter);
+  backdrop-filter: var(--chrome-filter);
+}
+
+/* ---- Keyframes the components' classes name --------------------------- */
+@keyframes ui-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--sp-2));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ui-page-enter {
+    animation: ui-page-enter var(--dur-slow) var(--ease-out) backwards;
+  }
+}
+
+@keyframes ui-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+@keyframes ui-skeleton-shimmer {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 100% 0;
+  }
+}
+
+@keyframes ui-bell-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes ui-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ui-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes ui-sheet-in-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes ui-sheet-out-right {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes ui-sheet-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes ui-sheet-out-left {
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes ui-sheet-in-bottom {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes ui-sheet-out-bottom {
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes ui-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+@keyframes ui-toast-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes ui-toast-swipe-out {
+  to {
+    opacity: 0;
+    transform: translateX(var(--radix-toast-swipe-end-x));
+  }
+}
+@keyframes ui-toast-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+@keyframes ui-progress-sweep {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 250% 0;
+  }
+}
+
+/* ---- Forced colours: keep boundaries, focus and state visible ----------
+   Windows high contrast removes box-shadow, which is how every ring and
+   rim in the kit is drawn, so focus gets a real outline from the system
+   colours, and every surface a border in CanvasText. */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+  .ui-card,
+  .ui-stat-tile,
+  .ui-dialog,
+  .ui-sheet,
+  .ui-toast,
+  .ui-kpi,
+  .ui-empty-state,
+  .ui-error-state,
+  .ui-error,
+  .ui-button,
+  .ui-badge,
+  .ui-input,
+  .ui-select,
+  .ui-menu,
+  .ui-tooltip,
+  .ui-popover,
+  .ui-segmented,
+  .ui-tablist,
+  .ui-kbd,
+  .ui-bulk-bar,
+  .ui-table-scroll,
+  .ui-chip,
+  .ui-notice,
+  .ui-choice-card,
+  .ui-avatar {
+    border-color: CanvasText;
+  }
+  .ui-button:is(:disabled, [aria-disabled="true"]),
+  .ui-input:disabled,
+  .ui-select:disabled {
+    border-color: GrayText;
+    color: GrayText;
+  }
+  .ui-button[data-variant="primary"],
+  .ui-button[data-variant="danger"],
+  .ui-button[data-variant="success"] {
+    background: ButtonFace;
+    color: ButtonText;
+  }
+  .ui-choice-card[data-checked] {
+    outline: 2px solid Highlight;
+  }
+  [role="tab"][data-state="active"],
+  .ui-segmented-item[data-state="on"] {
+    border-color: Highlight;
+  }
+  .ui-table-scroll tr[data-state="selected"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  .ui-checkbox {
+    border-color: CanvasText;
+    background: Canvas;
+  }
+  .ui-checkbox:checked,
+  .ui-checkbox:indeterminate {
+    background: Highlight;
+    border-color: Highlight;
+  }
+  .ui-checkbox::after {
+    border-color: HighlightText;
+  }
+  .ui-nav-link[aria-current="page"] {
+    border-color: Highlight;
+  }
+  .ui-skeleton {
+    border: 1px solid GrayText;
+  }
+  .ui-skeleton::after {
+    display: none;
+  }
+}

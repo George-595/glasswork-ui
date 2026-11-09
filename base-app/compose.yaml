@@ -1,0 +1,77 @@
+# Local databases for development and for `npm run test:db`. DEV ONLY.
+#
+#   npm run db:up      start both and wait until healthy
+#   npm run db:down    stop them (data kept in the named volumes)
+#   npm run db:reset   stop them, delete the volumes and the local sqlite file
+#
+# Not for production, and not reachable from other machines: both ports bind to 127.0.0.1.
+# The password below is a fixed, PUBLIC development value. It protects nothing; a real
+# deployment sets its own credentials through DATABASE_URL and never uses this file.
+#
+# How the images were chosen (George's 7-day quarantine, ENGINEERING §3): each is pinned by
+# version AND digest, and the digest names a release published more than 7 days before it was
+# pinned. To move one: pick the newest tag older than 7 days (Docker Hub "Last pushed"), copy
+# its manifest-list digest (`docker buildx imagetools inspect <image>:<tag>`), and change the
+# tag and the digest together. `scripts/check-release-age.mjs` covers npm only, so this is a
+# manual rule; the tag half of the pin is what a reviewer reads, the digest is what is pulled.
+#
+# Created on first start of an empty volume (db/postgres/init.sql, db/mysql/init.sql):
+#   app       the development database (what `npm run dev:pg` / `dev:mysql` use)
+#   app_test  the connection database of `npm run test:db`; each test run creates and drops
+#             its own throwaway database from it, so runs never see each other's tables.
+
+name: base-app-db
+
+services:
+  postgres:
+    image: postgres:17.10@sha256:7958605b474b3d264a969cb3a123d6aa00ad1e1fe9da8a69984dabb704d93317
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app_dev_only
+      POSTGRES_DB: app
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/postgres/init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+
+  mysql:
+    image: mysql:8.4.11@sha256:6ea90827b1100f8f2ae306a539f86d2c264a26ed435a2a9f75551dd5c3aeb242
+    restart: unless-stopped
+    # utf8mb4 everywhere, UTC session time, strict mode: the settings the schema relies on.
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+00:00
+      - --sql-mode=ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+    environment:
+      MYSQL_ROOT_PASSWORD: root_dev_only
+      MYSQL_DATABASE: app
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app_dev_only
+      TZ: UTC
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./db/mysql/init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
+    healthcheck:
+      # app_test exists only once init.sql has run, so "healthy" means "ready to use".
+      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -uapp -papp_dev_only -e 'SELECT 1' app_test >/dev/null 2>&1"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 15s
+
+volumes:
+  postgres-data:
+  mysql-data:

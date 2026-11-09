@@ -1,0 +1,57 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // MIRRORED: "plugins", "categories", "rules" and the "**/scripts/**" override are
+  // the general rules, kept identical in base-app/.oxlintrc.json. ignorePatterns and the
+  // other overrides differ on purpose.
+  // Edit both files; `npm run check` runs scripts/check-oxlint-mirror.mjs to catch drift.
+  "plugins": ["typescript", "react", "jsx-a11y", "import", "unicorn", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    "react/react-in-jsx-scope": "off",
+    "import/no-cycle": "error",
+    "typescript/no-explicit-any": "error",
+    "no-console": [
+      "warn",
+      {
+        "allow": ["warn", "error", "info"]
+      }
+    ],
+    "import/no-unassigned-import": [
+      "warn",
+      {
+        "allow": ["**/*.css"]
+      }
+    ],
+    "jsx-a11y/prefer-tag-over-role": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/scripts/**"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["packages/ui/src/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@apps/base-app", "**/base-app/**", "~/**"],
+                "message": "@apps/ui never imports app code. See apps/ENGINEERING.md §2."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "ignorePatterns": ["**/dist/**", "**/node_modules/**", "**/.a11y/**", "portfolio/**"]
+}

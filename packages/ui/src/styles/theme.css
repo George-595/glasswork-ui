@@ -1,0 +1,18 @@
+/* @apps/ui — the Tailwind v4 theme for the non-colour tokens. The COLOUR utilities
+   (bg-canvas, text-fg, bg-primary-hover…) come from @apps/colors/theme.css, which wipes
+   Tailwind's stock palette; this block maps radii, shadows and fonts. */
+@theme inline {
+  --radius-xs: var(--r-xs);
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-pill: var(--r-pill);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}

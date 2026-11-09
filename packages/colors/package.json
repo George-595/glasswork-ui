@@ -1,0 +1,22 @@
+{
+  "name": "@apps/colors",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Every colour in apps/: one palette, semantic roles for enterprise and glass in light and dark, generated CSS + Tailwind theme, and a contrast gate on the role table.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./colors.css": "./css/colors.css",
+    "./theme.css": "./css/theme.css",
+    "./favicon.svg": "./css/favicon.svg"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "build": "node scripts/build.ts",
+    "check:colors": "node scripts/build.ts --check",
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  }
+}

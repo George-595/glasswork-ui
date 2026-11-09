@@ -1,0 +1,7 @@
+# Exceptions to the 7-day dependency quarantine for apps/ (base-app/scripts/check-release-age.mjs).
+# Only George grants one, in his own words, for one exact version; quote him in the reason.
+# An entry exempts that version from the age rule only: it must still be an exact pin.
+# Delete the entry once the version is 7 days old (`npm run check:deps` says when).
+#
+# <npm> <name>@<version> <YYYY-MM-DD granted> <reason>
+npm shaders@4.0.4 2026-10-11 George: "Give a temporary 4.x allowance to this package only" (WebGPU backdrops in @apps/ui; 7 days old on 2026-10-16)
