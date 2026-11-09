@@ -34,6 +34,8 @@ const context = await browser.newContext({
 const page = await context.newPage();
 // a step that cannot happen should cost seconds, not half a minute of film
 page.setDefaultTimeout(8000);
+// the dev server renders each first visit of a route on demand
+page.setDefaultNavigationTimeout(45000);
 const started = Date.now();
 const timeline = [];
 const pause = (ms) => page.waitForTimeout(ms);
@@ -109,14 +111,17 @@ await scene('glass sign-in', async () => {
 });
 
 await scene('sign in', async () => {
-  const email = page.getByLabel('Email');
-  await email.fill('');
-  await email.pressSequentially('admin@example.test', { delay: 40 });
-  const password = page.getByLabel('Password', { exact: true });
-  await password.fill('');
-  await password.pressSequentially('adminpassword', { delay: 40 });
-  await pause(300);
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  // the sign-in page offers the public dev login as a button: on film, a click reads better than
+  // typing, and typing is slow while the glass renders in software on a runner with no GPU
+  const fill = page.getByRole('button', { name: 'Fill dev login' });
+  const box = await fill.boundingBox();
+  if (box) await glide(box.x + box.width / 2, box.y + box.height / 2, 35);
+  await fill.click();
+  await pause(900);
+  const submit = page.getByRole('button', { name: 'Sign in' });
+  const target = await submit.boundingBox();
+  if (target) await glide(target.x + target.width / 2, target.y + target.height / 2, 30);
+  await submit.click();
   await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 15000 });
 });
 
