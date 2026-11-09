@@ -115,7 +115,7 @@ const swap = (from, to, times) => {
 };
 swap(
   '# Build context is apps/ (the npm workspace root), so the lockfile, .npmrc and\n# the shared packages are all visible. From apps/:\n#   docker build -f base-app/Dockerfile -t base-app .\n#   docker run -p 8787:8787 --env-file base-app/.env base-app\n',
-  '# Build context is this folder (exported from glasswork-ui's base-app, with\n# @apps/ui and @apps/colors in vendor/). Run `npm install` once first so package-lock.json\n# exists. From this folder:\n#   docker build -t base-app .\n#   docker run -p 8787:8787 --env-file .env base-app\n',
+  '# Build context is this folder (exported from the glasswork-ui base-app, with\n# @apps/ui and @apps/colors in vendor/). Run `npm install` once first so package-lock.json\n# exists. From this folder:\n#   docker build -t base-app .\n#   docker run -p 8787:8787 --env-file .env base-app\n',
   1,
 );
 swap(
