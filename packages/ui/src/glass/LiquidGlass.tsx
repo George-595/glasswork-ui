@@ -10,8 +10,8 @@ import {
   useState,
 } from 'react';
 import { type GlassMode, useGlassEnvironment } from './environment';
-import { bucketGeometry, getMaterialMaps, type MaterialMaps, peekMaterialMaps } from './maps';
-import { type GlassAppearance, type MapGeometry, materials, toneTable } from './optics';
+import type { MaterialMaps } from './maps';
+import type { GlassAppearance, MapGeometry } from './optics';
 
 /* LiquidGlass — Glass HQ's Liquid Glass on one element (MIT; see
    THIRD_PARTY_NOTICES.md). In the glass skin on Chromium the element's
@@ -85,11 +85,36 @@ function measure(element: HTMLElement, width: number, height: number): Size {
   };
 }
 
+type Refraction = typeof import('./refraction');
+
+/** `materials.regular.refraction` (optics.ts), kept here so the hook does not import the optics. A test holds them equal. */
+export const DEFAULT_REFRACTION = 60;
+
+/* The refraction machinery (optics, the map worker, PNG encoding and the SVG filter) is fetched the first
+   time a surface refracts: a fine pointer, at most 2x, not low power (rule 2). The server and the first client
+   render never refract, so nothing here can mismatch; until it arrives, or if it cannot be fetched, the
+   surface stays on the CSS blur material (`mode: 'blur'`, no layers), which is what it shows before its maps exist. */
+let refractionModule: Refraction | null = null;
+let refractionLoad: Promise<Refraction> | null = null;
+function loadRefraction(): Promise<Refraction> {
+  refractionLoad ??= import('./refraction').then(
+    (m) => {
+      refractionModule = m;
+      return m;
+    },
+    (error: unknown) => {
+      refractionLoad = null;
+      throw error;
+    },
+  );
+  return refractionLoad;
+}
+
 export function useLiquidGlass<T extends HTMLElement = HTMLElement>(
   options: LiquidGlassOptions = {},
 ): LiquidGlassBinding<T> {
   const {
-    refraction = materials.regular.refraction,
+    refraction = DEFAULT_REFRACTION,
     material = 'clear',
     fill = 'surface',
     band = 14,
@@ -103,7 +128,24 @@ export function useLiquidGlass<T extends HTMLElement = HTMLElement>(
   // The last maps fetched; maps already cached for the current size are
   // read during render instead (peekMaterialMaps).
   const [lastMaps, setMaps] = useState<MaterialMaps | null>(null);
+  const [refr, setRefr] = useState<Refraction | null>(refractionModule);
   const filterId = `ui-lg-${useId().replace(/[^\w-]/g, '')}`;
+
+  useEffect(() => {
+    if (!refracting || refr) return;
+    let live = true;
+    loadRefraction().then(
+      (m) => {
+        if (live) setRefr(m);
+      },
+      () => {
+        /* stays on the blur material; the next surface to mount tries the fetch again */
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [refracting, refr]);
 
   // Size: a ResizeObserver while refracting, settled for 120ms before maps
   // are made, so a resize animation stretches the last maps meanwhile.
@@ -141,12 +183,12 @@ export function useLiquidGlass<T extends HTMLElement = HTMLElement>(
   const appearance: GlassAppearance = env.appearance;
   // sized in buckets (maps.ts): the maps are stretched to the real size
   const geometry: MapGeometry | null =
-    refracting && size ? bucketGeometry({ ...size, appearance, band, rimFill }) : null;
-  const ready = geometry ? peekMaterialMaps(geometry) : undefined;
+    refr && refracting && size ? refr.bucketGeometry({ ...size, appearance, band, rimFill }) : null;
+  const ready = refr && geometry ? refr.peekMaterialMaps(geometry) : undefined;
   useEffect(() => {
-    if (!refracting || !size || ready) return;
+    if (!refr || !refracting || !size || ready) return;
     let live = true;
-    getMaterialMaps(bucketGeometry({ ...size, appearance, band, rimFill })).then(
+    refr.getMaterialMaps(refr.bucketGeometry({ ...size, appearance, band, rimFill })).then(
       (next) => {
         if (live) setMaps(next);
       },
@@ -157,15 +199,15 @@ export function useLiquidGlass<T extends HTMLElement = HTMLElement>(
     return () => {
       live = false;
     };
-  }, [refracting, size, ready, appearance, band, rimFill]);
+  }, [refr, refracting, size, ready, appearance, band, rimFill]);
 
   const ref = useCallback((node: T | null) => setElement(node), []);
   const maps = ready ?? lastMaps;
-  const active = refracting && maps !== null && size !== null;
+  const active = refr !== null && refracting && maps !== null && size !== null;
   // Until the maps exist a refracting surface shows the CSS blur material.
   const mode: GlassMode = env.mode === 'refract' && !active ? 'blur' : env.mode;
 
-  if (!active || !maps || !size) {
+  if (!active || !refr || !maps || !size) {
     return { ref, mode, props: { className: 'ui-lg', 'data-lg': mode }, layers: null };
   }
 
@@ -183,152 +225,17 @@ export function useLiquidGlass<T extends HTMLElement = HTMLElement>(
       },
     },
     layers: (
-      <>
-        <svg className="ui-lg-defs" aria-hidden="true" focusable="false" width="0" height="0">
-          <GlassFilter
-            id={filterId}
-            maps={maps}
-            width={size.width}
-            height={size.height}
-            refraction={refraction}
-            material={material}
-            appearance={appearance}
-          />
-        </svg>
-        <span
-          className="ui-lg-layer ui-lg-fill"
-          aria-hidden="true"
-          style={{ maskImage: `url("${maps.body}")`, WebkitMaskImage: `url("${maps.body}")` }}
-        />
-        <span
-          className="ui-lg-layer ui-lg-shade"
-          aria-hidden="true"
-          style={{ maskImage: `url("${maps.shade}")`, WebkitMaskImage: `url("${maps.shade}")` }}
-        />
-        <span
-          className="ui-lg-layer ui-lg-light"
-          aria-hidden="true"
-          style={{
-            maskImage: `url("${maps.highlight}")`,
-            WebkitMaskImage: `url("${maps.highlight}")`,
-          }}
-        />
-      </>
+      <refr.RefractionLayers
+        filterId={filterId}
+        maps={maps}
+        width={size.width}
+        height={size.height}
+        refraction={refraction}
+        material={material}
+        appearance={appearance}
+      />
     ),
   };
-}
-
-interface GlassFilterProps {
-  id: string;
-  maps: MaterialMaps;
-  width: number;
-  height: number;
-  refraction: number;
-  material: GlassMaterialName;
-  appearance: GlassAppearance;
-}
-
-/** The material graph of upstream's src/dom/lens-layers.ts and
-    material-graph.ts (frostMarkup, toneMarkup), as React SVG, reading the
-    element's backdrop as SourceGraphic. */
-export function GlassFilter({
-  id,
-  maps,
-  width,
-  height,
-  refraction,
-  material,
-  appearance,
-}: GlassFilterProps) {
-  const dark = appearance === 'dark';
-  const spec = materials.regular[appearance];
-  const region = { x: 0, y: 0, width, height };
-  let input = 'SourceGraphic';
-  const frost: ReactNode[] = [];
-  if (material === 'regular') {
-    input = 'mix';
-    frost.push(
-      <feGaussianBlur
-        key="frost"
-        in="SourceGraphic"
-        stdDeviation={materials.regular.blur}
-        result="frost"
-      />,
-      <feGaussianBlur key="fill" in="SourceGraphic" stdDeviation={spec.fillSigma} result="fill" />,
-      <feBlend
-        key="blend"
-        in="frost"
-        in2="fill"
-        mode={dark ? 'darken' : 'lighten'}
-        result="blend"
-      />,
-      <feComposite
-        key="mix"
-        in="blend"
-        in2="frost"
-        operator="arithmetic"
-        k2={spec.fillOpacity}
-        k3={1 - spec.fillOpacity}
-        result="mix"
-      />,
-    );
-  }
-  const table = material === 'regular' ? toneTable(appearance) : clearToneTable(appearance);
-  return (
-    <filter
-      id={id}
-      {...region}
-      filterUnits="userSpaceOnUse"
-      primitiveUnits="userSpaceOnUse"
-      colorInterpolationFilters="sRGB"
-    >
-      <feImage
-        href={maps.field}
-        x={-2}
-        y={-2}
-        width={width + 4}
-        height={height + 4}
-        preserveAspectRatio="none"
-        result="field"
-      />
-      {frost}
-      <feDisplacementMap
-        in={input}
-        in2="field"
-        scale={2 * refraction}
-        xChannelSelector="R"
-        yChannelSelector="G"
-        result="refracted"
-      />
-      <feComponentTransfer in="refracted" result="tone">
-        <feFuncR type="table" tableValues={table} />
-        <feFuncG type="table" tableValues={table} />
-        <feFuncB type="table" tableValues={table} />
-      </feComponentTransfer>
-      <feColorMatrix
-        in="tone"
-        type="saturate"
-        values={String(material === 'regular' ? spec.tone[3] : 1)}
-        result="color"
-      />
-      <feComposite in="color" in2="field" operator="in" />
-    </filter>
-  );
-}
-
-/** Upstream's clear-material tone (toneMarkup's second branch, not nested). */
-function clearToneTable(appearance: GlassAppearance): string {
-  const dark = appearance === 'dark';
-  const spec = dark
-    ? { shadowLift: 0.15, highlightRolloff: 0.2 }
-    : { shadowLift: 0.18, highlightRolloff: 0 };
-  return Array.from({ length: 33 }, (_, n) => {
-    const v = n / 32;
-    const tone = v + spec.shadowLift * (1 - v) ** 3 - spec.highlightRolloff * v ** 3;
-    const tinted = dark ? 0.38 * v + 0.2 : 0.78 * v + 0.26;
-    const weight = dark ? 0.14 : 0.06;
-    return Number(Math.max(0, Math.min(1, (1 - weight) * tone + weight * tinted)).toFixed(4));
-  }).join(' ');
 }
 
 type GlassTag = 'div' | 'section' | 'aside' | 'header' | 'nav' | 'article' | 'footer' | 'main';

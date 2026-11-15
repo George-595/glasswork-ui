@@ -1,8 +1,15 @@
-import { type KeyboardEvent, type PointerEvent, useCallback, useRef, useState } from 'react';
+import {
+  type KeyboardEvent,
+  type PointerEvent,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useLiquidGlass } from '../glass/LiquidGlass';
 import { Icon, type IconName } from '../icons/Icon';
 import { cn } from '../lib/cn';
-import { Button } from './button';
+import { MenuTrigger } from './menu-trigger';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,6 +70,14 @@ export interface MenuProps {
   className?: string;
 }
 
+/** @internal Set only by DeferredMenu, which mounts a Menu once Radix has arrived. */
+export interface MenuInternalProps {
+  /** Open on the first render, as a press (focus on the content), a key (focus on the first item) or ArrowUp (focus on the last item) would have. */
+  openOnMount?: 'pointer' | 'keyboard' | 'keyboard-last';
+  /** Move focus to the trigger on mount: the stand-in it replaces had it. */
+  focusOnMount?: boolean;
+}
+
 const isSeparator = (item: MenuItem): item is { separator: true } => 'separator' in item;
 
 const TABBABLE =
@@ -85,13 +100,16 @@ export function Menu({
   iconOnly = false,
   iconSize = 15,
   className,
-}: MenuProps) {
-  const [open, setOpen] = useState(defaultOpen);
+  openOnMount,
+  focusOnMount = false,
+}: MenuProps & MenuInternalProps) {
+  const [open, setOpen] = useState(defaultOpen || openOnMount !== undefined);
   const client = useIsClient();
   const trigger = useRef<HTMLButtonElement>(null);
   const content = useRef<HTMLDivElement | null>(null);
   const quietOpen = useRef(defaultOpen); // the defaultOpen mount keeps focus where it is
-  const focusLast = useRef(false);
+  const focusLast = useRef(openOnMount === 'keyboard-last'); // opened by ArrowUp before Radix arrived
+  const focusFirst = useRef(openOnMount === 'keyboard'); // opened by a key before Radix arrived
   const keepFocus = useRef(false); // focus already moved on: do not send it back
   const pointerToggled = useRef(false);
   const glass = useLiquidGlass<HTMLDivElement>({ fill: 'raised', band: 10, refraction: 24 });
@@ -103,6 +121,10 @@ export function Menu({
     },
     [setGlassRef],
   );
+
+  useLayoutEffect(() => {
+    if (focusOnMount) trigger.current?.focus();
+  }, [focusOnMount]);
 
   const onTriggerKey = (e: KeyboardEvent<HTMLButtonElement>) => {
     if (e.key === 'ArrowUp') {
@@ -140,6 +162,10 @@ export function Menu({
       if (quietOpen.current) {
         quietOpen.current = false;
         e.preventDefault();
+      } else if (focusFirst.current) {
+        focusFirst.current = false;
+        e.preventDefault();
+        content.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
       } else if (focusLast.current) {
         focusLast.current = false;
         e.preventDefault();
@@ -153,29 +179,16 @@ export function Menu({
     <div className={cn('ui-menu-wrap relative inline-flex', className)}>
       <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button
+          <MenuTrigger
             ref={trigger}
-            variant="ghost"
-            size="md"
-            className={
-              iconOnly && icon
-                ? 'size-6 min-h-6 p-0 pointer-coarse:size-12 pointer-coarse:min-h-12'
-                : undefined
-            }
+            label={label}
+            icon={icon}
+            iconOnly={iconOnly}
+            iconSize={iconSize}
             onKeyDown={onTriggerKey}
             onPointerDown={onTriggerPointer}
             onClick={onTriggerClick}
-          >
-            {icon && <Icon name={icon} size={iconSize} />}
-            {iconOnly && icon ? (
-              <span className="ui-sr-only">{label}</span>
-            ) : (
-              <>
-                {label}
-                <Icon name="chevron-down" size={14} />
-              </>
-            )}
-          </Button>
+          />
         </DropdownMenuTrigger>
         <DropdownMenuContent
           ref={contentRef}

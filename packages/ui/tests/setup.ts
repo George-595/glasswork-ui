@@ -1,7 +1,7 @@
 /* Vitest setup for @apps/ui. jsdom reports the machine's core count and the kit reads it as a
    low-power signal (6 or fewer, effects/lowPower.ts), so pin it: a test must not behave
    differently on a small CI box. Node-environment tests have no navigator and need nothing. */
-import { beforeEach } from 'vitest';
+import { beforeAll, beforeEach } from 'vitest';
 
 // the look is also kept in a cookie (theme/themeCookie.ts): a test starts with none, as with empty storage
 beforeEach(() => {
@@ -16,3 +16,10 @@ beforeEach(() => {
 if (typeof navigator !== 'undefined') {
   Object.defineProperty(navigator, 'hardwareConcurrency', { value: 8, configurable: true });
 }
+
+// the Toaster fetches its Radix view after hydration (components/toaster.tsx); tests have it ready, so a toast shows as it always did
+// (imported here, not at the top: a test file's vi.mock must be registered before the kit's sound modules load)
+beforeAll(async () => {
+  const { preloadToaster } = await import('../src/components/toaster');
+  await preloadToaster();
+});

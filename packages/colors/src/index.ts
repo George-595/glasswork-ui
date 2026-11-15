@@ -5,10 +5,10 @@
          it passes var(--role), never a value, so skin and mode keep working. */
 export { contrast, flatten, luminance, parse, rgb } from './colour.ts';
 export { colorsCss, themeCss } from './css.ts';
+export { cssVar } from './css-var.ts';
 export { faviconSvg } from './favicon.ts';
 export { type Failure, runGate } from './gate.ts';
 export {
-  cssVar,
   EFFECTS,
   type Effect,
   MODES,
