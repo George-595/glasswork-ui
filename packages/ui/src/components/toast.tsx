@@ -1,10 +1,18 @@
 import { Toast as ToastPrimitive } from 'radix-ui';
-import { type ReactNode, useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Icon } from '../icons/Icon';
 import { cn } from '../lib/cn';
-import { playSound, type SoundName } from '../sound';
+import {
+  dismiss,
+  runUndo,
+  settled,
+  snapshot,
+  subscribe,
+  type ToastItem,
+  type ToastVariant,
+} from './toast-store';
 
-/* Toaster + toast() — brief, non-blocking messages ("Saved", "Couldn't send").
+/* ToasterView — the Radix view of Toaster + toast() — brief, non-blocking messages ("Saved", "Couldn't send").
 
    Mount <Toaster /> once near the root, then call toast() from anywhere, in or
    out of React: toast.success('Saved'), toast.error('Failed', { action }).
@@ -33,135 +41,6 @@ import { playSound, type SoundName } from '../sound';
    the result is heard, not just seen; `onExpire` runs once if the toast leaves any other way
    (timed out, dismissed, pushed out by a fourth toast), for work that waits for the window to
    close before it is final. */
-export type ToastVariant = 'default' | 'success' | 'error' | 'info';
-
-export interface ToastOptions {
-  variant?: ToastVariant;
-  description?: ReactNode;
-  /** Milliseconds before it leaves; Infinity keeps it. Default 5000 (errors: kept). */
-  duration?: number;
-  action?: { label: string; onClick: () => void };
-}
-
-export interface UndoToastOptions extends Omit<ToastOptions, 'variant' | 'action'> {
-  /** Takes the thing back. Runs at most once. */
-  onUndo: () => void;
-  /** Runs once if the toast leaves without an undo. */
-  onExpire?: () => void;
-  /** The button's words. Default "Undo". */
-  undoLabel?: string;
-  /** Said after an undo; false says nothing. Default "Undone". */
-  undone?: ReactNode | false;
-}
-
-interface UndoParts {
-  onUndo: () => void;
-  onExpire?: () => void;
-  label: string;
-  undone: ReactNode | false;
-}
-
-interface ToastItem extends ToastOptions {
-  id: string;
-  title: ReactNode;
-  open: boolean;
-  undo?: UndoParts;
-}
-
-const MAX_VISIBLE = 3;
-const EXIT_MS = 250;
-const UNDO_MS = 8000;
-
-let items: readonly ToastItem[] = [];
-let counter = 0;
-const listeners = new Set<() => void>();
-/** Undo toasts whose outcome (undone or expired) has been decided, so neither runs twice. */
-const settled = new Set<string>();
-
-function emit(next: readonly ToastItem[]) {
-  items = next;
-  for (const l of listeners) l();
-}
-
-function remove(id: string) {
-  settled.delete(id);
-  emit(items.filter((t) => t.id !== id));
-}
-
-/** Close a toast (it animates out, then is removed). An undo toast that goes without being
-    undone runs its onExpire, once. */
-function dismiss(id?: string) {
-  const ids = id ? [id] : items.map((t) => t.id);
-  for (const t of items) {
-    if (!ids.includes(t.id) || !t.undo || settled.has(t.id)) continue;
-    settled.add(t.id);
-    t.undo.onExpire?.();
-  }
-  emit(items.map((t) => (ids.includes(t.id) ? { ...t, open: false } : t)));
-  setTimeout(() => {
-    for (const x of ids) remove(x);
-  }, EXIT_MS);
-}
-
-const TOAST_SOUND: Record<ToastVariant, SoundName> = {
-  default: 'notify',
-  success: 'success',
-  error: 'error',
-  info: 'notify',
-};
-
-function push(title: ReactNode, options: ToastOptions = {}, undo?: UndoParts): string {
-  playSound(TOAST_SOUND[options.variant ?? 'default']);
-  counter += 1;
-  const id = `toast-${counter}`;
-  emit([...items, { ...options, id, title, open: true, undo }]);
-  // the stack shows three: the oldest open ones leave
-  const open = items.filter((t) => t.open);
-  for (const old of open.slice(0, Math.max(0, open.length - MAX_VISIBLE))) dismiss(old.id);
-  return id;
-}
-
-/** Undo the undo toast `id` (its button, or Ctrl+Z / Cmd+Z). */
-function runUndo(id: string) {
-  const t = items.find((x) => x.id === id);
-  if (!t?.undo || settled.has(id)) return;
-  settled.add(id);
-  t.undo.onUndo();
-  dismiss(id);
-  if (t.undo.undone !== false) push(t.undo.undone);
-}
-
-function pushUndo(
-  title: ReactNode,
-  { onUndo, onExpire, undoLabel = 'Undo', undone = 'Undone', ...options }: UndoToastOptions,
-): string {
-  return push(
-    title,
-    { duration: UNDO_MS, ...options },
-    { onUndo, onExpire, label: undoLabel, undone },
-  );
-}
-
-type Shorthand = (title: ReactNode, options?: Omit<ToastOptions, 'variant'>) => string;
-
-export const toast = Object.assign(
-  (title: ReactNode, options?: ToastOptions) => push(title, options),
-  {
-    success: ((title, options) => push(title, { ...options, variant: 'success' })) as Shorthand,
-    error: ((title, options) => push(title, { ...options, variant: 'error' })) as Shorthand,
-    info: ((title, options) => push(title, { ...options, variant: 'info' })) as Shorthand,
-    undo: pushUndo,
-    dismiss,
-  },
-);
-
-function subscribe(l: () => void) {
-  listeners.add(l);
-  return () => {
-    listeners.delete(l);
-  };
-}
-const snapshot = () => items;
 
 const WORD: Record<ToastVariant, string | null> = {
   default: null,
@@ -206,7 +85,7 @@ function inTextField(target: EventTarget | null): boolean {
   );
 }
 
-export function Toaster({ label = 'Notifications', className }: ToasterProps) {
+export function ToasterView({ label = 'Notifications', className }: ToasterProps) {
   const list = useSyncExternalStore(subscribe, snapshot, snapshot);
   const undoable = list.filter((t) => t.open && t.undo && !settled.has(t.id));
   const newest = undoable[undoable.length - 1]?.id;

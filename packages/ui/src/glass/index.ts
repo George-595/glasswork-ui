@@ -6,7 +6,6 @@ export {
 } from './environment';
 export {
   type GlassFill,
-  GlassFilter,
   type GlassMaterialName,
   LiquidGlass,
   type LiquidGlassBinding,
@@ -16,3 +15,4 @@ export {
 } from './LiquidGlass';
 export { clearMaterialMaps, getMaterialMaps, type MaterialMaps } from './maps';
 export { edgeDisplacement, materials, renderMaterialPixels, roundedRectField } from './optics';
+export { GlassFilter } from './refraction';

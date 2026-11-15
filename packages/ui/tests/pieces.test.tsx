@@ -6,6 +6,9 @@ import { act, type ReactNode, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { deferredModule } from '../src/components/deferred';
+import { createDeferredMenu } from '../src/components/deferred-menu';
+import * as menuModule from '../src/components/menu';
 import {
   AppShell,
   type Column,
@@ -163,16 +166,27 @@ describe('Tabs', () => {
   });
 });
 
+/* The same behaviour tests run against Menu and against DeferredMenu once Radix has arrived (primed below). How it
+   behaves before arrival is in deferred.test.tsx. */
+const arrivedMenu = deferredModule(async () => menuModule);
+const MENU_IMPLS = [
+  ['Menu', Menu],
+  ['DeferredMenu, arrived', createDeferredMenu(arrivedMenu)],
+] as const;
+beforeAll(async () => {
+  await arrivedMenu.load();
+});
+
 const ITEMS = (signOut: () => void) => [
   { id: 'u', label: 'Users', href: '#/users' },
   { separator: true as const },
   { id: 's', label: 'Sign out', onSelect: signOut, danger: true },
 ];
 
-describe('Menu', () => {
+describe.each(MENU_IMPLS)('%s', (_name, MenuX) => {
   it('opens on the first item, wraps, and Esc closes back to the trigger', async () => {
     const signOut = vi.fn<() => void>();
-    render(<Menu label="Admin" items={ITEMS(signOut)} />);
+    render(<MenuX label="Admin" items={ITEMS(signOut)} />);
     const trigger = $('button');
     expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
     act(() => trigger.focus());
@@ -199,7 +213,7 @@ describe('Menu', () => {
   });
 
   it('opens on the last item with ArrowUp, and on a bare click (assistive tech)', async () => {
-    render(<Menu label="Admin" items={ITEMS(() => {})} />);
+    render(<MenuX label="Admin" items={ITEMS(() => {})} />);
     const trigger = $('button');
     act(() => trigger.focus());
     key(trigger, 'ArrowUp');
@@ -215,7 +229,7 @@ describe('Menu', () => {
   it('leaves browser shortcuts alone, closes as Tab leaves, and Space follows a link item', async () => {
     render(
       <>
-        <Menu
+        <MenuX
           label="Admin"
           items={[
             { id: 'u', label: 'Users', href: '#/users' },
@@ -284,7 +298,7 @@ describe('Menu', () => {
   });
 
   it('opens from defaultOpen without taking focus, and closes on a press outside', async () => {
-    render(<Menu label="More" items={[{ id: 'a', label: 'A' }]} defaultOpen />);
+    render(<MenuX label="More" items={[{ id: 'a', label: 'A' }]} defaultOpen />);
     await flush();
     expect($doc('[role="menu"]')).not.toBeNull();
     expect(active()).toBe(document.body);
@@ -296,7 +310,9 @@ describe('Menu', () => {
     await flush();
     expect($doc('[role="menu"]')).toBeNull();
   });
+});
 
+describe('Menu', () => {
   it('server-renders a defaultOpen menu open, in place (the a11y gate scans it)', () => {
     const html = renderToStaticMarkup(
       <Menu label="Admin" items={ITEMS(() => {})} align="end" defaultOpen />,

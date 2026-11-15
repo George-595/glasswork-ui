@@ -25,6 +25,8 @@ import {
   type Column,
   ConfirmDialog,
   DataTable,
+  DeferredMenu,
+  DeferredTooltip,
   Delta,
   DescriptionList,
   DetailSection,
@@ -362,6 +364,7 @@ export function Showcase() {
             actions={
               <>
                 <Menu label="Admin" icon="shield" items={ADMIN_MENU} align="end" defaultOpen />
+                <DeferredMenu label="Account" icon="user" items={ADMIN_MENU} align="end" />
                 <ThemeToggle theme="dark" onToggle={noop} />
                 <SkinSelect skin="enterprise" onChange={noop} />
               </>
@@ -516,6 +519,9 @@ export function Showcase() {
               <Tooltip content="Copies the current filters into a share link." defaultOpen>
                 <Button variant="neutral">Share view</Button>
               </Tooltip>
+              <DeferredTooltip content="Copies the link to this view.">
+                <Button variant="neutral">Copy link</Button>
+              </DeferredTooltip>
             </div>
           </section>
 

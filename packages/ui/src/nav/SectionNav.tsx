@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import { Tooltip } from '../components/tooltip';
+import { DeferredTooltip } from '../components/deferred-tooltip';
 import { Icon, type IconName } from '../icons/Icon';
 import { cn } from '../lib/cn';
 
@@ -99,7 +99,7 @@ export function SectionNav({
               key={s.id}
               className="group-data-[collapsed]/shell:md:flex group-data-[collapsed]/shell:md:justify-center"
             >
-              {tooltips ? <Tooltip content={s.title}>{link}</Tooltip> : link}
+              {tooltips ? <DeferredTooltip content={s.title}>{link}</DeferredTooltip> : link}
             </li>
           );
         })}

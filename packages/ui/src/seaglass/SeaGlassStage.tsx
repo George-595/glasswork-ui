@@ -18,7 +18,7 @@ import { useWantsSolid } from '../effects/shaders/useShaderStage';
 import { useReducedMotion } from '../effects/useReducedMotion';
 import { useWebGlClaim } from '../effects/webglGuard';
 import { cn } from '../lib/cn';
-import { type Lighting, type PieceHandle, SeaGlassEngine } from './engine';
+import type { Lighting, PieceHandle, SeaGlassEngine } from './engine';
 import { rememberedVerdict, rememberVerdict, type SeaGlassVerdict } from './perf';
 
 /* SeaGlassStage — the paper that SeaGlass pieces lie on, and the one WebGL canvas that draws
@@ -225,54 +225,79 @@ export function SeaGlassStage({
       setFailed(true);
       return;
     }
-    const canvas = document.createElement('canvas');
-    canvas.className = 'ui-seaglass-canvas absolute inset-0 size-full';
-    slot.append(canvas);
-    const engine = SeaGlassEngine.create(canvas, slot, {
-      clear: !paper,
-      mode: modeRef.current,
-      intro: modeRef.current === 'live',
-      symmetric,
-      onReady: () => setReady(true),
-      onLost: () => setFailed(true),
-      onVerdict: auto
-        ? (v) => {
-            setVerdict(v);
-            if (v !== 'live') rememberVerdict(v);
-          }
-        : undefined,
-    });
-    if (!engine) {
-      canvas.remove();
-      setFailed(true);
-      return;
-    }
-    engineRef.current = engine;
-    engine.setLighting(lighting);
-    engine.setPieces(ordered());
+    // the engine and its shader are fetched when the stage first draws, not shipped in every page's first load.
+    // Until they arrive the stage shows what it shows before its first frame: the paper and the pieces' CSS.
+    // A stage that unmounts or changes first creates nothing; a failed fetch is flat, as no WebGL is.
+    let gone = false;
+    let teardown: (() => void) | undefined;
+    import('./engine').then(
+      ({ SeaGlassEngine }) => {
+        if (gone) return;
+        // the roles are read again: a theme or skin change while the engine was on its way is not lost
+        // (the observer below starts only now)
+        const arrived = readLighting(slot);
+        if (!arrived) {
+          setFailed(true);
+          return;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.className = 'ui-seaglass-canvas absolute inset-0 size-full';
+        slot.append(canvas);
+        const engine = SeaGlassEngine.create(canvas, slot, {
+          clear: !paper,
+          mode: modeRef.current,
+          intro: modeRef.current === 'live',
+          symmetric,
+          onReady: () => setReady(true),
+          onLost: () => setFailed(true),
+          onVerdict: auto
+            ? (v) => {
+                setVerdict(v);
+                if (v !== 'live') rememberVerdict(v);
+              }
+            : undefined,
+        });
+        if (!engine) {
+          canvas.remove();
+          setFailed(true);
+          return;
+        }
+        engineRef.current = engine;
+        engine.setLighting(arrived);
+        engine.setPieces(ordered());
 
-    // a theme or skin switch: read the roles again
-    const relight = () => {
-      const next = readLighting(slot);
-      if (next) engine.setLighting(next);
-    };
-    const mo = new MutationObserver(relight);
-    mo.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme', 'data-skin', 'class', 'style'],
-    });
-    const scheme =
-      typeof window.matchMedia === 'function'
-        ? window.matchMedia('(prefers-color-scheme: dark)')
-        : null;
-    scheme?.addEventListener('change', relight);
+        // a theme or skin switch: read the roles again
+        const relight = () => {
+          const next = readLighting(slot);
+          if (next) engine.setLighting(next);
+        };
+        const mo = new MutationObserver(relight);
+        mo.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['data-theme', 'data-skin', 'class', 'style'],
+        });
+        const scheme =
+          typeof window.matchMedia === 'function'
+            ? window.matchMedia('(prefers-color-scheme: dark)')
+            : null;
+        scheme?.addEventListener('change', relight);
+
+        teardown = () => {
+          mo.disconnect();
+          scheme?.removeEventListener('change', relight);
+          engine.destroy();
+          canvas.remove();
+          engineRef.current = null;
+        };
+      },
+      () => {
+        if (!gone) setFailed(true);
+      },
+    );
 
     return () => {
-      mo.disconnect();
-      scheme?.removeEventListener('change', relight);
-      engine.destroy();
-      canvas.remove();
-      engineRef.current = null;
+      gone = true;
+      teardown?.();
       setReady(false);
     };
   }, [drawing, paper, auto, symmetric, ordered]);

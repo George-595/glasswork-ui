@@ -738,5 +738,4 @@ export const THEMES: Record<ThemeKey, Theme> = {
   'glass-light': glassLight,
 };
 
-/** `var(--role)`: how JS (charts, shaders, inline SVG) refers to a role. Never a value. */
-export const cssVar = (name: Role | Effect): string => `var(--${name})`;
+export { cssVar } from './css-var.ts';

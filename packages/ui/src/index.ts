@@ -99,12 +99,14 @@ export { Checkbox, type CheckboxProps } from './components/checkbox';
 export {
   type CommandItem,
   CommandPalette,
-  CommandPaletteButton,
   type CommandPaletteProps,
   filterCommands,
+} from './components/command-palette';
+export {
+  CommandPaletteButton,
   isMacLike,
   useIsMacLike,
-} from './components/command-palette';
+} from './components/command-palette-button';
 export { ConfirmDialog, type ConfirmDialogProps } from './components/confirm-dialog';
 // Tables: the composable table system (useDataTable + parts) and Popover.
 export {
@@ -151,6 +153,8 @@ export {
   type UseDataTableOptions,
   useDataTable,
 } from './components/data-table';
+export { DeferredMenu } from './components/deferred-menu';
+export { DeferredTooltip } from './components/deferred-tooltip';
 export { Delta, type DeltaProps, formatDelta } from './components/delta';
 export {
   type DescriptionItem,
@@ -278,14 +282,14 @@ export {
   type TimelineProps,
   type TimelineTone,
 } from './components/timeline';
+export type { ToasterProps } from './components/toast';
 export {
-  Toaster,
-  type ToasterProps,
   type ToastOptions,
   type ToastVariant,
   toast,
   type UndoToastOptions,
-} from './components/toast';
+} from './components/toast-store';
+export { preloadToaster, Toaster } from './components/toaster';
 export {
   Toggle,
   ToggleGroup,

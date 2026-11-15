@@ -26,7 +26,7 @@ colours.
 - Tailwind: every role is a colour utility of the same name (`bg-surface`, `text-fg-muted`,
   `border-border-strong`, `ring-focus`, `fill-chart-3`). `theme.css` wipes Tailwind's stock
   palette, so `bg-red-500` and `text-white` do not exist.
-- JS: `cssVar('chart-1')` returns `var(--chart-1)`, never a value, so skin and mode keep
+- JS: `cssVar('chart-1')` returns `var(--chart-1)` (it is in `css-var.ts`, apart from `roles.ts`, which computes the theme tables when it loads, so a page that needs only `cssVar` does not ship them), never a value, so skin and mode keep
   working. Never read a role's value to compute another colour: add a role instead.
 - Selected rows are never washed (a wash pulls coloured cell text under 4.5:1): a table row
   shows selection with a `brand` bar and its checkbox. `selected` is for controls (a pressed
