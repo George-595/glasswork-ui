@@ -63,6 +63,8 @@ export async function startTestApp(
     extraRoutes?: Route[];
     /** Server-render pages with this source (see ssr.test.ts); without it the app is API-only. */
     ssr?: SsrSource;
+    /** With `ssr`: the theme cookie a first visit gets (DEFAULT_SKIN, see ssr.ts). */
+    firstVisitTheme?: string;
     /** Replaces the real outbox (the app still records every email in `mail`). */
     outbox?: Outbox;
     /** Overrides for the credential flows' rate limits. */
@@ -192,6 +194,7 @@ export async function startTestApp(
             source: opts.ssr,
             api: { routes, settings, gate, authenticate },
             log,
+            ...(opts.firstVisitTheme ? { firstVisitTheme: opts.firstVisitTheme } : {}),
           }),
         }
       : {}),

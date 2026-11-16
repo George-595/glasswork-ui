@@ -195,6 +195,8 @@ export async function createApp(
             log,
             dev: ssr === 'dev',
             hsts: env.auth.cookieSecure,
+            // the kit's cookie: mode.skin.backdrop.resolved (system mode; index.html sets light/dark)
+            ...(env.defaultSkin === 'glass' ? { firstVisitTheme: 'system.glass.tide.dark' } : {}),
           }),
         }
       : {}),

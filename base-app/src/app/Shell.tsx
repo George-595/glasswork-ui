@@ -86,7 +86,9 @@ export function Shell({ route, children }: { route: RouteDef; children: ReactNod
   const { open: askOpen } = useAsk();
   const [askMounted, setAskMounted] = useState(false);
   if (askOpen && !askMounted) setAskMounted(true);
-  // Search is a plain icon button on a phone, like the bell and the person beside it
+  // Under 640px the top bar holds icon buttons only (Ask, search, Admin, the bell, the person), and
+  // no light/dark switch: a phone follows the device's own setting. Six 48px touch targets beside
+  // the menu button pushed the bell and the person off a 390px screen.
   const roomy = useMediaQuery('(min-width: 640px)');
 
   useShortcuts({
@@ -114,13 +116,14 @@ export function Shell({ route, children }: { route: RouteDef; children: ReactNod
                 {canAsk && (
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size={roomy ? 'sm' : 'icon'}
                     onClick={() => setAskOpen(true)}
                     onPointerEnter={loadAskPanel}
                     onFocus={loadAskPanel}
+                    {...(roomy ? {} : { 'aria-label': 'Ask' })}
                   >
-                    <Icon name="sparkles" size={16} />
-                    Ask
+                    <Icon name="sparkles" size={roomy ? 16 : 18} />
+                    {roomy && 'Ask'}
                   </Button>
                 )}
                 <CommandPaletteButton
@@ -130,19 +133,21 @@ export function Shell({ route, children }: { route: RouteDef; children: ReactNod
                 <Show from="sm">
                   <ApiStatusBadge />
                 </Show>
-                <Cluster gap={1} nowrap data-appearance-controls>
-                  <Show from="lg">
-                    <SegmentedControl
-                      label="Theme"
-                      size="sm"
-                      options={SKIN_OPTIONS}
-                      value={skin}
-                      onValueChange={(v) => setSkin(v as Skin)}
-                    />
-                  </Show>
-                  <ThemeToggle theme={theme} onToggle={toggleTheme} />
-                </Cluster>
-                {isAdmin && <AdminMenu />}
+                {roomy && (
+                  <Cluster gap={1} nowrap data-appearance-controls>
+                    <Show from="lg">
+                      <SegmentedControl
+                        label="Theme"
+                        size="sm"
+                        options={SKIN_OPTIONS}
+                        value={skin}
+                        onValueChange={(v) => setSkin(v as Skin)}
+                      />
+                    </Show>
+                    <ThemeToggle theme={theme} onToggle={toggleTheme} />
+                  </Cluster>
+                )}
+                {isAdmin && <AdminMenu compact={!roomy} />}
                 {appFeatures.notifications && <NotificationsMenu />}
                 <UserMenu />
               </>

@@ -9,6 +9,11 @@ const ADMIN_ITEMS: readonly MenuItem[] = ROUTES.filter((r) => r.group === 'admin
   (r): MenuItem => ({ id: r.id, label: r.title, icon: r.icon, href: hrefFor(r.path) }),
 );
 
-export function AdminMenu() {
-  return <Menu label="Admin" icon="shield" align="end" items={ADMIN_ITEMS} />;
+/** `compact`: the shield alone (a phone's top bar), still named Admin. */
+export function AdminMenu({ compact = false }: { compact?: boolean }) {
+  return compact ? (
+    <Menu label="Admin" icon="shield" iconOnly iconSize={18} align="end" items={ADMIN_ITEMS} />
+  ) : (
+    <Menu label="Admin" icon="shield" align="end" items={ADMIN_ITEMS} />
+  );
 }

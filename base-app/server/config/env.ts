@@ -9,6 +9,8 @@ export interface ServerEnv {
   /** DEMO_MODE=true: a public, read-only demo. Seeds the demo data even in production, adds a
       shared demo login (shown on the sign-in page) and refuses every change that login asks for. */
   demo: boolean;
+  /** DEFAULT_SKIN: the skin a first visit gets (enterprise, the kit's default, or glass). */
+  defaultSkin: 'enterprise' | 'glass';
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   apiHost: string;
   apiPort: number;
@@ -157,6 +159,7 @@ export function readServerEnv(source: Record<string, string | undefined> = proce
   return {
     production,
     demo: flag('DEMO_MODE', read('DEMO_MODE'), false),
+    defaultSkin: skinSetting(read('DEFAULT_SKIN')),
     logLevel: logLevel as ServerEnv['logLevel'],
     apiHost,
     apiPort,
@@ -414,6 +417,11 @@ function adminPassword(production: boolean, raw: string | undefined): string {
 /* The origin emailed links point at. Development defaults to the Vite dev server; production
    must say (a link to localhost in a real email is a bug). Must be an http(s) origin: a path,
    query or credentials would end up inside every link. */
+
+function skinSetting(raw: string | undefined): 'enterprise' | 'glass' {
+  if (raw === undefined || raw === 'enterprise' || raw === 'glass') return raw ?? 'enterprise';
+  throw new EnvError('DEFAULT_SKIN must be "enterprise" or "glass"');
+}
 
 function flag(name: string, raw: string | undefined, fallback: boolean): boolean {
   if (raw === undefined) return fallback;
