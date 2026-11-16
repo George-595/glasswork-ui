@@ -38,8 +38,9 @@ export interface SectionNavProps {
 }
 
 /* shadcn's navigation-menu link look, on roles. Rest is `fg-muted`, hover `bg-hover` +
-   `fg`; the current link is `bg-selected text-fg` with a `brand` indicator (a bar at the
-   edge: aria-current, never colour alone). In the glass skin the current link is a glass
+   `fg`; the current link is `bg-selected text-fg`: in a row a `brand` underline, in a column
+   the wash plus semibold text (aria-current, never colour alone; no edge bar in a column:
+   George, 16 Nov 2026). In the glass skin the current link is a glass
    pill (blur and specular rim). In the sidebar's icon rail (the shell's data-collapsed, on
    the desktop layout) the link centres on its icon and the text is visually hidden. */
 const linkClasses = cn(
@@ -49,7 +50,6 @@ const linkClasses = cn(
   'hover:bg-hover hover:text-fg',
   'focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]',
   'aria-[current=page]:bg-selected aria-[current=page]:text-fg',
-  "before:absolute before:rounded-full before:content-[''] aria-[current=page]:before:bg-brand",
   'glass:aria-[current=page]:[box-shadow:var(--glass-rim)]',
   'group-data-[collapsed]/shell:md:min-h-9 group-data-[collapsed]/shell:md:min-w-9 group-data-[collapsed]/shell:md:justify-center group-data-[collapsed]/shell:md:px-0',
 );
@@ -78,8 +78,11 @@ export function SectionNav({
               className={cn(
                 linkClasses,
                 horizontal
-                  ? 'rounded-pill text-[12.5px] before:inset-x-3 before:bottom-0.5 before:h-0.5'
-                  : 'rounded-sm before:inset-y-1.5 before:left-0 before:w-0.5',
+                  ? cn(
+                      'rounded-pill text-[12.5px]',
+                      "before:absolute before:inset-x-3 before:bottom-0.5 before:h-0.5 before:rounded-full before:content-[''] aria-[current=page]:before:bg-brand",
+                    )
+                  : 'rounded-sm aria-[current=page]:font-semibold',
               )}
               href={s.href}
               aria-current={s.id === current ? 'page' : undefined}
