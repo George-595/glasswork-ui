@@ -21,7 +21,8 @@
 import { mkdirSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright-core';
-import { defaultChrome } from '../../packages/ui/scripts/browser.mjs';
+import { fullChrome } from '../../packages/ui/scripts/browser.mjs';
+import { guardClones } from '../../packages/ui/scripts/chrome-clones.mjs';
 
 const BASE = (process.env.BASE_URL ?? 'http://127.0.0.1:8787').replace(/\/+$/, '');
 const OUT = process.env.DEMO_OUT ?? 'demo-out';
@@ -47,9 +48,10 @@ function slowClocks(slow) {
   window.setInterval = (fn, ms, ...args) => interval(fn, (Number(ms) || 0) * slow, ...args);
 }
 
+const guard = guardClones();
 const browser = await chromium.launch({
   headless: true,
-  executablePath: defaultChrome(),
+  executablePath: fullChrome(),
   args: ['--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'],
 });
 const context = await browser.newContext({
@@ -312,8 +314,11 @@ await scene('glass light', async () => {
 
 mark('end');
 const video = page.video();
-await context.close();
-await browser.close();
+try {
+  await context.close();
+} finally {
+  await guard.around(() => browser.close());
+}
 const recorded = video
   ? await video.path()
   : join(OUT, readdirSync(OUT).find((f) => f.endsWith('.webm')) ?? '');

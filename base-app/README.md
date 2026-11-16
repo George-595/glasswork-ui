@@ -199,7 +199,8 @@ This folder builds from its own files, so it can leave `apps/` without breaking:
 - The browser checks (`scripts/a11y-browser.mjs`, `scripts/backdrop-contrast.mjs`,
   `scripts/perf-glass.mjs`, and `@apps/ui`'s `scripts/a11y-check.mjs`) drive headless Chrome
   through `scripts/browser.mjs` on playwright-core: set `CHROME_PATH`, or install playwright's
-  Chromium once with `npx playwright-core install chromium`.
+  Chromium once with `npx playwright-core install chromium`. Each launch is wrapped in
+  `chrome-clones.mjs`, which removes the `code_sign_clone` folders a Mac's Chrome leaves behind.
 
 ## Start your own app from it
 

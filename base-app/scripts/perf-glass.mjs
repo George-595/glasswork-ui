@@ -21,7 +21,7 @@
 // the composited-frame count (a trace of DrawFrame events) is the signal, not milliseconds of
 // GPU time. Exits 1 on any miss. BASE_URL points it at another server. The browser is
 // scripts/browser.mjs (playwright-core).
-import { defaultChrome, localBrowser, Stagehand } from './browser.mjs';
+import { fullChrome, localBrowser, Stagehand } from './browser.mjs';
 
 const BASE = (process.env.BASE_URL ?? 'http://127.0.0.1:5173').replace(/\/+$/, '');
 const EMAIL = process.env.A11Y_EMAIL ?? 'admin@example.test';
@@ -172,7 +172,7 @@ function check(route, name, value, ok, limit) {
   );
 }
 
-const exe = defaultChrome();
+const exe = fullChrome();
 const browser = await localBrowser.launch({
   headless: true,
   port: CDP_PORT,

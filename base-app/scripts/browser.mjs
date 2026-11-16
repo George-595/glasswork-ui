@@ -5,11 +5,14 @@
 // tabs with `goto`, `waitForLoadState`, `waitForTimeout`, `evaluate`, `screenshot` and
 // `setViewportSize(width, height)`. No model is ever called.
 //
-// Chrome: CHROME_PATH if set, else Google Chrome or Chromium where they usually live, else
-// playwright's own browser (`npx playwright-core install chromium`). The same file is mirrored
-// in base-app/scripts/browser.mjs (and back), so an exported app carries its own copy.
+// Browser: CHROME_PATH if set, else playwright's own chromium-headless-shell (`npm run browsers`; it is not a
+// signed .app, so it leaves no code_sign_clone behind on macOS), else Google Chrome or Chromium where they
+// usually live, else playwright's own browser. When the real Chrome is used, `close()` removes the clone folders
+// that launch left (chrome-clones.mjs). The same file is mirrored in base-app/scripts/browser.mjs and
+// packages/ui/scripts/browser.mjs (with chrome-clones.mjs), so an exported app carries its own copy.
 import { existsSync } from 'node:fs';
 import { chromium } from 'playwright-core';
+import { guardClones, headlessShell } from './chrome-clones.mjs';
 
 const CANDIDATES = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -20,10 +23,26 @@ const CANDIDATES = [
   '/usr/bin/chromium-browser',
 ];
 
-/** The Chrome to launch, or undefined for playwright's own. */
+/** The browser to launch, or undefined for playwright's own. */
 export function defaultChrome() {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
+  return headlessShell() ?? CANDIDATES.find((path) => existsSync(path));
+}
+
+/** For checks that need a full Chrome (rendering, WebAuthn, service workers): CHROME_PATH, else the
+    installed Chrome or Chromium, never the headless shell. */
+export function fullChrome() {
+  if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
   return CANDIDATES.find((path) => existsSync(path));
+}
+
+/** Which kind of browser an executable is, for a gate to say what it ran on. */
+export function browserKind(exe) {
+  return !exe
+    ? "playwright's own browser"
+    : /headless[-_]shell/.test(exe)
+      ? 'headless shell'
+      : 'Chrome';
 }
 
 /** A tab whose setViewportSize takes (width, height), as the scripts call it. */
@@ -54,6 +73,7 @@ export const localBrowser = {
     args = [],
     port,
   } = {}) {
+    const guard = guardClones();
     const browser = await chromium.launch({
       headless,
       executablePath,
@@ -64,7 +84,11 @@ export const localBrowser = {
       deviceScaleFactor,
       hasTouch,
     });
-    return { browser, context, close: () => browser.close() };
+    return {
+      browser,
+      context,
+      close: () => guard.around(() => browser.close()),
+    };
   },
 };
 

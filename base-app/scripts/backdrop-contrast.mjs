@@ -11,7 +11,7 @@
 // 5% of pixels nearest the text colour: the worst case). Reports the worst frame. Exits 1 if any falls below 4.5:1
 // (3:1 for large text). Pure Node: PNGs are decoded with zlib, no dependency.
 import { inflateSync } from 'node:zlib';
-import { defaultChrome, localBrowser, Stagehand } from './browser.mjs';
+import { fullChrome, localBrowser, Stagehand } from './browser.mjs';
 
 const BASE = (process.env.BASE_URL ?? 'http://127.0.0.1:5173').replace(/\/+$/, '');
 // the fixed development login (server/config/env.ts); override for other servers
@@ -78,7 +78,7 @@ const lum = (r, g, b) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 const ratio = (l1, l2) => (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 
 // ---- browser ----
-const exe = defaultChrome();
+const exe = fullChrome();
 const browser = await localBrowser.launch({
   headless: true,
   ...(exe ? { executablePath: exe } : {}),
