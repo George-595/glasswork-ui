@@ -9,7 +9,7 @@ import { config } from '~/core/config';
 import { hrefFor, navigate } from '~/core/router';
 import { ThemeProvider } from '~/core/ui';
 import { formatViolations, runAxe } from '~/test/axe';
-import { changeValue, click, press } from '~/test/dom';
+import { changeValue, click, getAllByRole, press } from '~/test/dom';
 import { locationNow, setLocation } from '~/test/location';
 import { mockApi, VIEWER } from '~/test/mockApi';
 import { flush, type Rendered, render } from '~/test/render';
@@ -319,19 +319,42 @@ describe('top bar and page', () => {
 
   it('groups the appearance controls and shows the user with an avatar', async () => {
     mockApi();
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) =>
+      ({
+        matches: true,
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }) as unknown as MediaQueryList) as typeof window.matchMedia;
+    try {
+      await mount('/');
+      const group = document.querySelector('[data-appearance-controls]') as HTMLElement;
+      expect(group.querySelector('[role="radiogroup"][aria-label="Theme"]')).not.toBeNull();
+      expect(group.querySelector('button[aria-label^="Switch to"]')).not.toBeNull();
+      expect(document.querySelector('select')).toBeNull(); // no raw native select in the bar
+
+      const glass = Array.from(group.querySelectorAll<HTMLElement>('[role="radio"]')).find(
+        (r) => r.textContent === 'Glass',
+      ) as HTMLElement;
+      await click(glass);
+      expect(document.documentElement.getAttribute('data-skin')).toBe('glass');
+
+      expect(document.querySelector('.ui-avatar')).not.toBeNull();
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
+  it('on a phone, icon buttons only and no light/dark switch: the bar fits', async () => {
+    mockApi();
     await mount('/');
-    const group = document.querySelector('[data-appearance-controls]') as HTMLElement;
-    expect(group.querySelector('[role="radiogroup"][aria-label="Theme"]')).not.toBeNull();
-    expect(group.querySelector('button[aria-label^="Switch to"]')).not.toBeNull();
-    expect(document.querySelector('select')).toBeNull(); // no raw native select in the bar
-
-    const glass = Array.from(group.querySelectorAll<HTMLElement>('[role="radio"]')).find(
-      (r) => r.textContent === 'Glass',
-    ) as HTMLElement;
-    await click(glass);
-    expect(document.documentElement.getAttribute('data-skin')).toBe('glass');
-
-    expect(document.querySelector('.ui-avatar')).not.toBeNull();
+    expect(document.querySelector('[data-appearance-controls]')).toBeNull();
+    const bar = document.querySelector('.ui-topbar-actions') as HTMLElement;
+    const ask = bar.querySelector('button[aria-label="Ask"]') as HTMLElement;
+    expect(ask).not.toBeNull();
+    expect(ask.textContent).toBe('');
+    expect(getAllByRole(bar, 'button', 'Admin')).toHaveLength(1);
   });
 
   it('shows the admin trail in the top bar for an admin page', async () => {

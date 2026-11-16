@@ -81,7 +81,8 @@ async function mount(hash: string, opts: Parameters<typeof render>[1] = {}) {
 
 const askButton = () =>
   Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
-    (b) => b.textContent === 'Ask',
+    // the words on a wide screen, the sparkle named Ask on a phone (the tests' default)
+    (b) => b.textContent === 'Ask' || b.getAttribute('aria-label') === 'Ask',
   );
 const panel = () => document.querySelector<HTMLElement>('[role="dialog"]');
 const field = () => getByRole(document.body, 'textbox', 'Message') as HTMLTextAreaElement;

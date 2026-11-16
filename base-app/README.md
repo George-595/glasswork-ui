@@ -277,6 +277,8 @@ It reads these from `base-app/.env` or the shell:
 - `DEMO_MODE=true` makes a public, read-only demo: the demo data is seeded even in production and
   a shared login (`demo@example.com` / `glasswork-demo`, shown on the sign-in page) can look at
   every page and change nothing (`server/routes/demo.ts`). Pair it with a throwaway database.
+- `DEFAULT_SKIN` (`enterprise` or `glass`, default `enterprise`): the skin a first visit gets. The
+  server draws the page with it and sets the theme cookie, so later visits keep the visitor's choice.
 - `UPLOADS_DIR` (default `./data/uploads`): where uploaded files (avatars) live on disk. Persist it
   (a volume in Docker) and back it up with the database: the `files` table points into it. S3 slots in
   behind `server/infra/storage` later.

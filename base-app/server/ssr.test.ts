@@ -419,3 +419,33 @@ describe('the response is compressed', () => {
 
 // keep the unused-credential linter quiet: both visitors sign in above
 void ADMIN_PASSWORD;
+
+describe('DEFAULT_SKIN=glass', () => {
+  let glass: TestApp;
+  beforeAll(async () => {
+    glass = await startTestApp({
+      ssr: viteSource(vite, ROOT),
+      firstVisitTheme: 'system.glass.tide.dark',
+    });
+  }, 120_000);
+  afterAll(async () => {
+    await glass?.close();
+  });
+
+  it('draws a first visit in glass and sets the cookie, so the browser agrees', async () => {
+    const res = await fetch(`${glass.base}/`, { redirect: 'manual' });
+    const html = await res.text();
+    expect(htmlTag(html)).toContain('data-skin="glass"');
+    expect(htmlTag(html)).toContain('data-theme-mode="system"');
+    expect(res.headers.get('set-cookie')).toMatch(/^ui-theme=system\.glass\.tide\.dark; Path=\//);
+  });
+
+  it('leaves a returning visitor’s own choice alone', async () => {
+    const res = await fetch(`${glass.base}/`, {
+      redirect: 'manual',
+      headers: { cookie: 'ui-theme=light.enterprise.tide.light' },
+    });
+    expect(htmlTag(await res.text())).toContain('data-skin="enterprise"');
+    expect(res.headers.get('set-cookie')).toBeNull();
+  });
+});

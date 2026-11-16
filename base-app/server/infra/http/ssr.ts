@@ -70,6 +70,9 @@ export interface SsrOptions {
   dev?: boolean;
   /** Send Strict-Transport-Security (the host is behind TLS). */
   hsts?: boolean;
+  /** A `ui-theme` cookie value for a first visit (no cookie yet): the page is drawn with it and
+      it is set, so the client and index.html's script agree. Unset: the kit's own default. */
+  firstVisitTheme?: string;
 }
 
 /** The most API calls one page may ask for ahead of the browser. */
@@ -197,7 +200,10 @@ export function createSsrHandler(
       if (!shell) throw new Error('index.html has no <!--app-state--> / <!--app-html--> markers.');
 
       // 1. who is signed in (once), and the API as that person
-      const cookie = req.headers.cookie;
+      let cookie = req.headers.cookie;
+      const firstVisit =
+        opts.firstVisitTheme !== undefined && !/(?:^|;\s*)ui-theme=/.test(cookie ?? '');
+      if (firstVisit) cookie = `${cookie ? `${cookie}; ` : ''}ui-theme=${opts.firstVisitTheme}`;
       const principal: Principal | null = await opts.api.authenticate(cookie);
       const get: InternalGet = createInternalGet(opts.api, req, principal, {
         requestId,
@@ -250,6 +256,11 @@ export function createSsrHandler(
               ...(opts.hsts ? { hsts: true } : {}),
             })),
         ...(status === 503 ? { 'retry-after': '60' } : {}),
+        ...(firstVisit
+          ? {
+              'set-cookie': `ui-theme=${opts.firstVisitTheme}; Path=/; Max-Age=31536000; SameSite=Lax${opts.hsts ? '; Secure' : ''}`,
+            }
+          : {}),
         ...(encoding ? { 'content-encoding': encoding } : {}),
       };
 
