@@ -232,9 +232,11 @@ export function AppShell({
           ) : (
             <AnimatedBackground variant={backdrop} />
           ))}
+        {/* Visually hidden until a keyboard focuses it: moved off screen it still showed in iOS's
+            pull-down overscroll and after a tap (George, 16 Nov 2026). */}
         {/* biome-ignore lint/a11y/useValidAnchor: a skip link is a link (and works without JS); the click handler only keeps a hash router from taking #main as a route */}
         <a
-          className="ui-skip-link absolute top-2 left-2 z-100 -translate-y-[200%] rounded-sm bg-primary px-3.5 py-2 text-[13px]/[1.3] font-semibold text-on-primary no-underline focus:translate-y-0 focus:outline-none focus:[box-shadow:var(--ring)]"
+          className="ui-skip-link sr-only rounded-sm bg-primary text-[13px]/[1.3] font-semibold text-on-primary no-underline focus-visible:not-sr-only focus-visible:px-3.5 focus-visible:py-2 focus-visible:absolute focus-visible:top-2 focus-visible:left-2 focus-visible:z-100 focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]"
           href="#main"
           onClick={skipToMain}
         >
