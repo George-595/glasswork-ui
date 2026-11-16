@@ -14,7 +14,8 @@
 # the quarantine allowlist at the time. Otherwise bump the pin only once the new tag
 # is at least 7 days old.
 
-FROM node:24.22.1-bookworm-slim@sha256:eb37f58646a901dc7727cf448cae36daaefaba79de33b5058dab79aa4c04aefb AS base
+# The digest is the multi-arch image index, so it resolves on amd64 hosts (Railway) as well as arm64.
+FROM node:24.22.1-bookworm-slim@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c AS base
 WORKDIR /app
 
 # deps: every workspace's manifest, then the full install (build needs devDeps).
@@ -52,9 +53,9 @@ COPY --from=build /app/base-app/dist ./base-app/dist
 
 WORKDIR /app/base-app
 # uploaded files (UPLOADS_DIR, default ./data/uploads): writable by the non-root user. Mount a
-# volume here, or the files go with the container.
+# volume here (on Railway, a Railway Volume at /app/base-app/data/uploads; Railway rejects a
+# Dockerfile VOLUME), or the files go with the container.
 RUN mkdir -p data/uploads && chown -R node:node data
-VOLUME /app/base-app/data/uploads
 USER node
 EXPOSE 8787
 
