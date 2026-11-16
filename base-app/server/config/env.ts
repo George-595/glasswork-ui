@@ -6,6 +6,9 @@ import type { LlmProvider } from '../infra/llm/types.ts';
 
 export interface ServerEnv {
   production: boolean;
+  /** DEMO_MODE=true: a public, read-only demo. Seeds the demo data even in production, adds a
+      shared demo login (shown on the sign-in page) and refuses every change that login asks for. */
+  demo: boolean;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   apiHost: string;
   apiPort: number;
@@ -69,6 +72,13 @@ export class EnvError extends Error {}
    any ADMIN_PASSWORD. */
 export const DEV_ADMIN_EMAIL = 'admin@example.test';
 export const DEV_ADMIN_PASSWORD = 'adminpassword';
+
+/** The public demo's shared login (DEMO_MODE). Public on purpose: it can look, never change. */
+export const DEMO_LOGIN = {
+  id: 'usr_demo',
+  email: 'demo@example.com',
+  password: 'glasswork-demo',
+} as const;
 
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 8787;
@@ -146,6 +156,7 @@ export function readServerEnv(source: Record<string, string | undefined> = proce
 
   return {
     production,
+    demo: flag('DEMO_MODE', read('DEMO_MODE'), false),
     logLevel: logLevel as ServerEnv['logLevel'],
     apiHost,
     apiPort,

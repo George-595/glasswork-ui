@@ -25,6 +25,9 @@ export interface SeedOptions {
   adminPassword: string;
   /** Demo users, transactions, audit log, metrics. Default: on. main.ts turns it off in production. */
   seedDemoData?: boolean;
+  /** DEMO_MODE: the shared read-only login, created when missing (an admin, so every page shows;
+      the demo gate refuses its changes). */
+  demoLogin?: { id: string; email: string; password: string };
 }
 
 export interface SeedReport {
@@ -99,6 +102,24 @@ export async function seedIfEmpty(db: DbClient, opts: SeedOptions): Promise<Seed
         new Date(),
       );
       report.admin = 'password set';
+    }
+
+    if (opts.demoLogin && !(await r.users.findCredentialsByEmail(opts.demoLogin.email))) {
+      const at = new Date().toISOString();
+      await r.users.insert(
+        {
+          id: opts.demoLogin.id,
+          name: 'Demo visitor',
+          email: opts.demoLogin.email,
+          role: 'admin',
+          status: 'active',
+          team: 'Platform',
+          createdAt: at,
+          lastActiveAt: at,
+        },
+        await hashPassword(opts.demoLogin.password),
+      );
+      seeded.push('demo login');
     }
 
     // The bell and the inbox have something to show on a fresh development database.

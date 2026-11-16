@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import type { Server } from 'node:http';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEV_ADMIN_PASSWORD, describeEnv, type ServerEnv } from './config/env.ts';
+import { DEMO_LOGIN, DEV_ADMIN_PASSWORD, describeEnv, type ServerEnv } from './config/env.ts';
 import { createDbClient } from './infra/db/index.ts';
 import { migrate, verifySchema } from './infra/db/migrate.ts';
 import { createApiServer } from './infra/http/server.ts';
@@ -14,6 +14,7 @@ import { createLogger, errorFields, type Logger } from './infra/log/logger.ts';
 import { createMailTransport } from './infra/mail/index.ts';
 import { createLocalFileStorage } from './infra/storage/index.ts';
 import { sessionToken, setTrustProxy } from './routes/auth.ts';
+import { createDemoGate } from './routes/demo.ts';
 import { createRoutes } from './routes/index.ts';
 import { createMaintenanceGate } from './routes/maintenance.ts';
 import { createServices, seedIfEmpty } from './services/index.ts';
@@ -64,7 +65,8 @@ export async function createApp(
     const seed = await seedIfEmpty(db, {
       adminEmail: env.auth.adminEmail,
       adminPassword: env.auth.adminPassword,
-      seedDemoData: !env.production,
+      seedDemoData: !env.production || env.demo,
+      ...(env.demo ? { demoLogin: { ...DEMO_LOGIN } } : {}),
     });
     log.info('seed', { tables: seed.seeded, admin: seed.admin });
     if (env.production && env.databaseUrl.includes(':memory:')) {
@@ -83,10 +85,12 @@ export async function createApp(
 
   // Development only: the sign-in page's hint and an easy-to-spot terminal box.
   const devDefault = env.auth.adminPassword === DEV_ADMIN_PASSWORD;
-  const devSignIn = env.production
-    ? undefined
-    : { adminEmail: env.auth.adminEmail, password: devDefault ? DEV_ADMIN_PASSWORD : null };
-  if (devSignIn) {
+  const devSignIn = env.demo
+    ? { adminEmail: DEMO_LOGIN.email, password: DEMO_LOGIN.password, demo: true }
+    : env.production
+      ? undefined
+      : { adminEmail: env.auth.adminEmail, password: devDefault ? DEV_ADMIN_PASSWORD : null };
+  if (devSignIn && !devSignIn.demo) {
     const lines = [
       'DEV ADMIN LOGIN (development only)',
       `email:     ${devSignIn.adminEmail}`,
@@ -135,7 +139,12 @@ export async function createApp(
     cookieSecure: env.auth.cookieSecure,
     ...(devSignIn ? { devSignIn } : {}),
   });
-  const gate = createMaintenanceGate(services);
+  const maintenance = createMaintenanceGate(services);
+  const demoGate = createDemoGate(env.demo);
+  const gate: typeof maintenance = async (request) => {
+    await demoGate(request);
+    await maintenance(request);
+  };
   const authenticate = async (cookie: string | undefined) => {
     try {
       return await services.auth.authenticate(sessionToken(cookie));
