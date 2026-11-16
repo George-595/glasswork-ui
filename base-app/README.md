@@ -274,6 +274,9 @@ It reads these from `base-app/.env` or the shell:
   would drop every invitation and password reset.
 - `APP_BASE_URL`: required. The public origin (`https://app.example.com`, no path) that the links in
   invitation and password-reset emails point at. Development defaults to `http://localhost:$WEB_PORT`.
+- `DEMO_MODE=true` makes a public, read-only demo: the demo data is seeded even in production and
+  a shared login (`demo@example.com` / `glasswork-demo`, shown on the sign-in page) can look at
+  every page and change nothing (`server/routes/demo.ts`). Pair it with a throwaway database.
 - `UPLOADS_DIR` (default `./data/uploads`): where uploaded files (avatars) live on disk. Persist it
   (a volume in Docker) and back it up with the database: the `files` table points into it. S3 slots in
   behind `server/infra/storage` later.

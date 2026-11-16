@@ -90,9 +90,12 @@ export default function LoginPage() {
   const [failures, setFailures] = useState(0);
 
   // Development only: the server sends who to sign in as (never in production), and the
-  // client build double-checks it is a dev build before showing it.
+  // client build double-checks it is a dev build before showing it. The one exception is a
+  // public demo (DEMO_MODE), whose shared read-only login is meant to be seen.
   const me = useApiQuery(() => api.me());
-  const devSignIn = import.meta.env.DEV && me.status === 'success' ? me.data.devSignIn : undefined;
+  const hint = me.status === 'success' ? me.data.devSignIn : undefined;
+  const devSignIn = hint && (import.meta.env.DEV || hint.demo) ? hint : undefined;
+  const demo = devSignIn?.demo === true;
 
   useEffect(() => {
     document.title = `Sign in · ${config.appName}`;
@@ -211,12 +214,23 @@ export default function LoginPage() {
           {devSignIn && (
             <Panel variant="sunken">
               <Section
-                title="Development sign-in"
+                title={demo ? 'Demo sign-in' : 'Development sign-in'}
                 level={2}
                 titleSize={4}
                 gap={2}
-                actions={<Badge variant="warning">Development only</Badge>}
+                actions={
+                  demo ? (
+                    <Badge variant="info">Read-only demo</Badge>
+                  ) : (
+                    <Badge variant="warning">Development only</Badge>
+                  )
+                }
               >
+                {demo && (
+                  <Text size="small">
+                    Sign in with the shared demo login to look around. Nothing can be changed.
+                  </Text>
+                )}
                 <Text size="small">
                   Email: <Code>{devSignIn.adminEmail}</Code>
                 </Text>
@@ -232,7 +246,7 @@ export default function LoginPage() {
                 </Text>
                 <Cluster>
                   <Button type="button" variant="outline" size="sm" onClick={fillDev}>
-                    Fill dev login
+                    {demo ? 'Fill demo login' : 'Fill dev login'}
                   </Button>
                 </Cluster>
               </Section>

@@ -68,7 +68,12 @@ export type LoginResponse = { ok: true; user: SessionUser };
 /** Development only (a production server never sends it): who to sign in as. `password` is
     the fixed, public dev credential when it is in use, or null when ADMIN_PASSWORD in
     apps/base-app/.env overrides it (that value is never sent). */
-export type DevSignInHint = { adminEmail: string; password: string | null };
+export type DevSignInHint = {
+  adminEmail: string;
+  password: string | null;
+  /** The public demo's shared, read-only login (DEMO_MODE), shown in production too. */
+  demo?: boolean;
+};
 /** GET /api/auth/me. `user` is null when signed out (still 200). */
 export type MeResponse = { ok: true; user: SessionUser | null; devSignIn?: DevSignInHint };
 /** POST /api/auth/logout. Clears the cookie; always 200. */
