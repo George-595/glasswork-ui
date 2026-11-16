@@ -51,7 +51,8 @@ export function ErrorState({ what, error, onRetry, className, ...props }: ErrorS
       role="alert"
       className={cn(
         'ui-error-state flex flex-col items-start gap-2 p-4',
-        'rounded-md border border-solid border-border-strong border-l-[3px] border-l-danger bg-surface',
+        // a soft danger wash, no coloured edge bar (see Notice)
+        'rounded-md border border-solid border-transparent bg-danger-soft',
         '[box-shadow:var(--elev-0)]',
         className,
       )}

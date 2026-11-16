@@ -3,8 +3,9 @@ import { Icon } from '../icons/Icon';
 import { cn } from '../lib/cn';
 
 /* Notice — an inline message about the thing next to it: a failed sign-in, a form-level
-   problem, a heads-up. The boundary is the tone's role, the words carry the meaning, and an
-   icon backs them up (never colour alone). Unlike ErrorState (a failed load with Retry) a
+   problem, a heads-up. The tone is a soft wash of its role and the icon's colour; the words
+   carry the meaning and the icon backs them up (never colour alone). No coloured edge bar: a
+   stripe bent round a rounded corner reads as generated filler (George, 16 Nov 2026). Unlike ErrorState (a failed load with Retry) a
    Notice has no action of its own; put it above the form it speaks about.
 
    `danger` and `warning` are announced at once (role="alert") and `info` / `success` politely
@@ -19,10 +20,10 @@ export interface NoticeProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title
 }
 
 const TONE: Record<NoticeTone, string> = {
-  danger: 'border-l-danger',
-  warning: 'border-l-warning',
-  info: 'border-l-info',
-  success: 'border-l-success',
+  danger: 'bg-danger-soft',
+  warning: 'bg-warning-soft',
+  info: 'bg-info-soft',
+  success: 'bg-success-soft',
 };
 const ICON_TONE: Record<NoticeTone, string> = {
   danger: 'text-danger',
@@ -42,7 +43,7 @@ export const Notice = forwardRef<HTMLDivElement, NoticeProps>(function Notice(
       data-tone={tone}
       {...props}
       className={cn(
-        'ui-notice flex items-start gap-2 rounded-md border border-solid border-border-strong border-l-[3px] bg-surface p-3 text-fg [font:var(--t-small)] focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]',
+        'ui-notice flex items-start gap-2 rounded-md border border-solid border-transparent p-3 text-fg [font:var(--t-small)] focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]',
         TONE[tone],
         className,
       )}

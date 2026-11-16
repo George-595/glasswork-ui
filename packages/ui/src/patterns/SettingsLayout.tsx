@@ -82,12 +82,12 @@ export function SettingsLayout({
                     aria-controls={panelId}
                     onClick={() => choose(s.id)}
                     className={cn(
-                      'flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-md border-0 border-s-2 border-solid bg-transparent px-3 py-1.5 text-start font-sans [font:var(--t-small)]',
+                      'flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-3 py-1.5 text-start font-sans [font:var(--t-small)]',
                       'transition-colors duration-(--dur-fast) ease-(--ease-out) motion-reduce:transition-none',
                       'hover:bg-hover active:bg-pressed focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]',
                       active
-                        ? 'border-s-brand bg-selected font-semibold text-fg'
-                        : 'border-s-transparent font-medium text-fg-muted hover:text-fg',
+                        ? 'bg-selected font-semibold text-fg'
+                        : 'font-medium text-fg-muted hover:text-fg',
                     )}
                   >
                     {s.icon && <Icon name={s.icon} size={16} />}

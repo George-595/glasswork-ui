@@ -125,8 +125,6 @@ export function NotificationItem<T extends NotificationEntry = NotificationEntry
       data-unread={unread || undefined}
       className={cn(
         'ui-notification group relative flex items-stretch gap-1 border-0 border-b border-solid border-border-subtle last:border-b-0',
-        'border-l-[3px]',
-        unread ? 'border-l-brand' : 'border-l-transparent',
       )}
     >
       <button
