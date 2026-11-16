@@ -74,21 +74,28 @@ export const localBrowser = {
     port,
   } = {}) {
     const guard = guardClones();
-    const browser = await chromium.launch({
-      headless,
-      executablePath,
-      args: [...args, ...(port ? [`--remote-debugging-port=${port}`] : [])],
-    });
-    const context = await browser.newContext({
-      viewport: viewport ?? null,
-      deviceScaleFactor,
-      hasTouch,
-    });
-    return {
-      browser,
-      context,
-      close: () => guard.around(() => browser.close()),
-    };
+    let browser;
+    try {
+      browser = await chromium.launch({
+        headless,
+        executablePath,
+        args: [...args, ...(port ? [`--remote-debugging-port=${port}`] : [])],
+      });
+      const context = await browser.newContext({
+        viewport: viewport ?? null,
+        deviceScaleFactor,
+        hasTouch,
+      });
+      return {
+        browser,
+        context,
+        close: () => guard.around(() => browser.close()),
+      };
+    } catch (err) {
+      // a launch that failed part-way: close what started (if anything), sweep what it left, then rethrow
+      await guard.around(async () => browser?.close()).catch(() => {});
+      throw err;
+    }
   },
 };
 

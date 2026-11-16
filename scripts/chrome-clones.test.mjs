@@ -181,3 +181,28 @@ test('the mirrored copies agree', () => {
   for (const f of ['chrome-clones.mjs', 'browser.mjs'])
     assert.equal(read(`base-app/scripts/${f}`), read(`packages/ui/scripts/${f}`), f);
 });
+
+test('a launch that throws (no such browser) still rejects with its own error, after the sweep', async () => {
+  const { localBrowser } = await import('../base-app/scripts/browser.mjs');
+  await assert.rejects(
+    localBrowser.launch({ executablePath: '/nonexistent/chrome-for-test' }),
+    /nonexistent|ENOENT|Failed to launch/,
+  );
+});
+
+test('the guard sweeps for a launch that never produced a browser', async () => {
+  const removed = [];
+  let listing = ['old'];
+  const options = {
+    dir: DIR,
+    list: () => listing,
+    who: () => ({ state: 'held', pids: [102] }),
+    ours,
+    inUse: () => false,
+    remove: (path) => removed.push(path.slice(DIR.length + 1)),
+  };
+  const guard = guardClones(options);
+  listing = ['old', 'half-started'];
+  await guard.around(async () => undefined);
+  assert.deepEqual(removed, ['half-started']);
+});

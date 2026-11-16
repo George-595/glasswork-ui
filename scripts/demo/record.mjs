@@ -49,285 +49,289 @@ function slowClocks(slow) {
 }
 
 const guard = guardClones();
-const browser = await chromium.launch({
-  headless: true,
-  executablePath: fullChrome(),
-  args: ['--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'],
-});
-const context = await browser.newContext({
-  viewport: { width: WIDTH, height: HEIGHT },
-  deviceScaleFactor: 1,
-  colorScheme: 'dark',
-  reducedMotion: 'no-preference',
-  recordVideo: { dir: OUT, size: { width: WIDTH, height: HEIGHT } },
-});
-await context.addInitScript(slowClocks, SLOW);
-const page = await context.newPage();
-page.setDefaultTimeout(15000 * SLOW);
-page.setDefaultNavigationTimeout(60000);
-const cdp = await context.newCDPSession(page);
-
-/** CSS transitions and animations go as slow as the clocks (set again after a navigation). */
-async function slowAnimations() {
-  await cdp.send('Animation.enable');
-  await cdp.send('Animation.setPlaybackRate', { playbackRate: 1 / SLOW });
-}
-
-const opened = Date.now();
-const timeline = [];
-/** Film seconds: the page's time, which runs SLOW times slower than the recording's. */
-const filmTime = () => (Date.now() - opened) / 1000 / SLOW;
-/** Let `ms` of the page's time pass. */
-const pause = (ms) => page.waitForTimeout(ms * SLOW);
-
-function mark(name) {
-  timeline.push({ name, at: filmTime() });
-  console.log(`${filmTime().toFixed(1).padStart(6)}s  ${name}`);
-}
-
-const clips = [];
-/** A stretch worth its own short film: timeline.json says where each one starts and ends. */
-async function clip(name, run) {
-  const start = filmTime();
-  await run();
-  clips.push({ name, start, end: filmTime() });
-}
-
-async function scene(name, run) {
-  mark(name);
-  try {
-    await run();
-  } catch (error) {
-    console.warn(`  scene "${name}" skipped: ${error instanceof Error ? error.message : error}`);
-    const file = `failed-${timeline.length}.png`;
-    await page.screenshot({ path: join(OUT, file) }).catch(() => {});
-    console.warn(`  page: ${page.url()} (screenshot ${file})`);
-  }
-}
-
-// ─── the pointer, in page time ───
-
-let pointer = { x: WIDTH * 0.3, y: HEIGHT * 0.4 };
-async function moveTo(x, y, ms = 700) {
-  const from = pointer;
-  const steps = Math.max(1, Math.round(ms / 33));
-  for (let i = 1; i <= steps; i++) {
-    const q = i / steps;
-    const e = q < 0.5 ? 2 * q * q : 1 - (-2 * q + 2) ** 2 / 2; // ease in and out
-    pointer = { x: from.x + (x - from.x) * e, y: from.y + (y - from.y) * e };
-    await page.mouse.move(pointer.x, pointer.y);
-    await pause(33);
-  }
-}
-
-/** Glide to the element and click it, as a person would. */
-async function press(locator) {
-  const target = locator.filter({ visible: true }).first();
-  let box = await target.boundingBox();
-  // only scroll for something really off screen: asked to scroll to a sticky header's control,
-  // the browser snaps the page to where that control sits in the flow, a jump in the film
-  if (!box || box.y < 0 || box.y + box.height > HEIGHT) {
-    await target.scrollIntoViewIfNeeded();
-    box = await target.boundingBox();
-  }
-  if (!box) throw new Error('nothing to press');
-  await moveTo(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.click(pointer.x, pointer.y);
-}
-
-/** A sidebar link by its name. */
-const nav = (name) => page.getByRole('navigation').getByRole('link', { name, exact: true });
-const button = (name) => page.getByRole('button', { name, exact: true });
-
-/** Sweep the pointer across the first few elements matching a selector. */
-async function sweep(selector, count = 4) {
-  const items = page.locator(selector);
-  const n = Math.min(count, await items.count());
-  for (let i = 0; i < n; i++) {
-    const box = await items.nth(i).boundingBox();
-    if (!box || box.y < 0 || box.y > HEIGHT) continue;
-    await moveTo(box.x + box.width * 0.2, box.y + box.height * 0.45, 350);
-    await moveTo(box.x + box.width * 0.85, box.y + box.height * 0.6, 650);
-  }
-}
-
-/** Scroll a heading to the top of the view, smoothly, and let it settle. */
-async function scrollToHeading(name) {
-  const heading = page.getByRole('heading', { name, exact: true }).first();
-  await heading.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-  await pause(1200);
-}
-
-/** Wait for a page's main heading after a route change. */
-const arrive = (name) =>
-  page.getByRole('heading', { level: 1, name, exact: true }).first().waitFor();
-
-// ─── the tour ───
-
-// the first look is set before anything loads; after that the tour switches skin and mode with
-// the app's own controls and moves by the sidebar, so the page never reloads
-await context.addCookies([{ name: 'ui-theme', value: 'dark.glass.tide.dark', url: BASE }]);
-await page.goto(`${BASE}/`);
-await page.evaluate(() => {
-  localStorage.setItem('ui-skin', 'glass');
-  localStorage.setItem('ui-theme', 'dark');
-  localStorage.removeItem('ui:lowpower:lag');
-  localStorage.removeItem('ui:seaglass:verdict');
-});
-await page.reload();
-await slowAnimations();
-await page.getByLabel('Email').waitFor();
-await page.mouse.move(pointer.x, pointer.y);
-await pause(2500); // the sea glass settles before the film starts
-mark('start');
-
-await scene('glass sign-in', async () => {
-  await moveTo(WIDTH * 0.7, HEIGHT * 0.55, 1600);
-  await pause(400);
-});
-
-await scene('sign in', async () => {
-  // the public dev login (a built app shows no "Fill dev login" button; the dev server accepts it)
-  for (const [label, text] of [
-    ['Email', 'admin@example.test'],
-    ['Password', 'adminpassword'],
-  ]) {
-    const field = page.getByLabel(label, { exact: true });
-    await press(field);
-    await field.pressSequentially(text, { delay: 45 * SLOW });
-    await pause(250);
-  }
-  await press(button('Sign in'));
-  await arrive('Overview');
-});
-
-if (!(await page.getByRole('heading', { level: 1, name: 'Overview' }).count())) {
-  mark('sign in through the API');
-  const status = await page.evaluate(
-    (body) =>
-      fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      }).then((r) => r.status),
-    { email: 'admin@example.test', password: 'adminpassword' },
-  );
-  console.log(`  status ${status}`);
-  await page.goto(`${BASE}/`);
-  await slowAnimations();
-  await arrive('Overview');
-}
-
-await scene('dashboard arrives (frost)', async () => {
-  await clip('frost', () => pause(6500));
-});
-
-await scene('pointer light on the figures', async () => {
-  await clip('pointer-light', async () => {
-    await sweep('.ui-kpi-fx');
-    await pause(900);
-  });
-});
-
-await scene('switch to enterprise light', async () => {
-  await press(page.getByRole('radio', { name: 'Enterprise' }));
-  await pause(1000);
-  await press(button('Switch to light mode'));
-  await pause(1000);
-});
-
-await scene('graphs arrive (plotter)', async () => {
-  await clip('plotter', async () => {
-    await press(nav('Graphs'));
-    await arrive('Graphs');
-    await pause(8000);
-  });
-});
-
-await scene('the reveal in each look', async () => {
-  await press(nav('Kit'));
-  await arrive('Kit');
-  await pause(800);
-  await scrollToHeading('Data visualisation');
-  const looks = page.getByRole('radiogroup', { name: 'Drawn as' });
-  await clip('draft', async () => {
-    await press(looks.getByRole('radio', { name: 'Draft', exact: true }));
-    await pause(5500);
-  });
-  await clip('agent-notes', async () => {
-    await press(button("With the agent's notes"));
-    await pause(7000);
-  });
-});
-
-await scene('switch to glass dark', async () => {
-  await press(page.getByRole('radio', { name: 'Glass' }));
-  await pause(1000);
-  await press(button('Switch to dark mode'));
-  await pause(1300);
-});
-
-await scene('cards and tiles', async () => {
-  await scrollToHeading('Cards and tiles');
-  await sweep('.ui-kpi-fx', 3);
-  await pause(600);
-});
-
-await scene('the odometer', async () => {
-  await scrollToHeading('Effects');
-  await clip('odometer', async () => {
-    // the kit page's last Replay is the odometer's
-    await press(page.getByRole('button', { name: 'Replay', exact: true }).last());
-    await pause(3500);
-  });
-});
-
-await scene('sea glass', async () => {
-  await scrollToHeading('Sea glass');
-  await clip('sea-glass', async () => {
-    await moveTo(WIDTH * 0.4, HEIGHT * 0.55, 1200);
-    await moveTo(WIDTH * 0.62, HEIGHT * 0.45, 1800);
-    await moveTo(WIDTH * 0.45, HEIGHT * 0.7, 1800);
-    await pause(1500);
-  });
-});
-
-await scene('the assistant (draft)', async () => {
-  await press(nav('Assistant'));
-  await arrive('Assistant');
-  await pause(800);
-  await clip('assistant', async () => {
-    await press(button('Show example conversation'));
-    await pause(7000);
-  });
-});
-
-await scene('glass light', async () => {
-  await press(button('Switch to light mode'));
-  await pause(700);
-  await clip('frost-light', async () => {
-    await press(nav('Home'));
-    await arrive('Overview');
-    await pause(7000);
-  });
-});
-
-mark('end');
-const video = page.video();
+let browser;
 try {
+  browser = await chromium.launch({
+    headless: true,
+    executablePath: fullChrome(),
+    args: ['--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'],
+  });
+  const context = await browser.newContext({
+    viewport: { width: WIDTH, height: HEIGHT },
+    deviceScaleFactor: 1,
+    colorScheme: 'dark',
+    reducedMotion: 'no-preference',
+    recordVideo: { dir: OUT, size: { width: WIDTH, height: HEIGHT } },
+  });
+  await context.addInitScript(slowClocks, SLOW);
+  const page = await context.newPage();
+  page.setDefaultTimeout(15000 * SLOW);
+  page.setDefaultNavigationTimeout(60000);
+  const cdp = await context.newCDPSession(page);
+
+  /** CSS transitions and animations go as slow as the clocks (set again after a navigation). */
+  async function slowAnimations() {
+    await cdp.send('Animation.enable');
+    await cdp.send('Animation.setPlaybackRate', { playbackRate: 1 / SLOW });
+  }
+
+  const opened = Date.now();
+  const timeline = [];
+  /** Film seconds: the page's time, which runs SLOW times slower than the recording's. */
+  const filmTime = () => (Date.now() - opened) / 1000 / SLOW;
+  /** Let `ms` of the page's time pass. */
+  const pause = (ms) => page.waitForTimeout(ms * SLOW);
+
+  function mark(name) {
+    timeline.push({ name, at: filmTime() });
+    console.log(`${filmTime().toFixed(1).padStart(6)}s  ${name}`);
+  }
+
+  const clips = [];
+  /** A stretch worth its own short film: timeline.json says where each one starts and ends. */
+  async function clip(name, run) {
+    const start = filmTime();
+    await run();
+    clips.push({ name, start, end: filmTime() });
+  }
+
+  async function scene(name, run) {
+    mark(name);
+    try {
+      await run();
+    } catch (error) {
+      console.warn(`  scene "${name}" skipped: ${error instanceof Error ? error.message : error}`);
+      const file = `failed-${timeline.length}.png`;
+      await page.screenshot({ path: join(OUT, file) }).catch(() => {});
+      console.warn(`  page: ${page.url()} (screenshot ${file})`);
+    }
+  }
+
+  // ─── the pointer, in page time ───
+
+  let pointer = { x: WIDTH * 0.3, y: HEIGHT * 0.4 };
+  async function moveTo(x, y, ms = 700) {
+    const from = pointer;
+    const steps = Math.max(1, Math.round(ms / 33));
+    for (let i = 1; i <= steps; i++) {
+      const q = i / steps;
+      const e = q < 0.5 ? 2 * q * q : 1 - (-2 * q + 2) ** 2 / 2; // ease in and out
+      pointer = { x: from.x + (x - from.x) * e, y: from.y + (y - from.y) * e };
+      await page.mouse.move(pointer.x, pointer.y);
+      await pause(33);
+    }
+  }
+
+  /** Glide to the element and click it, as a person would. */
+  async function press(locator) {
+    const target = locator.filter({ visible: true }).first();
+    let box = await target.boundingBox();
+    // only scroll for something really off screen: asked to scroll to a sticky header's control,
+    // the browser snaps the page to where that control sits in the flow, a jump in the film
+    if (!box || box.y < 0 || box.y + box.height > HEIGHT) {
+      await target.scrollIntoViewIfNeeded();
+      box = await target.boundingBox();
+    }
+    if (!box) throw new Error('nothing to press');
+    await moveTo(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.click(pointer.x, pointer.y);
+  }
+
+  /** A sidebar link by its name. */
+  const nav = (name) => page.getByRole('navigation').getByRole('link', { name, exact: true });
+  const button = (name) => page.getByRole('button', { name, exact: true });
+
+  /** Sweep the pointer across the first few elements matching a selector. */
+  async function sweep(selector, count = 4) {
+    const items = page.locator(selector);
+    const n = Math.min(count, await items.count());
+    for (let i = 0; i < n; i++) {
+      const box = await items.nth(i).boundingBox();
+      if (!box || box.y < 0 || box.y > HEIGHT) continue;
+      await moveTo(box.x + box.width * 0.2, box.y + box.height * 0.45, 350);
+      await moveTo(box.x + box.width * 0.85, box.y + box.height * 0.6, 650);
+    }
+  }
+
+  /** Scroll a heading to the top of the view, smoothly, and let it settle. */
+  async function scrollToHeading(name) {
+    const heading = page.getByRole('heading', { name, exact: true }).first();
+    await heading.evaluate((el) => el.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    await pause(1200);
+  }
+
+  /** Wait for a page's main heading after a route change. */
+  const arrive = (name) =>
+    page.getByRole('heading', { level: 1, name, exact: true }).first().waitFor();
+
+  // ─── the tour ───
+
+  // the first look is set before anything loads; after that the tour switches skin and mode with
+  // the app's own controls and moves by the sidebar, so the page never reloads
+  await context.addCookies([{ name: 'ui-theme', value: 'dark.glass.tide.dark', url: BASE }]);
+  await page.goto(`${BASE}/`);
+  await page.evaluate(() => {
+    localStorage.setItem('ui-skin', 'glass');
+    localStorage.setItem('ui-theme', 'dark');
+    localStorage.removeItem('ui:lowpower:lag');
+    localStorage.removeItem('ui:seaglass:verdict');
+  });
+  await page.reload();
+  await slowAnimations();
+  await page.getByLabel('Email').waitFor();
+  await page.mouse.move(pointer.x, pointer.y);
+  await pause(2500); // the sea glass settles before the film starts
+  mark('start');
+
+  await scene('glass sign-in', async () => {
+    await moveTo(WIDTH * 0.7, HEIGHT * 0.55, 1600);
+    await pause(400);
+  });
+
+  await scene('sign in', async () => {
+    // the public dev login (a built app shows no "Fill dev login" button; the dev server accepts it)
+    for (const [label, text] of [
+      ['Email', 'admin@example.test'],
+      ['Password', 'adminpassword'],
+    ]) {
+      const field = page.getByLabel(label, { exact: true });
+      await press(field);
+      await field.pressSequentially(text, { delay: 45 * SLOW });
+      await pause(250);
+    }
+    await press(button('Sign in'));
+    await arrive('Overview');
+  });
+
+  if (!(await page.getByRole('heading', { level: 1, name: 'Overview' }).count())) {
+    mark('sign in through the API');
+    const status = await page.evaluate(
+      (body) =>
+        fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        }).then((r) => r.status),
+      { email: 'admin@example.test', password: 'adminpassword' },
+    );
+    console.log(`  status ${status}`);
+    await page.goto(`${BASE}/`);
+    await slowAnimations();
+    await arrive('Overview');
+  }
+
+  await scene('dashboard arrives (frost)', async () => {
+    await clip('frost', () => pause(6500));
+  });
+
+  await scene('pointer light on the figures', async () => {
+    await clip('pointer-light', async () => {
+      await sweep('.ui-kpi-fx');
+      await pause(900);
+    });
+  });
+
+  await scene('switch to enterprise light', async () => {
+    await press(page.getByRole('radio', { name: 'Enterprise' }));
+    await pause(1000);
+    await press(button('Switch to light mode'));
+    await pause(1000);
+  });
+
+  await scene('graphs arrive (plotter)', async () => {
+    await clip('plotter', async () => {
+      await press(nav('Graphs'));
+      await arrive('Graphs');
+      await pause(8000);
+    });
+  });
+
+  await scene('the reveal in each look', async () => {
+    await press(nav('Kit'));
+    await arrive('Kit');
+    await pause(800);
+    await scrollToHeading('Data visualisation');
+    const looks = page.getByRole('radiogroup', { name: 'Drawn as' });
+    await clip('draft', async () => {
+      await press(looks.getByRole('radio', { name: 'Draft', exact: true }));
+      await pause(5500);
+    });
+    await clip('agent-notes', async () => {
+      await press(button("With the agent's notes"));
+      await pause(7000);
+    });
+  });
+
+  await scene('switch to glass dark', async () => {
+    await press(page.getByRole('radio', { name: 'Glass' }));
+    await pause(1000);
+    await press(button('Switch to dark mode'));
+    await pause(1300);
+  });
+
+  await scene('cards and tiles', async () => {
+    await scrollToHeading('Cards and tiles');
+    await sweep('.ui-kpi-fx', 3);
+    await pause(600);
+  });
+
+  await scene('the odometer', async () => {
+    await scrollToHeading('Effects');
+    await clip('odometer', async () => {
+      // the kit page's last Replay is the odometer's
+      await press(page.getByRole('button', { name: 'Replay', exact: true }).last());
+      await pause(3500);
+    });
+  });
+
+  await scene('sea glass', async () => {
+    await scrollToHeading('Sea glass');
+    await clip('sea-glass', async () => {
+      await moveTo(WIDTH * 0.4, HEIGHT * 0.55, 1200);
+      await moveTo(WIDTH * 0.62, HEIGHT * 0.45, 1800);
+      await moveTo(WIDTH * 0.45, HEIGHT * 0.7, 1800);
+      await pause(1500);
+    });
+  });
+
+  await scene('the assistant (draft)', async () => {
+    await press(nav('Assistant'));
+    await arrive('Assistant');
+    await pause(800);
+    await clip('assistant', async () => {
+      await press(button('Show example conversation'));
+      await pause(7000);
+    });
+  });
+
+  await scene('glass light', async () => {
+    await press(button('Switch to light mode'));
+    await pause(700);
+    await clip('frost-light', async () => {
+      await press(nav('Home'));
+      await arrive('Overview');
+      await pause(7000);
+    });
+  });
+
+  mark('end');
+  const video = page.video();
   await context.close();
+  const recorded = video
+    ? await video.path()
+    : join(OUT, readdirSync(OUT).find((f) => f.endsWith('.webm')) ?? '');
+  renameSync(recorded, join(OUT, 'demo.webm'));
+  const start = timeline.find((t) => t.name === 'start')?.at ?? 0;
+  writeFileSync(
+    join(OUT, 'timeline.json'),
+    `${JSON.stringify({ slow: SLOW, startSeconds: start * SLOW, scenes: timeline, clips }, null, 2)}\n`,
+  );
+  console.log(
+    `wrote ${join(OUT, 'demo.webm')} (slowed ${SLOW}x; the film starts ${(start * SLOW).toFixed(1)}s in)`,
+  );
 } finally {
-  await guard.around(() => browser.close());
+  // runs on a throw anywhere above too, including a failed launch (browser is then unset): close, then sweep
+  await guard.around(async () => {
+    await browser?.close();
+  });
 }
-const recorded = video
-  ? await video.path()
-  : join(OUT, readdirSync(OUT).find((f) => f.endsWith('.webm')) ?? '');
-renameSync(recorded, join(OUT, 'demo.webm'));
-const start = timeline.find((t) => t.name === 'start')?.at ?? 0;
-writeFileSync(
-  join(OUT, 'timeline.json'),
-  `${JSON.stringify({ slow: SLOW, startSeconds: start * SLOW, scenes: timeline, clips }, null, 2)}\n`,
-);
-console.log(
-  `wrote ${join(OUT, 'demo.webm')} (slowed ${SLOW}x; the film starts ${(start * SLOW).toFixed(1)}s in)`,
-);
