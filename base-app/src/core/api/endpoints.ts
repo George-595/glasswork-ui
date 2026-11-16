@@ -8,6 +8,7 @@ import type {
   ActionsResponse,
   ActivityResponse,
   AgentApprovalPart,
+  AgentAvailabilityResponse,
   AgentConversation,
   AgentConversationResponse,
   AgentConversationsResponse,
@@ -247,6 +248,8 @@ export const api = {
       `done` (whose `pending` says it stopped for an approval). Failures as llmStream. */
   agentStream: (body: AgentRunBody, handlers: AgentStreamHandlers): Promise<AgentEventDone> =>
     streamAgent(body, handlers),
+  /** Whether the assistant can answer the caller (a model key, and not switched off for a demo). */
+  agentAvailability: (): Promise<AgentAvailabilityResponse> => apiGet('/agent/availability'),
   /** The caller's saved chats, newest first. */
   conversations: (): Promise<AgentConversationsResponse> => apiGet('/agent/conversations'),
   conversation: (id: string): Promise<AgentConversationResponse> =>

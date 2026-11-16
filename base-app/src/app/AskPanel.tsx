@@ -116,6 +116,7 @@ export function AskPanel({ route }: { route: RouteDef }) {
               streaming={chat.busy}
               maxLength={4000}
               placeholder="Ask about this page"
+              disabled={chat.failure?.kind === 'disabled'}
               seaGlass={skin === 'glass'}
             />
           }

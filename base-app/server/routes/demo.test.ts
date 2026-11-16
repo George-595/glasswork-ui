@@ -33,6 +33,18 @@ describe('the demo gate', () => {
     }
   });
 
+  it('turns the assistant off for the demo login, kindly (no model spend from a public page)', async () => {
+    const gate = createDemoGate(true);
+    for (const path of ['/api/agent/stream', '/api/llm/complete', '/api/llm/stream']) {
+      const refused = await gate({ principal: demoUser, method: 'POST', path }).catch(
+        (e: unknown) => e,
+      );
+      expect((refused as HttpError).status).toBe(503);
+      expect((refused as HttpError).code).toBe('ai_disabled');
+      expect((refused as HttpError).message).toMatch(/aren't enabled on this demo/);
+    }
+  });
+
   it('leaves every other account alone, and does nothing when DEMO_MODE is off', async () => {
     await expect(
       createDemoGate(true)({ principal: realAdmin, method: 'POST', path: '/api/users/invite' }),

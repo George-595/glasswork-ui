@@ -86,6 +86,16 @@ export function AgentThread({ chat }: { chat: AgentChat }) {
 /* The line above the composer when a run failed: how to set a model key, or what went wrong. */
 export function AgentNotice({ chat, extra }: { chat: AgentChat; extra?: string }) {
   const { failure } = chat;
+  if (failure?.kind === 'disabled') {
+    return (
+      <Notice tone="info" title="The assistant is off here">
+        <Text size="small">
+          {failure.message}
+          {extra ? ` ${extra}` : ''}
+        </Text>
+      </Notice>
+    );
+  }
   if (failure?.kind === 'not-configured') {
     return (
       <Notice tone="warning" title="The assistant is not set up yet">
