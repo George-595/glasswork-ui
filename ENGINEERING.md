@@ -369,13 +369,14 @@ properties), `verbatimModuleSyntax` (type-only imports use `import type`). No `a
 | `npm run check:craft` | `scripts/check-craft.mjs`: motion and wording habits (§14 rule 137). `--strict` fails; `craft-ok: <reason>` in a comment marks a deliberate exception. |
 | `npm run build --workspace @apps/colors` | regenerate `packages/colors/css/` after editing `roles.ts` / `palette.ts` (the contrast gate must pass). |
 | `npm run check:deps` | the 7-day quarantine and exact-pin check (needs the network). |
+| `npm run browsers` | installs playwright-core's `chromium-headless-shell`, which the kit's a11y and touch gates prefer (`CHROME_PATH`, then it, then Google Chrome; the gate prints which it used). The rendering-sensitive scripts (`backdrop-contrast`, `perf-glass`, `a11y-browser`, the demo film) keep real Chrome (`fullChrome()`). Idempotent. The one network use in `verify`: only on the first run on a machine (cached after); offline it waits up to a 30 s connection timeout, warns and carries on with Google Chrome. A Mac's Google Chrome leaves a `code_sign_clone` folder per launch a script closes uncleanly; the headless shell leaves none, and `chrome-clones.mjs` removes only the clones a launch of ours made (held by a descendant of this process before close, free after), and leaves anything it cannot attribute. |
 | `npm run format` | biome format --write. |
 | `npm run typecheck` | tsc for every workspace. |
 | `npm test` | `node --test scripts/` (the checkers' own tests) + vitest in every workspace. |
 | `npm run a11y` | the axe gates. |
 | `npm run check:budget -w @apps/base-app` | builds the client and fails when first-load JavaScript (sign-in, Home; gzip bytes of the static import graph) is over `BUDGETS` in `scripts/check-budget.ts`; part of `verify`. |
 | `npm run check:perf:glass -w @apps/base-app` | the glass performance guard rail on a phone profile (§5), local, needs `npm run dev`; not part of `verify`. |
-| `npm run verify` | all of the above. Run it before you call work done. |
+| `npm run verify` | `browsers` first, then all of the above. Run it before you call work done. |
 
 Checks are local only: there is no CI for `apps/`.
 

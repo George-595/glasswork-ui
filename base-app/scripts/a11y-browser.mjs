@@ -16,7 +16,7 @@
 // axe-core and playwright-core are devDependencies of this app.
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { defaultChrome, localBrowser, Stagehand } from './browser.mjs';
+import { fullChrome, localBrowser, Stagehand } from './browser.mjs';
 
 const require = createRequire(import.meta.url);
 const BASE = (process.env.BASE_URL ?? 'http://127.0.0.1:5173').replace(/\/+$/, '');
@@ -55,7 +55,7 @@ const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 const axeSource = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 
-const exe = defaultChrome();
+const exe = fullChrome();
 const browser = await localBrowser.launch({
   headless: true,
   ...(exe ? { executablePath: exe } : {}),

@@ -22,7 +22,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { defaultChrome, localBrowser, Stagehand } from './browser.mjs';
+import { browserKind, defaultChrome, localBrowser, Stagehand } from './browser.mjs';
 import { LINK_TARGET, TARGET, touchTargets } from './touch-targets.mjs';
 
 const pkg = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -85,6 +85,7 @@ const PASSES = [
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'];
 
 const exe = defaultChrome();
+console.log(`a11y gate browser: ${browserKind(exe)}`);
 const browser = await localBrowser.launch({
   headless: true,
   ...(exe ? { executablePath: exe } : {}),
