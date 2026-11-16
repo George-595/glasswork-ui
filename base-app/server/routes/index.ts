@@ -43,7 +43,7 @@ import { platformRoutes } from './platform.ts';
    line in the table, its types in shared/api.ts, a method in src/core/api. */
 export function createRoutes(
   services: Services,
-  opts: { cookieSecure: boolean; devSignIn?: DevSignInHint },
+  opts: { cookieSecure: boolean; devSignIn?: DevSignInHint; demo?: boolean },
 ): Route[] {
   const auth = authRoutes(services, opts);
   const get =
@@ -176,7 +176,7 @@ export function createRoutes(
     },
     { method: 'POST', path: '/api/llm/stream', auth: 'user', handler: llmStreamHandler(services) },
     ...actionRoutes(services),
-    ...agentRoutes(services),
+    ...agentRoutes(services, { demo: opts.demo ?? false }),
 
     {
       method: 'GET',

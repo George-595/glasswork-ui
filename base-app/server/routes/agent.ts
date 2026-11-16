@@ -1,8 +1,10 @@
 import type {
+  AgentAvailabilityResponse,
   AgentConversationResponse,
   AgentConversationsResponse,
   LlmStreamError,
 } from '../../shared/api.ts';
+import { DEMO_AI_MESSAGE, DEMO_LOGIN } from '../config/env.ts';
 import { HttpError } from '../infra/http/errors.ts';
 import { readJsonBody, sendJson } from '../infra/http/json.ts';
 import { openSse, type SseWriter } from '../infra/http/sse.ts';
@@ -142,8 +144,20 @@ function errOf(err: unknown): unknown {
   return new HttpError(status, safe.code, safe.message);
 }
 
-export function agentRoutes(services: Services): Route[] {
+export function agentRoutes(services: Services, opts: { demo?: boolean } = {}): Route[] {
   return [
+    {
+      method: 'GET',
+      path: '/api/agent/availability',
+      auth: 'user',
+      handler: async (ctx) => {
+        const body: AgentAvailabilityResponse =
+          opts.demo && ctx.principal?.id === DEMO_LOGIN.id
+            ? { ok: true, enabled: false, message: DEMO_AI_MESSAGE }
+            : { ok: true, enabled: services.llm.available() };
+        sendJson(ctx.res, 200, body);
+      },
+    },
     { method: 'POST', path: '/api/agent/stream', auth: 'user', handler: streamHandler(services) },
     {
       method: 'GET',

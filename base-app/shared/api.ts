@@ -547,6 +547,9 @@ export type AgentEventDone = {
   pending: boolean;
 };
 export type AgentConversationsResponse = { ok: true; conversations: AgentConversation[] };
+/** Whether the assistant can answer this caller. `enabled: false` with a `message`: switched off on
+    purpose (a public demo); without one: the server has no model key. */
+export type AgentAvailabilityResponse = { ok: true; enabled: boolean; message?: string };
 export type AgentConversationResponse = {
   ok: true;
   conversation: AgentConversation;

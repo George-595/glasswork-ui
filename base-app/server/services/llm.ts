@@ -13,6 +13,15 @@ export function createLlmService(deps: {
   getClient: (provider: LlmProvider) => LlmClient;
 }) {
   return {
+    /** Whether the default provider can be called at all (it has a key). */
+    available(): boolean {
+      try {
+        deps.getClient(deps.defaultProvider);
+        return true;
+      } catch {
+        return false;
+      }
+    },
     complete(
       req: LlmCompleteRequest & { provider?: LlmProvider },
       opts?: { signal?: AbortSignal },

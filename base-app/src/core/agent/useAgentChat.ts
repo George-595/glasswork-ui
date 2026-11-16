@@ -20,7 +20,11 @@ import { playSound } from '~/core/ui';
    where the person is asking from and is read when a run starts, so it can change between
    messages. Stop aborts the run and keeps what arrived. A failed send is taken back out of
    the thread and its text goes back into the draft. */
-export type AgentFailure = { kind: 'not-configured' } | { kind: 'error'; message: string };
+export type AgentFailure =
+  | { kind: 'not-configured' }
+  /** Switched off on purpose (a public demo): the server's own words, and the composer is off. */
+  | { kind: 'disabled'; message: string }
+  | { kind: 'error'; message: string };
 export type PinState = 'pinning' | 'pinned';
 
 export const textOf = (m: AgentMessage) =>
@@ -89,9 +93,29 @@ export function useAgentChat(context: AgentContext, opts: { loadList?: boolean }
   }, [loadList]);
   useEffect(loadChats, [loadChats]);
 
+  // Say up front when the assistant cannot answer, rather than after someone has typed a question.
+  const [off, setOff] = useState<AgentFailure | null>(null);
+  useEffect(() => {
+    let live = true;
+    api
+      .agentAvailability()
+      .then((r) => {
+        if (!live || r.enabled) return;
+        const why: AgentFailure = r.message
+          ? { kind: 'disabled', message: r.message }
+          : { kind: 'not-configured' };
+        setOff(why);
+        setFailure((f) => f ?? why);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+
   async function open(id: string) {
     if (busy) return;
-    setFailure(null);
+    setFailure(off);
     setAnnounce('');
     setPins({});
     try {
@@ -113,7 +137,7 @@ export function useAgentChat(context: AgentContext, opts: { loadList?: boolean }
   function clear() {
     setActiveId(null);
     setMessages([]);
-    setFailure(null);
+    setFailure(off);
     setAnnounce('');
     setPins({});
   }
@@ -164,10 +188,12 @@ export function useAgentChat(context: AgentContext, opts: { loadList?: boolean }
       setFailure(
         err instanceof ApiError && err.code === 'llm_not_configured'
           ? { kind: 'not-configured' }
-          : {
-              kind: 'error',
-              message: err instanceof ApiError ? err.message : 'Something went wrong.',
-            },
+          : err instanceof ApiError && err.code === 'ai_disabled'
+            ? { kind: 'disabled', message: err.message }
+            : {
+                kind: 'error',
+                message: err instanceof ApiError ? err.message : 'Something went wrong.',
+              },
       );
       return false;
     } finally {

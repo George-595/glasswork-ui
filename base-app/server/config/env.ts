@@ -75,6 +75,10 @@ export class EnvError extends Error {}
 export const DEV_ADMIN_EMAIL = 'admin@example.test';
 export const DEV_ADMIN_PASSWORD = 'adminpassword';
 
+/** What the public demo's login is told about the assistant: it is off there, whatever keys the
+    server has, so a public page never spends on a model. */
+export const DEMO_AI_MESSAGE = "AI features aren't enabled on this demo site.";
+
 /** The public demo's shared login (DEMO_MODE). Public on purpose: it can look, never change. */
 export const DEMO_LOGIN = {
   id: 'usr_demo',

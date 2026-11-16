@@ -137,6 +137,7 @@ export async function createApp(
   }
   const routes = createRoutes(services, {
     cookieSecure: env.auth.cookieSecure,
+    demo: env.demo,
     ...(devSignIn ? { devSignIn } : {}),
   });
   const maintenance = createMaintenanceGate(services);

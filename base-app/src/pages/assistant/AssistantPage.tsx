@@ -84,7 +84,7 @@ export default function AssistantPage() {
             sample ? null : (
               <AgentNotice
                 chat={chat}
-                extra="Until then, the example conversation shows what the assistant looks like."
+                extra="Meanwhile, Show example conversation shows what it looks like."
               />
             )
           }
@@ -95,7 +95,7 @@ export default function AssistantPage() {
               onSend={(text) => void chat.send(text)}
               onStop={chat.stop}
               streaming={busy}
-              disabled={sample}
+              disabled={sample || chat.failure?.kind === 'disabled'}
               maxLength={4000}
               placeholder={sample ? 'This is an example conversation' : 'Ask about your data'}
               seaGlass={skin === 'glass'}
