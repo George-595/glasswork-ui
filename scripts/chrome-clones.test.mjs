@@ -182,12 +182,35 @@ test('the mirrored copies agree', () => {
     assert.equal(read(`base-app/scripts/${f}`), read(`packages/ui/scripts/${f}`), f);
 });
 
-test('a launch that throws (no such browser) still rejects with its own error, after the sweep', async () => {
+test('localBrowser.launch: a launch that throws sweeps the clones it left, then rethrows its own error', async () => {
   const { localBrowser } = await import('../base-app/scripts/browser.mjs');
-  await assert.rejects(
-    localBrowser.launch({ executablePath: '/nonexistent/chrome-for-test' }),
-    /nonexistent|ENOENT|Failed to launch/,
+  const { chromium } = await import('playwright-core');
+  const executablePath = '/nonexistent/chrome-for-test';
+  const expected = await chromium.launch({ headless: true, executablePath }).then(
+    () => assert.fail('the launch should have failed'),
+    (err) => err,
   );
+  const removed = [];
+  let listing = ['old'];
+  const guardOptions = {
+    dir: DIR,
+    // the failed launch "leaves" a clone that our fake process tree owns
+    list: () => {
+      const seen = listing;
+      listing = ['old', 'half-started'];
+      return seen;
+    },
+    who: () => ({ state: 'held', pids: [102] }),
+    ours,
+    inUse: () => false,
+    remove: (path) => removed.push(path.slice(DIR.length + 1)),
+  };
+  const err = await localBrowser.launch({ executablePath, guardOptions }).then(
+    () => assert.fail('the launch should have failed'),
+    (e) => e,
+  );
+  assert.equal(err.message, expected.message);
+  assert.deepEqual(removed, ['half-started']);
 });
 
 test('the guard sweeps for a launch that never produced a browser', async () => {
