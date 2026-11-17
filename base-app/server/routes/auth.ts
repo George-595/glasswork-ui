@@ -8,6 +8,7 @@ import type {
 import { parseCookies, serializeCookie } from '../infra/http/cookies.ts';
 import { HttpError } from '../infra/http/errors.ts';
 import { readJsonBody, sendJson } from '../infra/http/json.ts';
+import { clientAddress } from '../infra/http/shield.ts';
 import type { RequestContext } from '../infra/http/types.ts';
 import type { Services } from '../services/index.ts';
 import { call } from './errors.ts';
@@ -29,12 +30,8 @@ export function setTrustProxy(on: boolean): void {
   trustProxy = on;
 }
 export function clientIp(ctx: RequestContext): string {
-  const forwarded = ctx.req.headers['x-forwarded-for'];
-  if (trustProxy && typeof forwarded === 'string') {
-    const last = forwarded.split(',').at(-1)?.trim();
-    if (last) return last.slice(0, 45);
-  }
-  return ctx.req.socket.remoteAddress ?? 'unknown';
+  // shield.ts: the last X-Forwarded-For entry, or the visitor behind a Cloudflare edge
+  return clientAddress(ctx.req, trustProxy);
 }
 
 /* The browser's User-Agent, trimmed to the column's 300 characters. */

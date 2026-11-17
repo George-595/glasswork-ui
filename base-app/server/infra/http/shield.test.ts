@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { describe, expect, it } from 'vitest';
-import { createShield, type ShieldOptions } from './shield.ts';
+import { clientAddress, createShield, isCloudflare, type ShieldOptions } from './shield.ts';
 
 function fakeRes() {
   const headers: Record<string, string> = {};
@@ -130,5 +130,25 @@ describe('shield', () => {
     expect(call('/api/auth/login', 'x', other).handled).toBe(false);
     expect(call('/api/auth/login', 'x', other).handled).toBe(false);
     expect(call('/api/auth/login', 'x', other).status).toBe(429);
+  });
+});
+
+describe('the visitor address behind Cloudflare', () => {
+  const req = (xff: string, cf?: string) =>
+    ({
+      headers: { 'x-forwarded-for': xff, ...(cf ? { 'cf-connecting-ip': cf } : {}) },
+      socket: { remoteAddress: '10.0.0.2' },
+    }) as unknown as IncomingMessage;
+
+  it('believes CF-Connecting-IP only when the request came from a Cloudflare edge', () => {
+    expect(clientAddress(req('203.0.113.9, 172.68.1.10', '198.51.100.20'), true)).toBe(
+      '198.51.100.20',
+    );
+    expect(clientAddress(req('2a06:98c0:3600::103', '2001:db8::1'), true)).toBe('2001:db8::1');
+    // sent straight to the host with a made-up header: ignored
+    expect(clientAddress(req('203.0.113.9', '198.51.100.20'), true)).toBe('203.0.113.9');
+    expect(clientAddress(req('203.0.113.9'), true)).toBe('203.0.113.9');
+    expect(isCloudflare('104.16.1.1')).toBe(true);
+    expect(isCloudflare('8.8.8.8')).toBe(false);
   });
 });
