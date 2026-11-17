@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { BlockList, isIP } from 'node:net';
 
 /* The shield: the first thing every request meets, before the host check, static files, the
    server render or the API. It is cheap (no database, no session lookup) so a scanner costs
@@ -140,13 +141,58 @@ function hitLog(maxKeys = 20_000) {
   };
 }
 
+/* Cloudflare's edge addresses (https://www.cloudflare.com/ips, 17 Nov 2026). Behind Cloudflare
+   every request reaches the host from one of these, so the address before them is Cloudflare's
+   and the visitor is in CF-Connecting-IP. That header is believed only when the request really
+   came from Cloudflare: sent straight to the host, it is ignored. */
+const CLOUDFLARE_RANGES = [
+  '173.245.48.0/20',
+  '103.21.244.0/22',
+  '103.22.200.0/22',
+  '103.31.4.0/22',
+  '141.101.64.0/18',
+  '108.162.192.0/18',
+  '190.93.240.0/20',
+  '188.114.96.0/20',
+  '197.234.240.0/22',
+  '198.41.128.0/17',
+  '162.158.0.0/15',
+  '104.16.0.0/13',
+  '104.24.0.0/14',
+  '172.64.0.0/13',
+  '131.0.72.0/22',
+  '2400:cb00::/32',
+  '2606:4700::/32',
+  '2803:f800::/32',
+  '2405:b500::/32',
+  '2405:8100::/32',
+  '2a06:98c0::/29',
+  '2c0f:f248::/32',
+];
+const CLOUDFLARE = new BlockList();
+for (const range of CLOUDFLARE_RANGES) {
+  const [net = '', bits = '0'] = range.split('/');
+  CLOUDFLARE.addSubnet(net, Number(bits), net.includes(':') ? 'ipv6' : 'ipv4');
+}
+
+/** True when `ip` is one of Cloudflare's edge addresses. */
+export function isCloudflare(ip: string): boolean {
+  const v = isIP(ip);
+  return v !== 0 && CLOUDFLARE.check(ip, v === 6 ? 'ipv6' : 'ipv4');
+}
+
+/** The visitor's address: the last X-Forwarded-For entry behind a proxy (Railway, Vercel), or
+    the socket's; and when that is a Cloudflare edge, the CF-Connecting-IP it vouches for. */
 export function clientAddress(req: IncomingMessage, trustProxy: boolean): string {
+  let peer = req.socket.remoteAddress ?? 'unknown';
   const forwarded = req.headers['x-forwarded-for'];
   if (trustProxy && typeof forwarded === 'string') {
     const last = forwarded.split(',').at(-1)?.trim();
-    if (last) return last.slice(0, 45);
+    if (last) peer = last.slice(0, 45);
   }
-  return req.socket.remoteAddress ?? 'unknown';
+  const cf = req.headers['cf-connecting-ip'];
+  if (typeof cf === 'string' && isIP(cf.trim()) !== 0 && isCloudflare(peer)) return cf.trim();
+  return peer;
 }
 
 /** The one-line notice every response carries (ASCII: it is a header). */
