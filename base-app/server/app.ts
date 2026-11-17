@@ -6,6 +6,7 @@ import { DEMO_LOGIN, DEV_ADMIN_PASSWORD, describeEnv, type ServerEnv } from './c
 import { createDbClient } from './infra/db/index.ts';
 import { migrate, verifySchema } from './infra/db/migrate.ts';
 import { createApiServer } from './infra/http/server.ts';
+import { createShield } from './infra/http/shield.ts';
 import { createSsrHandler, type SsrSource } from './infra/http/ssr.ts';
 import { distSource, startViteDev, type ViteDev } from './infra/http/ssr-source.ts';
 import { createStaticHandler } from './infra/http/static.ts';
@@ -177,6 +178,8 @@ export async function createApp(
     gate,
     authenticate,
     log,
+    // production only: Vite's dev server asks for hundreds of module files a minute
+    ...(env.production ? { shield: siteShield(env, log) } : {}),
     ...(ssr === 'dev' ? { middleware: () => dev?.middleware } : {}),
     ...(env.serveDist
       ? {
@@ -205,4 +208,19 @@ export async function createApp(
   if (ssr === 'dev') dev = await startViteDev(server, appRoot);
 
   return { env, log, db, services, server, dev };
+}
+
+/* Bot and agent protection (the template's default; infra/http/shield.ts): scanners, attack tools and AI
+   crawlers are turned away, every address has a request budget, and every response says this is
+   a live production system the reader does not own. Nothing here is public for indexing. The
+   health check is never limited. */
+function siteShield(env: ServerEnv, log: Logger) {
+  return createShield({
+    owner: env.demo ? 'George Allan' : 'the owner of this site',
+    site: new URL(env.appBaseUrl).host,
+    contact: 'https://github.com/George-595/glasswork-ui',
+    trustProxy: env.trustProxy,
+    isExempt: (path) => path === '/api/health',
+    onBlock: (e) => log.info('shield', e),
+  });
 }

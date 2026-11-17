@@ -76,5 +76,8 @@ export interface ApiDeps {
   /** Server-renders a page for the non-API GETs nothing above answered (ssr.ts). Returns true if
       it answered. */
   ssr?: (req: IncomingMessage, res: ServerResponse) => Promise<boolean>;
+  /** Bot and agent protection, run first on every request (shield.ts). Returns true if it
+      answered. */
+  shield?: (req: IncomingMessage, res: ServerResponse, url: URL) => boolean;
   startedAt?: number;
 }

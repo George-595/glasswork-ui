@@ -62,6 +62,8 @@ export function createApiServer(deps: ApiDeps): Server {
       });
     });
 
+    if (deps.shield?.(req, res, url)) return;
+
     if (!hostAllowed(req.headers.host ?? '', deps.settings.publicHosts)) {
       sendError(res, 403, 'forbidden_host', 'This server does not answer for that host name');
       return;
