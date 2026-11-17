@@ -74,18 +74,13 @@ describe('shield', () => {
     );
   });
 
-  it('404s scanner paths and shuts the address out after three', () => {
-    const { call, advance } = shieldWith();
-    for (const p of ['/.env', '/wp-login.php', '/.git/config']) {
+  it('404s scanner paths but never bans the address: it may be shared with real people', () => {
+    const { call } = shieldWith();
+    for (const p of ['/.env', '/wp-login.php', '/.git/config', '/.env.local', '/config.json']) {
       expect(call(p).status).toBe(404);
     }
-    const r = call('/');
-    expect(r.handled).toBe(true);
-    expect(r.status).toBe(403);
-    // another address is untouched
-    expect(call('/', 'Mozilla/5.0', '198.51.100.7').handled).toBe(false);
-    advance(61 * 60_000);
     expect(call('/').handled).toBe(false);
+    expect(call('/assets/app.js').handled).toBe(false);
   });
 
   it('does not mistake real app paths for scanner paths', () => {

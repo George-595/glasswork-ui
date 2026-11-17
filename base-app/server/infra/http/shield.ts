@@ -5,8 +5,10 @@ import { BlockList, isIP } from 'node:net';
    server render or the API. It is cheap (no database, no session lookup) so a scanner costs
    almost nothing, and it does five jobs:
 
-   1. Scanner paths (/.env, /wp-login.php, /.git/config, *.php...) get a bare 404. An address that
-      asks for several of them in a few minutes is shut out for an hour.
+   1. Scanner paths (/.env, /wp-login.php, /.git/config, *.php...) get a bare 404. Nobody is ever
+      banned for them: one address is often shared by many people (iCloud Private Relay, mobile
+      networks, a home with a browser agent in it), and a ban once locked George out of his own
+      site (17 Nov 2026). Cloudflare stops most of these before they arrive.
    2. Attack tools that name themselves (sqlmap, nikto, nuclei...) get a 403.
    3. AI crawlers and AI agents may read the public paths only; everything else answers 403.
    4. Every address has a request budget per minute (a tighter one on sign-in), then 429.
@@ -21,19 +23,11 @@ export interface ShieldLimits {
   perMinute: number;
   /** Requests a minute from one address to /api/auth/* (sign-in, Google, password flows). */
   authPerMinute: number;
-  /** Scanner-path hits within `strikeWindowMs` that shut an address out. */
-  strikes: number;
-  strikeWindowMs: number;
-  /** How long a shut-out address stays shut out. */
-  banMs: number;
 }
 
 export const DEFAULT_LIMITS: ShieldLimits = {
   perMinute: 300,
   authPerMinute: 20,
-  strikes: 3,
-  strikeWindowMs: 10 * 60_000,
-  banMs: 60 * 60_000,
 };
 
 export interface ShieldOptions {
@@ -48,7 +42,7 @@ export interface ShieldOptions {
   /** Paths search engines and AI readers may read. Everything else is noindex and closed to AI
       crawlers. Default: none (a private app). */
   isPublicPath?: (path: string) => boolean;
-  /** Paths never limited, blocked or banned: health checks, machine heartbeats. */
+  /** Paths never limited or blocked: health checks, machine heartbeats. */
   isExempt?: (path: string) => boolean;
   /** Extra paragraphs for /llms.txt, after the standard notice. */
   agentNote?: string;
@@ -58,7 +52,7 @@ export interface ShieldOptions {
   onBlock?: (event: { reason: ShieldReason; ip: string; path: string }) => void;
 }
 
-export type ShieldReason = 'banned' | 'scanner_path' | 'attack_tool' | 'ai_crawler' | 'rate_limit';
+export type ShieldReason = 'scanner_path' | 'attack_tool' | 'ai_crawler' | 'rate_limit';
 
 /* Paths no page or API of these apps has ever had, and every web scanner asks for. */
 const SCANNER_PATH = new RegExp(
@@ -278,10 +272,8 @@ export function createShield(opts: ShieldOptions): Shield {
   const isPublic = opts.isPublicPath ?? (() => false);
   const isExempt = opts.isExempt ?? (() => false);
   const notice = agentNotice(opts);
-  const strikes = hitLog();
   const minute = hitLog();
   const authMinute = hitLog();
-  const banned = new Map<string, number>();
   const publicList = ['/', '/llms.txt'].filter((p) => p === '/llms.txt' || isPublic(p));
 
   const files: Record<string, () => string> = {
@@ -320,23 +312,8 @@ export function createShield(opts: ShieldOptions): Shield {
       return true;
     };
 
-    const until = banned.get(ip);
-    if (until !== undefined) {
-      if (until > t) return block('banned', 403, `Blocked. ${notice}\n`);
-      banned.delete(ip);
-    }
-
     const api = path === '/api' || path.startsWith('/api/');
     if (SCANNER_PATH.test(path) || (!api && SCANNER_FILE.test(path))) {
-      if (strikes.hit(ip, t, limits.strikeWindowMs) >= limits.strikes) {
-        banned.set(ip, t + limits.banMs);
-        // the ban map is capped like the others: oldest bans go first
-        while (banned.size > 20_000) {
-          const oldest = banned.keys().next().value;
-          if (oldest === undefined) break;
-          banned.delete(oldest);
-        }
-      }
       return block('scanner_path', 404, 'Not found.\n');
     }
 
