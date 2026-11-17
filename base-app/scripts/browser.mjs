@@ -63,7 +63,8 @@ function tabOf(page) {
 
 export const localBrowser = {
   /** Launch Chrome with one context sized and touch-enabled as asked. `port` opens the
-      DevTools protocol on that port (perf-glass reads compositor frames through it). */
+      DevTools protocol on that port (perf-glass reads compositor frames through it).
+      `guardOptions` is for tests: it is passed to guardClones (chrome-clones.mjs). */
   async launch({
     headless = true,
     executablePath,
@@ -72,8 +73,9 @@ export const localBrowser = {
     hasTouch,
     args = [],
     port,
+    guardOptions,
   } = {}) {
-    const guard = guardClones();
+    const guard = guardClones(guardOptions);
     let browser;
     try {
       browser = await chromium.launch({
