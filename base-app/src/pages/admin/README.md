@@ -29,9 +29,10 @@ admin-only endpoints, never local state alone.
   (day keys, the picker's quick ranges and `inDayRange`, filters, counts, grouping) and has its own tests; the page
   uses `AUDIT_RANGE_PRESETS`, `inDayRange` and `dayKey` from it.
 - `mail/`: **Mail**, the outbox. A `ListPage` in the table's server (manual) mode: `GET /api/admin/emails` pages it, newest
-  first. A row opens a `DetailSheet` with the fields and the email's plain-text body, whose links are clickable
-  (`LinkedText`, new tab): in development (`MAIL_TRANSPORT=log`) this is the mailbox where an invite or reset
-  link is followed. The HTML part never reaches the browser. In production it is the audit of what was sent.
+  first. A row opens a `DetailSheet` with the fields and the email's plain-text body. Ordinary links open in a
+  new tab; masked invite and reset links are plain text. For recent log mail on local development, **Open local
+  test link** opens the original from process memory without putting it in the outbox. The HTML part never
+  reaches the browser. In production this is the audit of what was sent.
 - `jobs/`: **Jobs**, the queue. A `KpiRow` of counts by status, a status `SegmentedControl` (the server filters),
   a server-paged `ListPage`. A failed or dead job has **Retry** in its row menu and drawer
   (`POST /api/admin/jobs/:id/retry`, audited); payloads are never shown.

@@ -86,7 +86,10 @@ Background work is part of the template, not an afterthought:
   password_reset, password_changed, notification; text and accessible HTML, every value escaped)
   and writes an `outbound_emails` row plus a `send_email` job in your transaction; the job sends it
   and records the result. `MAIL_TRANSPORT=log` (the development default) sends nothing: read the
-  email, links clickable, at **Admin → Mail**. `MAIL_TRANSPORT=resend` sends through Resend
+  masked email at **Admin → Mail**. On a localhost-only development server, open a recent invite or
+  reset email and select **Open local test link**. These links are kept only in server memory;
+  request a new email if the link is no longer available, for example after a restart.
+  `MAIL_TRANSPORT=resend` sends through Resend
   (`RESEND_API_KEY`, `MAIL_FROM`); a 4xx is a permanent failure, anything else is retried.
   `APP_BASE_URL` is what links in emails point at.
 - **Settings** (`server/services/settings.ts`, `GET`/`PUT /api/settings`). A typed registry

@@ -52,6 +52,7 @@ export function createServices(deps: {
   /** Email: the transport, the From header and the base URL links are built on. Without it
       (tests) mail goes to a log transport that writes nothing. */
   mail?: { transport: MailTransport; from: string; appBaseUrl: string };
+  devMailLinks?: boolean;
   /** Overrides where settings events go; by default they ride the realtime hub. */
   publish?: Publish;
   /** Job runner knobs (poll interval, concurrency, lease...) and the clock. */
@@ -101,6 +102,7 @@ export function createServices(deps: {
     transport: mail.transport,
     from: mail.from,
     appBaseUrl,
+    ...(deps.devMailLinks ? { devMailLinks: true } : {}),
     workspaceName: (tx) => settings.workspaceName(tx),
     ...now,
   });

@@ -357,6 +357,8 @@ export type EmailDetail = EmailSummary & {
   providerMessageId: string | null;
   /** Why it failed (safe text: a status and the provider's error name). */
   error: string | null;
+  /** A working link is available separately in this local development process. */
+  devLinkAvailable?: true;
 };
 /** GET /api/admin/emails?page=1&pageSize=25 (admin). Newest first. */
 export type EmailsResponse = {

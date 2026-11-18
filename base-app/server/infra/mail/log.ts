@@ -2,7 +2,7 @@ import type { Logger } from '../log/logger.ts';
 import type { MailMessage, MailTransport } from './types.ts';
 
 /* The development transport: nothing leaves the machine. The email is already in the
-   outbound_emails table (the admin Mail page shows it, links clickable), so "sending" is
+   outbound_emails table (shown on the admin Mail page), so "sending" is
    writing one line to the log. The line names the recipient and subject, never the body:
    the body holds single-use links. */
 export function createLogTransport(log: Logger): MailTransport {

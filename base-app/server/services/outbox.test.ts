@@ -27,8 +27,11 @@ let behave: (msg: MailMessage) => Promise<{ providerMessageId: string | null }>;
 const advance = (ms: number): void => {
   clock = new Date(clock.getTime() + ms);
 };
+let transportName: MailTransport['name'];
 const transport: MailTransport = {
-  name: 'log',
+  get name() {
+    return transportName;
+  },
   send: (msg) => {
     sent.push(msg);
     return behave(msg);
@@ -57,6 +60,7 @@ const drain = async () => {
 };
 
 beforeEach(async () => {
+  transportName = 'log';
   clock = new Date(T0);
   sent = [];
   behave = async () => ({ providerMessageId: 'msg-1' });
@@ -309,7 +313,17 @@ describe('a working link is not kept once it has been sent (SEC-03)', () => {
     expect(TOKEN).toHaveLength(43);
   });
 
+  it('never stores a live link for the log transport, even while queued', async () => {
+    await send('priya@example.com', 'invite', LIVE);
+    expect(await everythingStored()).not.toContain(TOKEN);
+    const [queued] = await db.query<{ id: string }>('SELECT id FROM outbound_emails');
+    await drain();
+    expect(sent[0]?.text).toContain('/accept-invite#token=[sent]');
+    expect(await outbox.devLink(queued?.id ?? '')).toBeUndefined();
+  });
+
   it('sends the real link, then leaves no token in the row, the text or the html', async () => {
+    transportName = 'resend';
     await send('priya@example.com', 'invite', LIVE);
     // queued: the job needs the real body, and the job holds only the email id
     expect(await everythingStored()).toContain(TOKEN);
@@ -333,6 +347,7 @@ describe('a working link is not kept once it has been sent (SEC-03)', () => {
   });
 
   it('masks a message that failed for good too, and the Mail page never shows a live link', async () => {
+    transportName = 'resend';
     behave = async () => {
       throw new MailError('Provider rejected the message (HTTP 422).', {
         retryable: false,
@@ -350,6 +365,7 @@ describe('a working link is not kept once it has been sent (SEC-03)', () => {
   });
 
   it('an email whose worker kept dying ends failed and masked, never queued for ever', async () => {
+    transportName = 'resend';
     await send('priya@example.com', 'invite', LIVE);
     const repo = createRepositories(db).jobs;
     const [job] = await db.query<{ id: string }>('SELECT id FROM jobs');
@@ -386,6 +402,7 @@ describe('a working link is not kept once it has been sent (SEC-03)', () => {
   });
 
   it('a retry that is still waiting keeps the real body so the retry can send it', async () => {
+    transportName = 'resend';
     let calls = 0;
     behave = async () => {
       calls++;

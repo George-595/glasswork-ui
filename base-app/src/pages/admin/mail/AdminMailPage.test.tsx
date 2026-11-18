@@ -20,9 +20,10 @@ const MAIL = (n: number, over: Partial<EmailSummary> = {}): EmailSummary => ({
 });
 
 const LINK = 'https://app.example.com/#/reset-password?token=abc123';
+const MASKED = 'https://app.example.com/reset-password#token=[sent]';
 const DETAIL = (e: EmailSummary): EmailDetail => ({
   ...e,
-  bodyText: `Hello,\n\nChoose a new password:\n${LINK}\n\n-- Base app`,
+  bodyText: `Hello,\n\nChoose a new password:\n${MASKED}\n\nHelp: ${LINK}\n\n-- Base app`,
   providerMessageId: null,
   error: e.status === 'failed' ? 'Resend answered 422 (validation_error)' : null,
 });
@@ -45,7 +46,9 @@ function mail(emails: EmailSummary[] = EMAILS, total = emails.length) {
           pageSize: Number(req.query.get('pageSize')),
         },
       }),
-      'GET /api/admin/emails/em_1': { body: { ok: true, email: DETAIL(MAIL(1)) } },
+      'GET /api/admin/emails/em_1': {
+        body: { ok: true, email: { ...DETAIL(MAIL(1)), devLinkAvailable: true } },
+      },
       'GET /api/admin/emails/em_2': {
         body: { ok: true, email: DETAIL(EMAILS[1] as EmailSummary) },
       },
@@ -112,6 +115,13 @@ describe('AdminMailPage', () => {
     expect(a).toBeTruthy();
     expect(a.getAttribute('target')).toBe('_blank');
     expect(sheet.textContent).toContain('The log transport only records the email');
+    expect(sheet.textContent).toContain('The saved link is masked and cannot be used.');
+    const body = getByRole(sheet, 'group', 'Email text');
+    expect(body.textContent).toContain(MASKED);
+    expect(body.querySelectorAll('a')).toHaveLength(1);
+    expect(getByRole(sheet, 'link', 'Open local test link').getAttribute('href')).toBe(
+      '/api/admin/emails/em_1/dev-link',
+    );
     expect(sheet.querySelector('iframe, script')).toBeNull();
   });
 
@@ -123,6 +133,7 @@ describe('AdminMailPage', () => {
     expect((document.querySelector('[role="dialog"]') as HTMLElement).textContent).toContain(
       'Resend answered 422 (validation_error)',
     );
+    expect(document.querySelector('a[href$="/dev-link"]')).toBeNull();
   });
 
   it('has an empty state, and Refresh asks again', async () => {

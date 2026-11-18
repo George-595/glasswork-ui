@@ -117,6 +117,12 @@ export async function createApp(
       from: env.mail.from,
       appBaseUrl: env.appBaseUrl,
     },
+    devMailLinks:
+      !env.production &&
+      !env.trustProxy &&
+      env.publicHosts.length === 0 &&
+      ['localhost', '127.0.0.1', '::1'].includes(env.apiHost) &&
+      ['localhost', '127.0.0.1', '[::1]'].includes(new URL(env.appBaseUrl).hostname),
     jobs: { pollMs: env.jobs.pollMs, concurrency: env.jobs.concurrency, log },
     log,
     // after-commit hooks and the realtime hub report here; neither ever fails a request
