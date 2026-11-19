@@ -67,6 +67,7 @@ export async function startTestApp(
     firstVisitTheme?: string;
     /** Replaces the real outbox (the app still records every email in `mail`). */
     outbox?: Outbox;
+    devMailLinks?: boolean;
     /** Overrides for the credential flows' rate limits. */
     limits?: NonNullable<
       NonNullable<Parameters<typeof createServices>[0]['credentialTuning']>['limits']
@@ -134,6 +135,7 @@ export async function startTestApp(
     db,
     sessionTtlHours: 1,
     storage: createLocalFileStorage(uploadsDir),
+    ...(opts.devMailLinks ? { devMailLinks: true } : {}),
     // every email, notification and disconnect is recorded, then handed to the real service
     wrap: {
       outbox: (real) => ({

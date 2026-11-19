@@ -20,6 +20,7 @@ import { call } from './errors.ts';
      PUT  /api/settings                 admin   change settings (audited, published)
      GET  /api/admin/emails             admin   ?page&pageSize
      GET  /api/admin/emails/:id         admin
+     GET  /api/admin/emails/:id/dev-link admin  local development only
      GET  /api/admin/jobs               admin   ?status&page&pageSize
      POST /api/admin/jobs/:id/retry     admin   failed or dead only (audited) */
 
@@ -100,6 +101,18 @@ export function platformRoutes(services: Services): Route[] {
       },
     },
 
+    {
+      method: 'GET',
+      path: '/api/admin/emails/:id/dev-link',
+      auth: 'admin',
+      handler: async (ctx) => {
+        const url = await outbox.devLink(ctx.params.id ?? '');
+        if (!url)
+          throw new HttpError(404, 'dev_link_unavailable', 'No local test link is available.');
+        ctx.res.writeHead(303, { location: url, 'cache-control': 'private, no-store' });
+        ctx.res.end();
+      },
+    },
     {
       method: 'GET',
       path: '/api/admin/jobs',

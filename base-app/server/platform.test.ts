@@ -9,7 +9,7 @@ let admin = '';
 let viewer = '';
 
 beforeAll(async () => {
-  app = await startTestApp();
+  app = await startTestApp({ devMailLinks: true });
   admin = await app.signIn();
   viewer = await app.signIn(VIEWER_EMAIL, VIEWER_PASSWORD);
 });
@@ -218,6 +218,46 @@ describe('GET /api/admin/emails', () => {
     expect((await call('GET', '/api/admin/emails?page=0', admin)).status).toBe(400);
     expect((await call('GET', '/api/admin/emails?pageSize=1000', admin)).status).toBe(400);
   });
+
+  it.each([
+    ['invite', '/accept-invite'],
+    ['password_reset', '/reset-password'],
+  ] as const)(
+    'opens a recent local %s link separately from the masked outbox',
+    async (template, path) => {
+      const token = 'A'.repeat(43);
+      const link = `http://localhost:5173${path}#token=${token}`;
+      await app.services.outbox.sendEmail(app.db, {
+        to: 'tester@example.com',
+        template,
+        data: { name: 'Pat', inviterName: 'Ada', link, expiresIn: '1 hour' },
+      });
+      const [row] = await app.db.query<{ id: string; body_text: string; body_html: string }>(
+        'SELECT id, body_text, body_html FROM outbound_emails',
+      );
+      expect(row?.body_text).toContain(`${path}#token=[sent]`);
+      expect(row?.body_html).not.toContain(token);
+      const detail = `/api/admin/emails/${row?.id}`;
+      const open = (cookie?: string) =>
+        fetch(`${app.base}${detail}/dev-link`, {
+          redirect: 'manual',
+          ...(cookie ? { headers: { cookie } } : {}),
+        });
+      expect((await open(admin)).status).toBe(404);
+      await app.services.jobs.tick();
+      await app.services.jobs.idle();
+      expect((await open()).status).toBe(401);
+      expect((await open(viewer)).status).toBe(403);
+      const email = (await json(await call('GET', detail, admin))).email;
+      expect(email.devLinkAvailable).toBe(true);
+      expect(JSON.stringify(email)).not.toContain(token);
+      const local = await open(admin);
+      expect(local.status).toBe(303);
+      expect(local.headers.get('location')).toBe(link);
+      expect(local.headers.get('cache-control')).toBe('private, no-store');
+      expect(JSON.stringify(app.logs)).not.toContain(token);
+    },
+  );
 });
 
 describe('admin jobs', () => {

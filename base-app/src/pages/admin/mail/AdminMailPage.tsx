@@ -15,11 +15,8 @@ import { formatDateTime } from '~/core/utils';
 import { EmailSheet } from './EmailSheet';
 import { EmailStatusBadge } from './EmailStatusBadge';
 
-/* The mail outbox: every email the app has queued, newest first, 25 to a page. In development
-   (MAIL_TRANSPORT=log) this is the mailbox: nothing is sent, so open a row to read the message and
-   follow its link (an invite, a password reset). In production it is the audit of what went out:
-   who, what and when, with the plain-text body. The server pages it (manual table mode); the
-   order is the server's. */
+/* The mail outbox: every email the app has queued, newest first, 25 to a page. The server
+   pages it (manual table mode); the order is the server's. */
 const COLUMNS: readonly Column<EmailSummary>[] = [
   { key: 'to', header: 'To' },
   { key: 'subject', header: 'Subject' },
@@ -70,7 +67,7 @@ export default function AdminMailPage() {
     <Page
       title="Mail"
       eyebrow="Admin"
-      description="Every email the app has queued, newest first. In development nothing is sent: read the message here and follow its link."
+      description="Every email the app has queued, newest first. Open a message to see its delivery status and saved text."
       actions={
         <Button variant="outline" size="sm" onClick={query.reload}>
           Refresh

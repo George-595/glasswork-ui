@@ -2,7 +2,7 @@ import { buttonAttrs, Text } from '@apps/ui';
 
 /* LinkedText — plain text whose http(s) addresses are clickable links, everything else shown
    as written (line breaks kept). It is for text the server wrote that holds links: the admin
-   Mail page shows an email's body with it, so an invite or reset link can be followed in dev.
+   Mail page shows an email's body with it.
 
    Only `http:` and `https:` become links. Text is never read as HTML (React escapes it), and a
    link opens in a new tab with `noopener noreferrer`, so the page behind it cannot be reached
@@ -33,15 +33,16 @@ export function splitLinks(text: string): TextPart[] {
 
 export interface LinkedTextProps {
   text: string;
+  linkAllowed?: (url: string) => boolean;
   /** Names the block for assistive tech. */
   label?: string;
 }
 
-export function LinkedText({ text, label }: LinkedTextProps) {
+export function LinkedText({ text, label, linkAllowed }: LinkedTextProps) {
   return (
     <Text as="div" size="small" preserveLines role={label ? 'group' : undefined} aria-label={label}>
       {splitLinks(text).map((part, i) =>
-        part.url ? (
+        part.url && (linkAllowed?.(part.url) ?? true) ? (
           <a
             // biome-ignore lint/suspicious/noArrayIndexKey: parts are positional and never reorder
             key={i}

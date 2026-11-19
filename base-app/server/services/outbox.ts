@@ -1,4 +1,5 @@
 import type { EmailDetail, EmailSummary, EmailsResponse } from '../../shared/api.ts';
+import { afterCommit } from '../infra/db/after-commit.ts';
 import type { DbClient, DbExecutor } from '../infra/db/types.ts';
 import { MailError, type MailTransport } from '../infra/mail/index.ts';
 import { newId } from '../lib/ids.ts';
@@ -28,11 +29,13 @@ export type { EmailTemplate } from './mail-templates.ts';
    stored but never leaves the server: the admin Mail page shows the plain text.
 
    Secrets. An invitation or a reset email carries a working link, `#token=<43 characters>` (older ones `?token=`), and
-   tokens.ts promises that only the SHA-256 of a token is ever stored. The row has to hold the
-   real body until the transport takes it (the job reads it from there), but not a moment after:
+   tokens.ts keeps only the SHA-256. A real delivery needs the row to hold the body until
+   the transport takes it (the job reads it from there), but not a moment after:
    once the message is sent, or has failed for good, the stored text and HTML are rewritten with
    the token masked (`token=[sent]`), so a copy of the database, a backup, a branch or the admin
    Mail page never holds a working link. The Mail page masks too, for a message still queued.
+   The log transport does not deliver mail: its bodies are masked before insert. Local
+   development can keep the original link separately in process memory.
    Passing a link on by hand is the manager's "copy link", which returns it once and keeps it
    nowhere. */
 
@@ -54,6 +57,7 @@ export interface OutboxDeps {
   from: string;
   /** APP_BASE_URL, for links in emails. */
   appBaseUrl: string;
+  devMailLinks?: boolean;
   /** The workspace name for the email header; settings.workspaceName. Takes the open transaction. */
   workspaceName: (tx?: DbExecutor) => Promise<string>;
   now?: () => Date;
@@ -91,9 +95,19 @@ const masked = (e: OutboundEmailRecord) => ({
   bodyHtml: maskTokenLinks(e.bodyHtml),
 });
 
+const DEV_LINK_TTL_MS = 60 * 60_000;
+const DEV_LINK_LIMIT = 100;
+
 export function createOutbox(db: DbClient, deps: OutboxDeps) {
   const now = deps.now ?? (() => new Date());
   const repos = createRepositories(db);
+  const devLinks = new Map<string, { url: string; expiresAt: number }>();
+  const devLinkFor = (email: OutboundEmailRecord): string | undefined => {
+    if (email.provider !== 'log' || email.status !== 'sent') return undefined;
+    const link = devLinks.get(email.id);
+    if (link && now().getTime() < link.expiresAt) return link.url;
+    devLinks.delete(email.id);
+  };
 
   /* The email row keeps only safe text: a transport's MailError message, or a generic line. The
      last one seen per email waits here for `onGiveUp`; an outcome this process never saw (a
@@ -157,17 +171,44 @@ export function createOutbox(db: DbClient, deps: OutboxDeps) {
         appBaseUrl: deps.appBaseUrl,
       });
       const id = newId();
+      const local = deps.transport.name === 'log';
       await createRepositories(tx).outboundEmails.insert({
         id,
         toAddress: to,
         subject: rendered.subject,
         template: msg.template,
-        bodyText: rendered.text,
-        bodyHtml: rendered.html,
+        bodyText: local ? maskTokenLinks(rendered.text) : rendered.text,
+        bodyHtml: local ? maskTokenLinks(rendered.html) : rendered.html,
         provider: deps.transport.name,
         createdAt: now(),
       });
       await deps.jobs.enqueueJob(tx, sendEmailJob, { emailId: id });
+
+      if (local && deps.devMailLinks) {
+        const path =
+          msg.template === 'invite'
+            ? '/accept-invite'
+            : msg.template === 'password_reset'
+              ? '/reset-password'
+              : null;
+        const link = path && URL.parse(msg.data.link ?? '', deps.appBaseUrl);
+        if (
+          link &&
+          link.href === `${deps.appBaseUrl}${path}${link.hash}` &&
+          /^#token=[\w-]{43}$/.test(link.hash)
+        ) {
+          const url = link.href;
+          const expiresAt = now().getTime() + DEV_LINK_TTL_MS;
+          afterCommit(tx, () => {
+            const committedAt = now().getTime();
+            for (const [key, value] of devLinks) {
+              if (value.expiresAt <= committedAt || devLinks.size >= DEV_LINK_LIMIT)
+                devLinks.delete(key);
+            }
+            devLinks.set(id, { url, expiresAt });
+          });
+        }
+      }
     },
   };
 
@@ -214,7 +255,14 @@ export function createOutbox(db: DbClient, deps: OutboxDeps) {
         bodyText: maskTokenLinks(e.bodyText),
         providerMessageId: e.providerMessageId,
         error: e.error,
+        ...(devLinkFor(e) ? { devLinkAvailable: true } : {}),
       };
+    },
+
+    async devLink(id: string): Promise<string | undefined> {
+      if (!deps.devMailLinks) return undefined;
+      const email = await repos.outboundEmails.byId(id);
+      return email ? devLinkFor(email) : undefined;
     },
   };
 }

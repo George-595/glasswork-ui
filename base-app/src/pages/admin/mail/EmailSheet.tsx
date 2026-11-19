@@ -1,10 +1,11 @@
 import { api, useApiQuery } from '~/core/api';
-import { Code, DetailSection, DetailSheet, LinkedText, Stack, Text } from '~/core/ui';
+import { config } from '~/core/config';
+import { buttonAttrs, Code, DetailSection, DetailSheet, LinkedText, Stack, Text } from '~/core/ui';
 import { formatDateTime } from '~/core/utils';
 import { EmailStatusBadge } from './EmailStatusBadge';
 
-/* One email, in a drawer: who and what, its status (and why, if it failed), then the plain-text
-   body with every link clickable. The HTML part is never sent to the browser. */
+const MASKED_LINK = /[?&#]token=\[sent(?:\]|$)/;
+
 export function EmailSheet({ id, onClose }: { id: string | null; onClose: () => void }) {
   const q = useApiQuery(() => (id ? api.email(id) : Promise.resolve(null)), id ?? '');
   const email = q.status === 'success' && q.data ? q.data.email : null;
@@ -40,11 +41,29 @@ export function EmailSheet({ id, onClose }: { id: string | null; onClose: () => 
           <DetailSection title="Text body">
             {email.provider === 'log' && (
               <Text size="small" tone="muted">
-                The log transport only records the email; it is not delivered. Follow the links
-                below to try the flow.
+                The log transport only records the email; it is not delivered.
               </Text>
             )}
-            <LinkedText text={email.bodyText} label="Email text" />
+            {MASKED_LINK.test(email.bodyText) && (
+              <Text size="small" tone="muted">
+                The saved link is masked and cannot be used.
+              </Text>
+            )}
+            {email.devLinkAvailable && (
+              <a
+                {...buttonAttrs('link', 'sm')}
+                href={`${config.apiBase}/admin/emails/${encodeURIComponent(email.id)}/dev-link`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open local test link
+              </a>
+            )}
+            <LinkedText
+              text={email.bodyText}
+              label="Email text"
+              linkAllowed={(url) => !MASKED_LINK.test(url)}
+            />
           </DetailSection>
         </Stack>
       )}
