@@ -85,5 +85,5 @@ export function serverPatch(draft: Settings, changed: readonly (keyof Settings)[
 
 export const BACKDROP_LABEL: Record<string, string> = {
   tide: 'Tide',
-  hive: 'Hive',
+  hive: 'Honeycomb',
 };

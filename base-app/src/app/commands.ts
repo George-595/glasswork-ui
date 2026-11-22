@@ -19,7 +19,7 @@ import { goShortcutFor } from './shortcuts';
    - Account: sign out. */
 const BACKDROP_LABELS: Readonly<Record<string, string>> = {
   tide: 'Tide',
-  hive: 'Hive',
+  hive: 'Honeycomb',
   ...PRESET_LABELS,
 };
 
