@@ -367,7 +367,7 @@ describe('AdminSettingsPage appearance', () => {
     const labels = radios.map((r) => r.closest('label')?.textContent);
     expect(labels).toEqual([
       'Tide',
-      'Hive',
+      'Honeycomb',
       'Mesh gradient',
       'Liquid metal',
       'Soft noise',

@@ -3,7 +3,7 @@ import { NOISE } from './noise';
 import type { MountBackground } from './types';
 import { WASH } from './wash';
 
-/* Hive — a honeycomb that breathes.
+/* Honeycomb — cells that breathe.
 
    A lattice of hexagons, about seven cells tall whatever the screen, laid over the shared
    colour wash (wash.ts), so the whole page glows softly and the comb is the light on top of
