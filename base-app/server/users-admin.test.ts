@@ -38,8 +38,8 @@ const send = (method: string, path: string, body: unknown, cookie?: string) =>
     },
     body: JSON.stringify(body),
   });
-// oxlint-disable-next-line typescript/no-explicit-any -- response JSON is inspected loosely in tests
-const json = async (res: Response) => (await res.json()) as Record<string, any>;
+// biome-ignore lint/suspicious/noExplicitAny: response JSON is inspected loosely in tests
+const json = async (res: Response) => (await res.json()) as Record<string, any>; // oxlint-disable-line typescript/no-explicit-any
 
 async function invite(email: string): Promise<string> {
   const res = await send(

@@ -39,6 +39,7 @@ export function lazyResolved<P extends object>(
   };
   const Lazy = lazy(fetchOnce);
 
+  // biome-ignore lint/correctness/noComponentHookFactories: a factory called once per page, at module scope
   function LazyResolved(props: P) {
     const [Ready] = useState(() => resolved);
     return Ready ? <Ready {...props} /> : <Lazy {...(props as P & object)} />;

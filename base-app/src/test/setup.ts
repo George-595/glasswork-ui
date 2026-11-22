@@ -72,6 +72,7 @@ beforeEach(() => {
   // the look is also kept in a cookie (@apps/ui theme/themeCookie.ts): forget it between tests
   for (const cookie of document.cookie.split(';')) {
     const name = cookie.split('=')[0]?.trim();
+    // biome-ignore lint/suspicious/noDocumentCookie: jsdom has no Cookie Store API; this clears what themeCookie.ts wrote
     if (name) document.cookie = `${name}=; Path=/; Max-Age=0`;
   }
   // No network in tests. A test that needs fetch stubs it with vi.stubGlobal.

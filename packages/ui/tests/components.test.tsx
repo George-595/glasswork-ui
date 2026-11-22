@@ -414,7 +414,8 @@ describe('Skeleton', () => {
     const el = render(<SkeletonTable rows={3} columns={5} />);
     const table = el.firstElementChild as HTMLElement;
     expect(table.getAttribute('aria-hidden')).toBe('true');
-    expect(table.style.gridTemplateColumns).toBe('repeat(5, minmax(0, 1fr))');
+    // serialised the way a browser does (jsdom 31's CSS engine): 0 reads back as 0px
+    expect(table.style.gridTemplateColumns).toBe('repeat(5, minmax(0px, 1fr))');
     expect(table.querySelectorAll('.ui-skeleton')).toHaveLength(5 * 4);
     expect(table.children[5]?.className).toContain('py-[9px]');
   });

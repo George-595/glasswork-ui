@@ -66,7 +66,11 @@ services:
       - ./db/mysql/init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
     healthcheck:
       # app_test exists only once init.sql has run, so "healthy" means "ready to use".
-      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -uapp -papp_dev_only -e 'SELECT 1' app_test >/dev/null 2>&1"]
+      test:
+        [
+          "CMD-SHELL",
+          "mysql -h 127.0.0.1 -uapp -papp_dev_only -e 'SELECT 1' app_test >/dev/null 2>&1",
+        ]
       interval: 3s
       timeout: 5s
       retries: 40

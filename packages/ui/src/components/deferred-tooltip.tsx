@@ -19,6 +19,7 @@ type TooltipModule = Pick<typeof import('./tooltip'), 'Tooltip'>;
 
 /** @internal The factory, so a test can hold the module back. */
 export function createDeferredTooltip(module: DeferredModule<TooltipModule>) {
+  // biome-ignore lint/correctness/noComponentHookFactories: called once, at module scope (and by tests that hold the module back)
   return function DeferredTooltip(props: TooltipProps): ReactElement {
     const { children, defaultOpen } = props;
     const { module: loaded, request } = useDeferredModule(module);

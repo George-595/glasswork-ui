@@ -16,8 +16,8 @@ beforeAll(async () => {
 });
 afterAll(() => app.close());
 
-// oxlint-disable-next-line typescript/no-explicit-any -- response JSON is inspected loosely in tests
-type Json = any;
+// biome-ignore lint/suspicious/noExplicitAny: response JSON is inspected loosely in tests
+type Json = any; // oxlint-disable-line typescript/no-explicit-any
 const req = (method: string, path: string, cookie: string, body?: unknown) =>
   fetch(`${app.base}${path}`, {
     method,

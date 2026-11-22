@@ -96,11 +96,13 @@ function load(html: string, url: string, cookie: string | undefined) {
   }
   document.body.innerHTML = parsed.body.innerHTML;
   window.history.replaceState(null, '', url);
+  // biome-ignore lint/suspicious/noDocumentCookie: replays the server's Set-Cookie into jsdom, as a browser would
   if (cookie) document.cookie = `${cookie}; Path=/`;
   for (const script of Array.from(document.body.querySelectorAll('script'))) {
     const type = script.getAttribute('type');
     if (!script.src && (type === null || type === 'text/javascript') && script.textContent) {
       // biome-ignore lint/security/noGlobalEval: the page's own inline scripts
+      // biome-ignore lint/complexity/noCommaOperator: indirect eval runs them in global scope, as the page does
       (0, eval)(script.textContent);
     }
   }

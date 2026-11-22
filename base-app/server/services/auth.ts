@@ -156,10 +156,13 @@ export function createAuthService(db: DbClient, opts: AuthServiceOptions) {
       for (const [k] of limits) record(k);
 
       const found = await repos.users.findCredentialsByEmail(email);
-      const ok =
-        found?.passwordHash && found.user.status === 'active'
-          ? await verifyPassword(password, found.passwordHash)
-          : (await burnPasswordCheck(password), false);
+      let ok = false;
+      if (found?.passwordHash && found.user.status === 'active') {
+        ok = await verifyPassword(password, found.passwordHash);
+      } else {
+        // the same work as a real check, so a missing account takes as long as a wrong password
+        await burnPasswordCheck(password);
+      }
       if (!found || !ok) {
         await audit(found?.user.name ?? email, found?.user.id ?? null, 'login', email, ip, false);
         throw new ServiceError(
