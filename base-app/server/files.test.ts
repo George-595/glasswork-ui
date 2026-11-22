@@ -53,8 +53,8 @@ const put = (
   });
 const get = (path: string, cookie?: string, headers: Record<string, string> = {}) =>
   fetch(`${app.base}${path}`, { headers: { ...(cookie ? { cookie } : {}), ...headers } });
-// oxlint-disable-next-line typescript/no-explicit-any -- response JSON is inspected loosely in tests
-const json = async (res: Response) => (await res.json()) as Record<string, any>;
+// biome-ignore lint/suspicious/noExplicitAny: response JSON is inspected loosely in tests
+const json = async (res: Response) => (await res.json()) as Record<string, any>; // oxlint-disable-line typescript/no-explicit-any
 
 /** Every stored blob under the uploads dir (the temp area must be empty). */
 function blobs(): string[] {

@@ -19,6 +19,7 @@ type MenuModule = Pick<typeof import('./menu'), 'Menu'>;
 
 /** @internal The factory, so a test can hold the module back. */
 export function createDeferredMenu(module: DeferredModule<MenuModule>) {
+  // biome-ignore lint/correctness/noComponentHookFactories: called once, at module scope (and by tests that hold the module back)
   return function DeferredMenu(props: MenuProps): ReactElement {
     const { module: loaded, request } = useDeferredModule(module);
     /* The open gesture waiting for Radix. It is dropped when focus leaves, when the fetch fails and after

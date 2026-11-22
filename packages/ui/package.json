@@ -27,7 +27,7 @@
     "@tanstack/charts": "1.5.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
-    "motion": "14.9.0",
+    "motion": "14.14.0",
     "radix-ui": "1.8.1",
     "shaders": "4.0.7",
     "tailwind-merge": "3.7.0"

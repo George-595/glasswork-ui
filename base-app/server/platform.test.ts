@@ -30,8 +30,8 @@ const call = (method: string, path: string, cookie?: string, body?: unknown) =>
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
-// oxlint-disable-next-line typescript/no-explicit-any -- response JSON is inspected loosely in tests
-const json = async (res: Response) => (await res.json()) as Record<string, any>;
+// biome-ignore lint/suspicious/noExplicitAny: response JSON is inspected loosely in tests
+const json = async (res: Response) => (await res.json()) as Record<string, any>; // oxlint-disable-line typescript/no-explicit-any
 const setSettings = (body: Record<string, unknown>) => call('PUT', '/api/settings', admin, body);
 
 describe('GET /api/settings', () => {

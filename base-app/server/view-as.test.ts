@@ -38,8 +38,8 @@ const call = (method: string, path: string, cookie: string, body?: unknown) =>
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
-// oxlint-disable-next-line typescript/no-explicit-any -- response JSON is inspected loosely in tests
-const json = async (res: Response) => (await res.json()) as Record<string, any>;
+// biome-ignore lint/suspicious/noExplicitAny: response JSON is inspected loosely in tests
+const json = async (res: Response) => (await res.json()) as Record<string, any>; // oxlint-disable-line typescript/no-explicit-any
 const viewAs = (cookie: string, role: unknown) =>
   call('POST', '/api/auth/view-as', cookie, { role });
 const me = async (cookie: string) => (await json(await call('GET', '/api/auth/me', cookie))).user;
