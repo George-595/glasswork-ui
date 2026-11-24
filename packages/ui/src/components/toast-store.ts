@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { playSound, type SoundName } from '../sound';
 
-/* The toast store: the queue behind toast() and the Toaster. No Radix and no JSX, so the whole of the kit's
-   toast(...) calls cost a page a few hundred bytes. The Radix view (toast.tsx) is fetched by the Toaster facade
+/* The toast store: the queue behind toast() and the Toaster. No UI SDK and no JSX, so the whole of the kit's
+   toast(...) calls cost a page a few hundred bytes. The UI SDK view (toast.tsx) is fetched by the Toaster facade
    (toaster.tsx) after hydration; a toast pushed before it arrives waits here. See toast.tsx for the behaviour. */
 export type ToastVariant = 'default' | 'success' | 'error' | 'info';
 
@@ -56,7 +56,7 @@ function emit(next: readonly ToastItem[]) {
   for (const l of listeners) l();
 }
 
-/* The store's own expiry. Radix times a toast while its view is mounted. When the view cannot be fetched nothing
+/* The store's own expiry. The UI SDK times a toast while its view is mounted. When the view cannot be fetched nothing
    would, so an undo toast's onExpire would never run: the Toaster facade turns this on (selfTime) after a failed
    fetch, and off again when a view arrives, which then takes over the toasts still open. */
 const DEFAULT_MS = 5000;

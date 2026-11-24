@@ -90,14 +90,19 @@ describe('Sheet focus on open', () => {
       </Sheet>,
     );
 
-  it('with a mouse, the first field is focused', () => {
+  // the UI SDK moves focus into a dialog a moment after it mounts
+  const settle = () => act(async () => await new Promise((r) => setTimeout(r, 0)));
+
+  it('with a mouse, the first field is focused', async () => {
     sheet();
+    await settle();
     expect(document.activeElement).toBe($('input[aria-label="Quantity"]'));
   });
 
-  it('on a touch screen the quantity field is NOT focused: the sheet is, so no keyboard covers Take out', () => {
+  it('on a touch screen the quantity field is NOT focused: the sheet is, so no keyboard covers Take out', async () => {
     coarse = true;
     sheet();
+    await settle();
     expect(document.activeElement).not.toBe($('input[aria-label="Quantity"]'));
     expect(document.activeElement).toBe($('[role="dialog"]'));
   });
@@ -129,7 +134,7 @@ describe('Sheet focus on close', () => {
     );
   }
 
-  // Radix gives focus back a tick after the panel unmounts
+  // the dialog gives focus back a tick after the panel unmounts
   const settle = () => act(async () => new Promise((r) => setTimeout(r, 10)));
 
   it('gives focus back to what opened it, and to `fallbackFocus` when that is gone', async () => {

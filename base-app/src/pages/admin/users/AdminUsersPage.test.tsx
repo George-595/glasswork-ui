@@ -121,7 +121,8 @@ async function openInvite(): Promise<HTMLElement> {
 
 async function openRowMenu(name: string): Promise<HTMLElement[]> {
   const trigger = getByRole(rowOf(name), 'button', `Actions for ${name}`);
-  await press(trigger, 'Enter');
+  // Enter on a native button is a click (jsdom does not synthesise it)
+  await click(trigger);
   await flush();
   return getAllByRole(document.body, 'menuitem');
 }

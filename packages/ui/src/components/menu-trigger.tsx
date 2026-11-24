@@ -2,8 +2,8 @@ import { type ButtonHTMLAttributes, forwardRef } from 'react';
 import { Icon, type IconName } from '../icons/Icon';
 import { Button } from './button';
 
-/* MenuTrigger — the button of a Menu, with no Radix import. Menu renders it inside DropdownMenuTrigger asChild
-   (Radix adds the ARIA state); DeferredMenu renders it alone until Radix has arrived, so the two are the same
+/* MenuTrigger — the button of a Menu, with no UI SDK import. Menu renders it as DropdownMenuTrigger's element
+   (the SDK adds the ARIA state); DeferredMenu renders it alone until the SDK has arrived, so the two are the same
    markup by construction. */
 export interface MenuTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** The trigger's text; the accessible name when `iconOnly`. */

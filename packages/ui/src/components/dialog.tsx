@@ -7,7 +7,7 @@ import { playSound } from '../sound';
 import { Button } from './button';
 import { useMergedRef } from './useMergedRef';
 
-/* Dialog — shadcn's dialog look on the native <dialog> element (Radix's is
+/* Dialog — shadcn's dialog look on the native <dialog> element (a headless one is
    not needed). showModal() gives the focus trap, Esc to close and an inert
    page for free; we add the title/description wiring, a labelled close
    button, closing on a scrim click, and returning focus to the opener.

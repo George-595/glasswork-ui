@@ -4,7 +4,6 @@ import { type ReactNode, useRef, useState } from 'react';
 import { cn } from '../../lib/cn';
 import { Button } from '../button';
 import { PopoverContent, Popover as PopoverRoot, PopoverTrigger } from '../ui/popover';
-import { useIsClient } from '../ui/use-is-client';
 import { Calendar, type CalendarBaseProps } from './calendar';
 import {
   type DayRange,
@@ -26,7 +25,7 @@ import { FieldTrigger } from './field-trigger';
 
    Presets are quick picks in a column beside the calendar (stacked above it on a phone).
    `DateRangePicker` offers Last 7 / 30 / 90 days unless `presets` says otherwise; pass `false`
-   to hide them. Inside a native <dialog> pass `portal={false}`, or the panel mounts behind it. */
+   to hide them. The panel sits in the browser's top layer, so it shows above a native <dialog> too. */
 interface PickerCommon extends Pick<CalendarBaseProps, 'min' | 'max' | 'locale' | 'weekStart'> {
   /** Override "today" (tests, a server clock). */
   today?: IsoDate;
@@ -40,7 +39,7 @@ interface PickerCommon extends Pick<CalendarBaseProps, 'min' | 'max' | 'locale' 
   size?: 'sm' | 'md';
   /** Size to the content instead of filling the container. */
   fit?: boolean;
-  /** Render the panel in place (inside a modal dialog) instead of in a portal. */
+  /** @deprecated Ignored: the panel always renders in place, in the top layer. */
   portal?: boolean;
   className?: string;
   id?: string;
@@ -64,8 +63,8 @@ export interface DatePickerProps extends PickerCommon {
   presets?: readonly DatePreset[];
 }
 
-function focusTabStop(panel: HTMLElement | null) {
-  panel?.querySelector<HTMLElement>('button[data-day][tabindex="0"]')?.focus();
+function tabStop(panel: HTMLElement | null) {
+  return panel?.querySelector<HTMLElement>('button[data-day][tabindex="0"]');
 }
 
 const presetButton = 'justify-start whitespace-nowrap font-normal text-fg-muted hover:text-fg';
@@ -77,7 +76,7 @@ export function DatePicker({
   placeholder = 'Select a date',
   clearable,
   panelLabel = 'Choose a date',
-  portal = true,
+  portal: _portal,
   min,
   max,
   locale = 'en-GB',
@@ -90,7 +89,6 @@ export function DatePicker({
   ...aria
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
-  const client = useIsClient();
   const panel = useRef<HTMLDivElement>(null);
   const today = todayProp ?? todayIso();
   const choose = (day: IsoDate | null) => {
@@ -99,28 +97,26 @@ export function DatePicker({
   };
   return (
     <PopoverRoot open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <FieldTrigger
-          {...aria}
-          disabled={disabled}
-          size={size}
-          fit={fit}
-          className={className}
-          display={formatDay(value, locale)}
-          placeholder={placeholder}
-          clearLabel="Clear date"
-          onClear={clearable ? () => onValueChange?.(null) : undefined}
-        />
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <FieldTrigger
+            {...aria}
+            disabled={disabled}
+            size={size}
+            fit={fit}
+            className={className}
+            display={formatDay(value, locale)}
+            placeholder={placeholder}
+            clearLabel="Clear date"
+            onClear={clearable ? () => onValueChange?.(null) : undefined}
+          />
+        }
+      />
       <PopoverContent
         ref={panel}
-        portal={portal && client}
         aria-label={panelLabel}
         className="ui-date-picker w-auto p-3"
-        onOpenAutoFocus={(e) => {
-          e.preventDefault();
-          focusTabStop(panel.current);
-        }}
+        initialFocus={() => tabStop(panel.current)}
       >
         <div className="flex flex-col gap-3 sm:flex-row">
           {presets && presets.length > 0 && (
@@ -182,7 +178,7 @@ export function DateRangePicker({
   placeholder = 'Select a date range',
   clearable,
   panelLabel = 'Choose a date range',
-  portal = true,
+  portal: _portal,
   min,
   max,
   locale = 'en-GB',
@@ -196,7 +192,6 @@ export function DateRangePicker({
 }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DayRange>(value);
-  const client = useIsClient();
   const panel = useRef<HTMLDivElement>(null);
   const today = todayProp ?? todayIso();
 
@@ -219,28 +214,26 @@ export function DateRangePicker({
         setOpen(next);
       }}
     >
-      <PopoverTrigger asChild>
-        <FieldTrigger
-          {...aria}
-          disabled={disabled}
-          size={size}
-          fit={fit}
-          className={cn(className)}
-          display={display}
-          placeholder={placeholder}
-          clearLabel="Clear date range"
-          onClear={clearable ? () => onValueChange?.(EMPTY_RANGE) : undefined}
-        />
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <FieldTrigger
+            {...aria}
+            disabled={disabled}
+            size={size}
+            fit={fit}
+            className={cn(className)}
+            display={display}
+            placeholder={placeholder}
+            clearLabel="Clear date range"
+            onClear={clearable ? () => onValueChange?.(EMPTY_RANGE) : undefined}
+          />
+        }
+      />
       <PopoverContent
         ref={panel}
-        portal={portal && client}
         aria-label={panelLabel}
         className="ui-date-range-picker w-auto p-3"
-        onOpenAutoFocus={(e) => {
-          e.preventDefault();
-          focusTabStop(panel.current);
-        }}
+        initialFocus={() => tabStop(panel.current)}
       >
         <div className="flex flex-col gap-3 sm:flex-row">
           {presets && presets.length > 0 && (

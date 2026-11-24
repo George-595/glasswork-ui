@@ -1,4 +1,7 @@
-import { ToggleGroup } from 'radix-ui';
+import {
+  SegmentedControlItem,
+  SegmentedControl as SegmentedRoot,
+} from '@ui-sdk/react/segmented-control';
 import {
   type CSSProperties,
   type HTMLAttributes,
@@ -12,8 +15,8 @@ import { cn } from '../lib/cn';
 import { playSound } from '../sound';
 
 /* SegmentedControl — one choice from a few, shown side by side (a range, a
-   view, a unit). It is a radio group: Radix ToggleGroup (single) supplies the
-   roving tabindex and the arrow keys, and we make selection follow focus, as
+   view, a unit). It is a radio group on Vercel's UI SDK segmented control: the
+   roving tabindex and the arrow keys, with selection following focus as
    native radios do, so an arrow key both moves and chooses. Every segment is
    named by its visible text; the group is named by `label`.
 
@@ -65,8 +68,7 @@ export function SegmentedControl({
   const [box, setBox] = useState<{ x: number; w: number } | null>(null);
 
   const choose = useCallback(
-    (next: string) => {
-      // a toggle group lets the chosen item be un-chosen; a radio group does not
+    (next: string | null) => {
       if (!next || next === current) return;
       setInner(next);
       playSound('tick');
@@ -81,7 +83,7 @@ export function SegmentedControl({
     const root = rootRef.current;
     if (!root) return;
     const measure = () => {
-      const on = root.querySelector<HTMLElement>('[data-state="on"]');
+      const on = root.querySelector<HTMLElement>('[data-checked]');
       if (!on) return setBox(null);
       setBox((prev) =>
         prev && prev.x === on.offsetLeft && prev.w === on.offsetWidth
@@ -103,11 +105,9 @@ export function SegmentedControl({
   };
 
   return (
-    <ToggleGroup.Root
+    <SegmentedRoot
       {...props}
       ref={rootRef}
-      type="single"
-      role="radiogroup"
       aria-label={label}
       value={current}
       onValueChange={choose}
@@ -135,21 +135,19 @@ export function SegmentedControl({
         />
       )}
       {options.map((o) => (
-        <ToggleGroup.Item
+        <SegmentedControlItem
           key={o.value}
           value={o.value}
           disabled={o.disabled}
           aria-label={o['aria-label']}
-          // selection follows focus, like native radios: an arrow key chooses
-          onFocus={() => !o.disabled && choose(o.value)}
           className={cn(
             'ui-segmented-item relative z-[1] inline-flex min-w-6 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-solid border-transparent bg-transparent font-sans font-medium text-fg-muted',
             'transition-colors duration-(--dur-fast) ease-(--ease-out) hover:bg-hover hover:text-fg motion-reduce:transition-none',
-            'focus-visible:outline-none focus-visible:[box-shadow:var(--ring)] disabled:pointer-events-none disabled:text-disabled-fg',
-            'data-[state=on]:font-semibold data-[state=on]:text-fg',
+            'focus-visible:outline-none focus-visible:[box-shadow:var(--ring)] disabled:pointer-events-none disabled:text-disabled-fg data-disabled:pointer-events-none data-disabled:text-disabled-fg',
+            'data-checked:font-semibold data-checked:text-fg',
             // before the pill is measured the chosen segment paints its own fill
-            'data-[state=on]:border-brand data-[state=on]:bg-selected',
-            'group-data-[ready]:data-[state=on]:border-transparent group-data-[ready]:data-[state=on]:bg-transparent',
+            'data-checked:border-brand data-checked:bg-selected',
+            'group-data-[ready]:data-checked:border-transparent group-data-[ready]:data-checked:bg-transparent',
             // a 48px target on a touch screen, a thin one with a mouse
             size === 'sm'
               ? 'min-h-6 px-2.5 py-0.5 text-[12px] pointer-coarse:min-h-12'
@@ -158,8 +156,8 @@ export function SegmentedControl({
           )}
         >
           {o.label}
-        </ToggleGroup.Item>
+        </SegmentedControlItem>
       ))}
-    </ToggleGroup.Root>
+    </SegmentedRoot>
   );
 }

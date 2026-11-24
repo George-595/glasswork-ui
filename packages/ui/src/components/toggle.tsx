@@ -1,10 +1,10 @@
+import { ToggleGroup as ToggleGroupRoot, Toggle as ToggleRoot } from '@ui-sdk/react/toggle';
 import { cva } from 'class-variance-authority';
-import { ToggleGroup as ToggleGroupPrimitive, Toggle as TogglePrimitive } from 'radix-ui';
 import { type ComponentPropsWithoutRef, forwardRef, type ReactNode } from 'react';
 import { cn } from '../lib/cn';
 
 /* Toggle — a button that stays pressed: bold, italic, "show grid", a filter chip.
-   Radix Toggle supplies `aria-pressed` and `data-state="on|off"`, so assistive tech
+   The UI SDK toggle supplies `aria-pressed` and `data-pressed`, so assistive tech
    announces "pressed". The selected state is the kit's one selected look, shared with
    SegmentedControl, Tabs and checkable menu items: `bg-selected`, `text-fg` and a
    `border-brand` edge (never a different hue per component, and not colour alone: the
@@ -23,8 +23,9 @@ export const toggleVariants = cva(
     'hover:bg-ghost-hover active:bg-ghost-active',
     'focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]',
     // selected: the one selected look
-    'data-[state=on]:border-brand data-[state=on]:bg-selected data-[state=on]:font-semibold data-[state=on]:text-fg',
+    'data-pressed:border-brand data-pressed:bg-selected data-pressed:font-semibold data-pressed:text-fg',
     'disabled:pointer-events-none disabled:border-disabled-border disabled:bg-disabled disabled:text-disabled-fg',
+    'data-disabled:pointer-events-none data-disabled:border-disabled-border data-disabled:bg-disabled data-disabled:text-disabled-fg',
     '[&>svg]:pointer-events-none',
   ],
   {
@@ -44,20 +45,23 @@ export const toggleVariants = cva(
   },
 );
 
-export interface ToggleProps extends ComponentPropsWithoutRef<typeof TogglePrimitive.Root> {
+export interface ToggleProps
+  extends Omit<ComponentPropsWithoutRef<typeof ToggleRoot>, 'onPressedChange'> {
   appearance?: ToggleAppearance;
   size?: ToggleSize;
+  onPressedChange?: (pressed: boolean) => void;
 }
 
 export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(function Toggle(
-  { className, appearance = 'outline', size = 'md', ...props },
+  { className, appearance = 'outline', size = 'md', onPressedChange, ...props },
   ref,
 ) {
   return (
-    <TogglePrimitive.Root
+    <ToggleRoot
       ref={ref}
       className={cn(toggleVariants({ appearance, size }), className)}
       data-size={size}
+      onPressedChange={onPressedChange && ((pressed: boolean) => onPressedChange(pressed))}
       {...props}
     />
   );
@@ -106,42 +110,37 @@ export function ToggleGroup(props: ToggleGroupProps) {
     wrap = false,
     className,
   } = props;
-  const items = options.map((o) => (
-    <ToggleGroupPrimitive.Item
-      key={o.value}
-      value={o.value}
-      disabled={o.disabled}
-      aria-label={o['aria-label']}
-      className={toggleVariants({ appearance, size })}
-    >
-      {o.label}
-    </ToggleGroupPrimitive.Item>
-  ));
-  const cls = cn('ui-toggle-group inline-flex items-center gap-1', wrap && 'flex-wrap', className);
-  return props.type === 'single' ? (
-    <ToggleGroupPrimitive.Root
+  const single = props.type === 'single';
+  const toArray = (v: string | string[] | undefined) =>
+    v === undefined ? undefined : Array.isArray(v) ? v : v ? [v] : [];
+  return (
+    <ToggleGroupRoot
       aria-label={label}
       disabled={disabled}
-      className={cls}
-      type="single"
-      role="group"
-      value={props.value}
-      defaultValue={props.defaultValue}
-      onValueChange={props.onValueChange}
+      className={cn(
+        'ui-toggle-group inline-flex items-center gap-1',
+        wrap && 'flex-wrap',
+        className,
+      )}
+      multiple={!single}
+      value={toArray(props.value)}
+      defaultValue={toArray(props.defaultValue)}
+      onValueChange={(next: string[]) => {
+        if (props.type === 'single') props.onValueChange?.(next[0] ?? '');
+        else props.onValueChange?.(next);
+      }}
     >
-      {items}
-    </ToggleGroupPrimitive.Root>
-  ) : (
-    <ToggleGroupPrimitive.Root
-      aria-label={label}
-      disabled={disabled}
-      className={cls}
-      type="multiple"
-      value={props.value}
-      defaultValue={props.defaultValue}
-      onValueChange={props.onValueChange}
-    >
-      {items}
-    </ToggleGroupPrimitive.Root>
+      {options.map((o) => (
+        <ToggleRoot
+          key={o.value}
+          value={o.value}
+          disabled={o.disabled}
+          aria-label={o['aria-label']}
+          className={toggleVariants({ appearance, size })}
+        >
+          {o.label}
+        </ToggleRoot>
+      ))}
+    </ToggleGroupRoot>
   );
 }

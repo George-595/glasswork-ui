@@ -32,7 +32,7 @@ const realtimeOff = process.env.VERCEL === '1' && process.env.VITE_REALTIME === 
    helpers every component calls) are the long-cached chunks a sign-in page needs. The charts (the
    chart library, the kit's chart components, the assistant's visual) are fenced into one chunk that only the pages drawing a chart import (a KPI tile fetches its sparkline from it only when it has a
    trend). The menus', dialogs'
-   and popovers' libraries (radix, floating-ui) have no group: the signed-in app's file
+   and popovers' library (the UI SDK) have no group: the signed-in app's file
    (src/app/SignedIn.tsx) is what imports them, so they ride with it and the sign-in page never
    fetches them (the toast library, which every page's Toaster needs, stays in the entry). */
 const CHUNK_GROUPS = [

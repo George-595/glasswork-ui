@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/* The Toaster facade (components/toaster.tsx): the store is always there, the Radix view is fetched after
+/* The Toaster facade (components/toaster.tsx): the store is always there, the UI SDK view is fetched after
    hydration. These tests load a fresh copy of the modules (the test setup has preloaded the shared one), so
    the view really is absent when the toast is pushed. */
 import { act } from 'react';

@@ -229,15 +229,10 @@ describe('Toggle', () => {
     expect(btn().getAttribute('aria-pressed')).toBe('false');
     act(() => btn().click());
     expect(btn().getAttribute('aria-pressed')).toBe('true');
-    expect(btn().dataset.state).toBe('on');
+    expect(btn().hasAttribute('data-pressed')).toBe(true);
     expect(onPressedChange).toHaveBeenCalledWith(true);
     expect(
-      has(
-        btn(),
-        'data-[state=on]:bg-selected',
-        'data-[state=on]:text-fg',
-        'data-[state=on]:border-brand',
-      ),
+      has(btn(), 'data-pressed:bg-selected', 'data-pressed:text-fg', 'data-pressed:border-brand'),
     ).toEqual([]);
   });
 
