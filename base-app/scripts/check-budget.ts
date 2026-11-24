@@ -35,7 +35,7 @@ export type Manifest = Record<string, ManifestChunk>;
    fails and noise does not. */
 export const BUDGETS: Readonly<Record<Scenario, number>> = {
   'sign-in': 135_000,
-  home: 207_000,
+  home: 214_000, // +7 kB, Nov 2026: the UI SDK (menus, tooltips, dialogs, toasts) replaced Radix; sign-in fell 17 kB
 };
 
 /* The manifest key of the route file each non-entry scenario adds. */

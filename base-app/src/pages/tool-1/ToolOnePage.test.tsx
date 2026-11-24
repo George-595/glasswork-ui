@@ -121,7 +121,7 @@ describe('ToolOnePage', () => {
   it('keeps each slider and its box in step', async () => {
     await render(<ToolOnePage />);
     const years = slider('Years slider');
-    expect(years.getAttribute('aria-valuenow')).toBe('10');
+    expect((years as HTMLInputElement).value).toBe('10');
     expect(years.getAttribute('aria-valuetext')).toBe('10 years');
 
     // slider -> box
@@ -133,12 +133,12 @@ describe('ToolOnePage', () => {
 
     // box -> slider
     await changeValue(field('Years'), '20');
-    expect(years.getAttribute('aria-valuenow')).toBe('20');
+    expect((years as HTMLInputElement).value).toBe('20');
     await changeValue(field('Monthly contribution (£)'), '500');
-    expect(slider('Monthly contribution slider').getAttribute('aria-valuenow')).toBe('500');
+    expect((slider('Monthly contribution slider') as HTMLInputElement).value).toBe('500');
     // text the slider cannot show parks it at its end; the box keeps the text
     await changeValue(field('Starting amount (£)'), '5,000,000');
-    expect(slider('Starting amount slider').getAttribute('aria-valuenow')).toBe('100000');
+    expect((slider('Starting amount slider') as HTMLInputElement).value).toBe('100000');
     expect(field('Starting amount (£)').value).toBe('5,000,000');
   });
 

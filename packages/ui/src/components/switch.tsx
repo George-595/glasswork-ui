@@ -3,7 +3,7 @@ import { cn } from '../lib/cn';
 import { playSound } from '../sound';
 import { Switch as SwitchControl } from './ui/switch';
 
-/* Switch — an on/off setting that applies at once, on Radix Switch (shadcn):
+/* Switch — an on/off setting that applies at once, on the UI SDK Switch:
    a <button role="switch" aria-checked>, so Space and Enter toggle it and
    assistive tech announces "on"/"off". The visible label wraps it, so the
    whole row is the target, but the switch is named by the label text alone

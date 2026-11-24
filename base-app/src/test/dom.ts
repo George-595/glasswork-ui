@@ -75,6 +75,8 @@ export function getAllByRole(
   return Array.from(root.querySelectorAll<HTMLElement>(selector)).filter((el) => {
     const explicit = el.getAttribute('role');
     if (explicit && explicit !== role) return false;
+    // the UI SDK's shared live regions (status / alert) are announcers, not page content
+    if (el.hasAttribute('data-ui-sdk-announcer')) return false;
     if (name === undefined) return true;
     const n = accessibleName(el);
     return typeof name === 'string' ? n === name : name.test(n);

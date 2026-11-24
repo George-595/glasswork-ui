@@ -2,7 +2,7 @@ import { useCallback, useEffect, useSyncExternalStore } from 'react';
 
 /* deferred — a module fetched on intent or when the browser is idle, for always-mounted chrome whose popup only a
    press opens (the shell's user menu, the rail's tooltips). The caller renders a stand-in with the same markup
-   until the module arrives, so the first load carries a button, not the popup's whole Radix stack. */
+   until the module arrives, so the first load carries a button, not the popup's whole UI SDK stack. */
 export interface DeferredModule<M> {
   load(): Promise<M>;
   peek(): M | undefined;

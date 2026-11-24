@@ -5,3 +5,5 @@
 #
 # <npm> <name>@<version> <YYYY-MM-DD granted> <reason>
 npm shaders@4.0.4 2026-10-11 George: "Give a temporary 4.x allowance to this package only" (WebGPU backdrops in @apps/ui; 7 days old on 2026-10-16)
+npm @ui-sdk/react@0.1.0-beta.17 2026-11-24 George: "Bypass the 7d dependency security pinning this time only" (move the kit onto Vercel's UI SDK; 7 days old on 2026-12-01)
+npm @ui-sdk/core@0.1.0-beta.17 2026-11-24 George: "Bypass the 7d dependency security pinning this time only" (move the kit onto Vercel's UI SDK; 7 days old on 2026-12-01)

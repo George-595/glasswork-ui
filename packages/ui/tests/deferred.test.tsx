@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/* DeferredMenu and DeferredTooltip: the Radix part arrives on intent or idle, and until then a stand-in with the
+/* DeferredMenu and DeferredTooltip: the UI SDK part arrives on intent or idle, and until then a stand-in with the
    same markup does the job. `held()` holds the module back until the test lets it arrive. Once it has arrived the
    menu's own behaviour tests run against DeferredMenu too (pieces.test.tsx). */
 import { act, type ReactNode } from 'react';
@@ -168,12 +168,9 @@ describe('useDeferredModule', () => {
   });
 });
 
-/* Radix's own ids and wiring, which a closed menu button may omit, are not part of the comparison. */
+/* The SDK's own ids and wiring, which a closed menu button may omit, are not part of the comparison. */
 const scrub = (el: Element) =>
-  el.outerHTML
-    .replace(/ id="[^"]*"/g, '')
-    .replace(/ aria-controls="[^"]*"/g, '')
-    .replace(/ data-radix-[a-z-]+="[^"]*"/g, '');
+  el.outerHTML.replace(/ id="[^"]*"/g, '').replace(/ aria-controls="[^"]*"/g, '');
 
 describe('the stand-in markup', () => {
   it('is the Menu trigger, wrapper included, with and without a label', async () => {
@@ -192,13 +189,20 @@ describe('the stand-in markup', () => {
     const DeferredTooltip = createDeferredTooltip(m);
     const link = <a href="#/x">Home</a>;
     render(<Tooltip content="Home">{link}</Tooltip>);
-    const real = scrub($('.ui-tooltip-wrap'));
+    const wrap = $('.ui-tooltip-wrap');
+    // the SDK adds its hidden tip and its own wiring on the child
+    const real = scrub(wrap.querySelector('a') as Element)
+      .replace(/ data-slot="[^"]*"/g, '')
+      .replace(/ type="button"/g, '')
+      .replace(/ aria-describedby="[^"]*"/g, '');
+    const cls = wrap.className;
     render(<DeferredTooltip content="Home">{link}</DeferredTooltip>);
-    expect(scrub($('.ui-tooltip-wrap'))).toBe(real);
+    expect($('.ui-tooltip-wrap').className).toBe(cls);
+    expect(scrub($('.ui-tooltip-wrap a'))).toBe(real);
   });
 });
 
-describe('DeferredMenu before Radix arrives', () => {
+describe('DeferredMenu before the UI SDK arrives', () => {
   const setup = () => {
     const h = held(menuModule);
     const DeferredMenu = createDeferredMenu(h.m);
@@ -263,7 +267,7 @@ describe('DeferredMenu before Radix arrives', () => {
     act(() => trigger.focus());
     expect(active()).toBe(trigger);
     await arrive();
-    expect($('button')).not.toBe(trigger); // Radix wraps it: a new element
+    expect($('button')).not.toBe(trigger); // the SDK wraps it: a new element
     expect(active()).toBe($('button'));
     expect($doc('[role="menu"]')).toBeNull();
   });
@@ -316,7 +320,7 @@ describe('DeferredMenu before Radix arrives', () => {
     expect($('button').getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('a gesture older than 2 s when Radix arrives is ignored', async () => {
+  it('a gesture older than 2 s when the UI SDK arrives is ignored', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     const { trigger, arrive } = setup();
     act(() => trigger.focus());
@@ -369,28 +373,30 @@ describe('DeferredTooltip', () => {
     const { link } = setup();
     expect(link.getAttribute('aria-label')).toBe('Security');
     expect(link.hasAttribute('aria-describedby')).toBe(false);
-    expect($doc('[role="tooltip"]')).toBeNull();
+    expect($doc('[role="tooltip"]:not([hidden])')).toBeNull();
   });
 
   it('a focused link keeps focus across the swap, and the tip then shows on focus', async () => {
     const { link, arrive } = setup();
     act(() => link.focus());
-    expect($doc('[role="tooltip"]')).toBeNull();
+    expect($doc('[role="tooltip"]:not([hidden])')).toBeNull();
     await arrive();
     expect(active()).toBe($('a'));
     expect($('a')).not.toBe(link);
     await flush();
-    expect($doc('[role="tooltip"]')?.textContent).toBe('Security');
+    expect($doc('[role="tooltip"]:not([hidden])')?.textContent).toBe('Security');
   });
 
   it('shows on keyboard focus after it has arrived', async () => {
     const { arrive } = setup();
     await arrive();
-    expect($doc('[role="tooltip"]')).toBeNull();
+    expect($doc('[role="tooltip"]:not([hidden])')).toBeNull();
     act(() => $('a').focus());
     await flush();
-    expect($doc('[role="tooltip"]')?.textContent).toBe('Security');
-    expect($('a').getAttribute('aria-describedby')).toBe($doc('[role="tooltip"]')?.id);
+    expect($doc('[role="tooltip"]:not([hidden])')?.textContent).toBe('Security');
+    expect($('a').getAttribute('aria-describedby')).toBe(
+      $doc('[role="tooltip"]:not([hidden])')?.id,
+    );
   });
 
   it('a pointer held down on the child holds the swap, so its click still lands', async () => {
@@ -404,9 +410,9 @@ describe('DeferredTooltip', () => {
       </DeferredTooltip>,
     );
     const link = $('a');
-    pointer(link, 'pointerover'); // the pointer arrives first and asks for Radix
+    pointer(link, 'pointerover'); // the pointer arrives first and asks for the UI SDK
     pointer(link, 'pointerdown');
-    await h.arrive(); // Radix arrives between pointerdown and pointerup
+    await h.arrive(); // the UI SDK arrives between pointerdown and pointerup
     expect($('a')).toBe(link); // the swap waits
     pointer(link, 'pointerup');
     act(() => link.click()); // the click that follows the pointerup
@@ -425,7 +431,7 @@ describe('DeferredTooltip', () => {
       </DeferredTooltip>,
     );
     const link = $('a');
-    pointer(link, 'pointerover'); // the pointer arrives first and asks for Radix
+    pointer(link, 'pointerover'); // the pointer arrives first and asks for the UI SDK
     pointer(link, 'pointerdown');
     await h.arrive();
     expect($('a')).toBe(link);
@@ -468,6 +474,6 @@ describe('DeferredTooltip', () => {
       </DeferredTooltip>,
     );
     await arrive();
-    expect($doc('[role="tooltip"]')?.textContent).toBe('Shown');
+    expect($doc('[role="tooltip"]:not([hidden])')?.textContent).toBe('Shown');
   });
 });

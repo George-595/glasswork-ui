@@ -230,7 +230,7 @@ as a UI kit, template or starter of your own.
   (the chart library and the kit's chart components, the KPI tile and the assistant's visual) are
   chunks of their own, and the rest of what the entry needs is one `index` chunk. The sign-in page
   needs only those first two and `index` (about 132 kB gzip): the signed-in app (the shell, its menus
-  and popovers and their radix libraries) is `src/app/SignedIn.tsx`, a file a signed-out visitor never
+  and popovers and the UI SDK) is `src/app/SignedIn.tsx`, a file a signed-out visitor never
   fetches, loaded before hydration for someone signed in (`src/app/SignedInGate.tsx`). Home's charts
   are `pages/home/HomeSections.tsx`, behind `React.lazy` and a Suspense boundary per panel, hydrated
   as the file arrives. The Shell mounts the Ask panel lazily (`React.lazy`, fetched when the Ask

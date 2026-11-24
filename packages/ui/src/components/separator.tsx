@@ -2,7 +2,7 @@ import type { HTMLAttributes } from 'react';
 import { cn } from '../lib/cn';
 import { Separator as SeparatorPrimitive } from './ui/separator';
 
-/* Separator — the vendored shadcn separator (Radix). Decorative by default
+/* Separator — the shadcn separator look on the UI SDK separator. Decorative by default
    (role="none", hidden from assistive tech); pass decorative={false} when it
    divides content meaningfully, and it becomes role="separator". */
 export interface SeparatorProps extends HTMLAttributes<HTMLDivElement> {

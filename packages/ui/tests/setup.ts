@@ -17,9 +17,33 @@ if (typeof navigator !== 'undefined') {
   Object.defineProperty(navigator, 'hardwareConcurrency', { value: 8, configurable: true });
 }
 
-// the Toaster fetches its Radix view after hydration (components/toaster.tsx); tests have it ready, so a toast shows as it always did
+// the Toaster fetches its UI SDK view after hydration (components/toaster.tsx); tests have it ready, so a toast shows as it always did
 // (imported here, not at the top: a test file's vi.mock must be registered before the kit's sound modules load)
 beforeAll(async () => {
   const { preloadToaster } = await import('../src/components/toaster');
   await preloadToaster();
 });
+
+/* What the UI SDK (@ui-sdk/react) needs from a browser that jsdom lacks: the popover API (its popups sit in the top
+   layer), animations, layout reads and ResizeObserver. Assigned rather than `??=`: jsdom has some of them without the
+   parts that matter. */
+if (typeof document !== 'undefined') {
+  HTMLElement.prototype.showPopover = function showPopover() {};
+  HTMLElement.prototype.hidePopover = function hidePopover() {};
+  Element.prototype.getAnimations = () => [];
+  Element.prototype.scrollIntoView = function scrollIntoView() {};
+  Element.prototype.checkVisibility = () => true;
+  Element.prototype.getClientRects = () => [] as unknown as DOMRectList;
+  document.elementFromPoint = () => null;
+  document.elementsFromPoint = () => [];
+  globalThis.ResizeObserver ??= class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+  document.head.append(
+    Object.assign(document.createElement('style'), {
+      textContent: '[popover] { display: block !important }',
+    }),
+  );
+}

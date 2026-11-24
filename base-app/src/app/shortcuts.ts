@@ -30,9 +30,9 @@ export function isTyping(target: EventTarget | null): boolean {
   return ce !== undefined && ce !== null && ce !== 'false';
 }
 
-/** True while a modal dialog (the native <dialog> or a Radix one) is open. */
+/** True while a modal dialog (the native <dialog> or a UI SDK one) is open. */
 function dialogOpen(): boolean {
-  return document.querySelector('dialog[open], [role="dialog"][data-state="open"]') !== null;
+  return document.querySelector('dialog[open], [role="dialog"][data-open]') !== null;
 }
 
 export interface ShortcutHandlers {

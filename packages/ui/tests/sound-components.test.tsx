@@ -163,7 +163,7 @@ describe("kit sounds on a person's action", () => {
     expect(heard).toEqual([]);
     const tabs = host.querySelectorAll<HTMLElement>('[role="tab"]');
     act60(() => {
-      tabs[1]?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }));
+      tabs[1]?.click();
     });
     expect(heard).toEqual(['tick']);
   });

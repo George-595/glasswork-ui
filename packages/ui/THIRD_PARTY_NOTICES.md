@@ -157,7 +157,7 @@ keyboard model; none of the markup or styling is pasted) from three MIT projects
 | `src/ai/Composer.tsx` | BoardUI `components/application/agent-chat/agent-composer` (MIT, Mertcan Dundar Esmergul): Enter sends, a stop button while busy |
 
 Changes from upstream: every colour is a role from `@apps/colors`; no react-aria-components,
-no motion library and no icon package (Radix-free, our `Button`, `Icon` and `cva`/`cn`); the
+no motion library and no icon package (no headless-UI library, our `Button`, `Icon` and `cva`/`cn`); the
 composer is a growing `<textarea>` (Shift+Enter for a new line) rather than a one-line input;
 Escape does not deny an approval; the thread is a `log` live region.
 
@@ -275,3 +275,11 @@ depends on earshot.
 > LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+## Vercel UI SDK — the headless behaviours under the overlays and controls
+
+Source: `@ui-sdk/react` and `@ui-sdk/core` (https://github.com/vercel-labs/ui), Apache License 2.0,
+Copyright Vercel, Inc. A runtime dependency, installed from npm and not copied into this package:
+the menus, tooltips, dialogs (Sheet, CommandPalette), tabs, toggles, segmented control, switch,
+separator, slider, popovers and toasts take their keyboard, focus and ARIA behaviour from it, and
+their look from our tokens. Its licence text ships with the package (`LICENSE`).

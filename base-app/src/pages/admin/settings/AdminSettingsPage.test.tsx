@@ -304,9 +304,9 @@ describe('AdminSettingsPage appearance', () => {
     const style = getByRole(document.body, 'radiogroup', 'Style');
     const radios = getAllByRole(style, 'radio');
     expect(radios.map((r) => r.textContent)).toEqual(['Enterprise', 'Glass']);
-    expect(radios.map((r) => r.getAttribute('data-state'))).toEqual(['on', 'off']);
+    expect(radios.map((r) => r.hasAttribute('data-checked'))).toEqual([true, false]);
     await click(radios[1] as HTMLElement);
-    expect(radios.map((r) => r.getAttribute('data-state'))).toEqual(['off', 'on']);
+    expect(radios.map((r) => r.hasAttribute('data-checked'))).toEqual([false, true]);
     expect(document.documentElement.dataset.skin).toBe('enterprise');
     expect(saveBar()).not.toBeNull();
     await click(getByRole(document.body, 'button', 'Save changes'));
@@ -344,10 +344,10 @@ describe('AdminSettingsPage appearance', () => {
     expect(document.documentElement.dataset.theme).toBe('light');
     expect(stored()?.mode).toBe('system');
     expect(
-      getByRole(getByRole(document.body, 'radiogroup', 'Theme'), 'radio', 'System').getAttribute(
-        'data-state',
+      getByRole(getByRole(document.body, 'radiogroup', 'Theme'), 'radio', 'System').hasAttribute(
+        'data-checked',
       ),
-    ).toBe('on');
+    ).toBe(true);
   });
 
   it('shows every glass backdrop as a card, with its name, in one radio group', async () => {

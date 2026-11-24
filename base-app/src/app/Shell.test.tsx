@@ -175,8 +175,15 @@ describe('sidebar and drawer', () => {
       localStorage.setItem('app-sidebar-collapsed', 'true');
       await mount('/');
       const link = document.querySelector('.ui-sidebar a[href="/table"]') as HTMLElement;
-      expect(link.hasAttribute('data-state')).toBe(true); // a Tooltip trigger
-      expect(link.textContent).toBe('Table'); // still named, visually hidden by CSS
+      // a Tooltip trigger, once the deferred tooltip has arrived (the browser is idle or the pointer asks)
+      link.dispatchEvent(new Event('pointerover', { bubbles: true }));
+      const trigger = document.querySelector('.ui-sidebar a[href="/table"]') as HTMLElement;
+      await vi.waitFor(() =>
+        expect(
+          document.querySelector('.ui-sidebar a[href="/table"]')?.hasAttribute('aria-describedby'),
+        ).toBe(true),
+      );
+      expect(trigger.textContent).toBe('Table'); // still named, visually hidden by CSS
     } finally {
       window.matchMedia = original;
     }
@@ -184,7 +191,7 @@ describe('sidebar and drawer', () => {
     view = null;
     await mount('/');
     const plain = document.querySelector('.ui-sidebar a[href="/table"]') as HTMLElement;
-    expect(plain.hasAttribute('data-state')).toBe(false);
+    expect(plain.hasAttribute('aria-describedby')).toBe(false);
   });
 
   it('the hamburger opens the navigation drawer, which Esc closes', async () => {

@@ -27,7 +27,7 @@ import {
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-/* What Radix needs from a browser that jsdom lacks. */
+/* What the UI SDK needs from a browser that jsdom lacks. */
 beforeAll(() => {
   class ResizeObserverStub {
     observe() {}
