@@ -25,7 +25,7 @@ export const SKINS: readonly Skin[] = ['enterprise', 'glass'];
 export const DEFAULT_BACKDROP: Backdrop = 'tide';
 
 export function isBackdrop(value: unknown): value is Backdrop {
-  return value === 'tide' || value === 'hive' || isShaderPreset(value);
+  return value === 'tide' || value === 'honeycomb' || isShaderPreset(value);
 }
 
 /* The backdrops before Nov 2026 were 'aurora' and 'iridescence'. A reader who chose one keeps
@@ -33,7 +33,7 @@ export function isBackdrop(value: unknown): value is Backdrop {
    cookie (mode, skin) is not thrown away for an old name. */
 const RENAMED_BACKDROPS: Readonly<Record<string, Backdrop>> = {
   aurora: 'tide',
-  iridescence: 'hive',
+  iridescence: 'honeycomb',
 };
 
 /** A stored backdrop name, with the old names read as their successors. */

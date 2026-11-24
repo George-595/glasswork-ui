@@ -396,7 +396,7 @@ describe('useBackdrop', () => {
     act(() => root.render(null));
     window.localStorage.setItem('ui-backdrop', 'iridescence');
     resetBackdropMemory();
-    expect(render(<Picker />).textContent).toBe('hive');
+    expect(render(<Picker />).textContent).toBe('honeycomb');
   });
 
   it('persists the choice under ui-backdrop and shares it across hooks', () => {
@@ -439,7 +439,7 @@ describe('useBackdrop', () => {
   it('lists the six backdrops', () => {
     expect(BACKDROPS).toEqual([
       'tide',
-      'hive',
+      'honeycomb',
       'mesh',
       'liquid-metal',
       'aurora-noise',
@@ -477,10 +477,10 @@ describe('AppShell backdrop', () => {
   it('an explicit `background` wins over the saved choice', async () => {
     document.documentElement.setAttribute('data-skin', 'glass');
     setBackdrop('liquid-metal');
-    const el = render(shell({ background: 'hive' }));
+    const el = render(shell({ background: 'honeycomb' }));
     await settle();
     expect(el.querySelector('.ui-shader')).toBeNull();
-    expect(el.querySelector('.ui-fx-bg')?.getAttribute('data-variant')).toBe('hive');
+    expect(el.querySelector('.ui-fx-bg')?.getAttribute('data-variant')).toBe('honeycomb');
   });
 
   it('default is tide', async () => {

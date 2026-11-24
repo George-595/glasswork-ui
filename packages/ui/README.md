@@ -416,10 +416,10 @@ and re-read when the skin or mode changes; `intensity` (0–1) sets how much col
 - The package's telemetry is switched off, and it loads lazily (its own chunk), so apps that
   never choose a shader do not download it.
 
-**Picking one.** `AppShell`'s `background` prop takes `'tide' | 'hive' | ShaderPreset |
+**Picking one.** `AppShell`'s `background` prop takes `'tide' | 'honeycomb' | ShaderPreset |
 false`. Left unset, it follows the reader's saved choice: `const [backdrop, setBackdrop] =
 useBackdrop()` (stored in `localStorage` under `ui-backdrop`, survives storage being blocked;
-default `'tide'`; names saved before Nov 2026, `'aurora'` and `'iridescence'`, read as `'tide'` and `'hive'`). `BACKDROPS` lists the six values and `PRESET_LABELS` names the shader
+default `'tide'`; names saved before Nov 2026, `'aurora'` and `'iridescence'`, read as `'tide'` and `'honeycomb'`). `BACKDROPS` lists the six values and `PRESET_LABELS` names the shader
 presets, for a Settings picker.
 
 ## Sea glass

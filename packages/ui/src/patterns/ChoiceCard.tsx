@@ -120,7 +120,7 @@ export function SkinPreview({
 
 const SWATCH: Record<string, string> = {
   tide: 'bg-linear-to-br from-backdrop-1 via-canvas to-backdrop-2',
-  hive: 'bg-linear-to-r from-backdrop-3 via-backdrop-1 to-backdrop-2',
+  honeycomb: 'bg-linear-to-r from-backdrop-3 via-backdrop-1 to-backdrop-2',
   mesh: 'bg-radial from-backdrop-1 via-backdrop-2 to-canvas',
   'liquid-metal': 'bg-linear-to-br from-fg-subtle via-canvas to-backdrop-1',
   'aurora-noise': 'bg-linear-to-tr from-backdrop-2 via-canvas to-backdrop-3',

@@ -19,8 +19,8 @@ export function isShaderPreset(value: unknown): value is ShaderPreset {
 
 /** What `fallback="animated"` shows (the kit's AnimatedBackground) for each preset. */
 export const FALLBACK_VARIANT: Record<ShaderPreset, BackgroundVariant> = {
-  mesh: 'hive',
-  'liquid-metal': 'hive',
+  mesh: 'honeycomb',
+  'liquid-metal': 'honeycomb',
   'aurora-noise': 'tide',
   'glass-caustics': 'tide',
 };

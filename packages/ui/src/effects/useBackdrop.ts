@@ -12,7 +12,7 @@ import { SHADER_PRESETS } from './shaders/presets';
 
 /* useBackdrop — the reader's choice of glass-skin backdrop, persisted.
 
-   A Backdrop is one of the two kit scenes ('tide', 'hive') or one of
+   A Backdrop is one of the two kit scenes ('tide', 'honeycomb') or one of
    the four shader presets. AppShell reads this when its `background` prop is
    not set, so a Settings page can offer a picker with nothing more than:
 
@@ -33,7 +33,11 @@ import { SHADER_PRESETS } from './shaders/presets';
 export type { Backdrop } from '../theme/themeCookie';
 export { DEFAULT_BACKDROP, isBackdrop } from '../theme/themeCookie';
 
-export const BACKDROPS = ['tide', 'hive', ...SHADER_PRESETS] as const satisfies readonly Backdrop[];
+export const BACKDROPS = [
+  'tide',
+  'honeycomb',
+  ...SHADER_PRESETS,
+] as const satisfies readonly Backdrop[];
 export const BACKDROP_KEY = 'ui-backdrop';
 
 /** Set once a choice is made in this page, so a blocked store still works. */

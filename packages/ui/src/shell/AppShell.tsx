@@ -102,7 +102,7 @@ export interface AppShellProps {
       the topbar's drawer button is hidden while it is there (the tab bar's More is the way to
       everything else). From 768px the sidebar takes over. Leave unset on full-screen flows. */
   bottomNav?: ReactNode;
-  /** The glass skin's animated backdrop: a kit scene ('tide', 'hive'), a shader
+  /** The glass skin's animated backdrop: a kit scene ('tide', 'honeycomb'), a shader
       preset ('mesh', 'liquid-metal', 'aurora-noise', 'glass-caustics'), or false for none.
       Unset: the reader's saved choice (`useBackdrop()`), which defaults to 'tide'. */
   background?: Backdrop | false;

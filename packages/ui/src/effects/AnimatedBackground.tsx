@@ -10,7 +10,7 @@ import { claimWebGl, useWebGlOwner } from './webglGuard';
 
 /* AnimatedBackground — the animated backdrop behind the glass skin (ENGINEERING.md §5:
    "Motion never costs access"). Two scenes, both the kit's own full-screen shaders on bare
-   WebGL (backgrounds/gl.ts): 'tide', slow silk, and 'hive', a honeycomb that breathes.
+   WebGL (backgrounds/gl.ts): 'tide', slow silk, and 'honeycomb', cells that breathe.
 
    - Decorative: aria-hidden, no pointer events, fixed behind the content.
    - Lazy: the scene is a dynamic import, started after the first paint.
@@ -30,10 +30,10 @@ import { claimWebGl, useWebGlOwner } from './webglGuard';
    - Re-coloured when the theme or skin changes.
    - SSR: renders the empty decorative div with the static gradient. */
 
-export type BackgroundVariant = 'tide' | 'hive';
+export type BackgroundVariant = 'tide' | 'honeycomb';
 
 export interface AnimatedBackgroundProps extends HTMLAttributes<HTMLDivElement> {
-  /** Which scene. tide: slow silk folds over the page colour; hive: a honeycomb whose cells
+  /** Which scene. tide: slow silk folds over the page colour; honeycomb: hexagonal cells
       light and fade in slow waves. */
   variant?: BackgroundVariant;
   /** Three roles (`cssVar('chart-1')`…) for the scene's ramp. Default: chart-1..3. */
@@ -51,7 +51,7 @@ export const SCROLL_QUIET_MS = 150;
 
 const SCENES: Record<BackgroundVariant, () => Promise<{ mount: MountBackground }>> = {
   tide: () => import('./backgrounds/tide'),
-  hive: () => import('./backgrounds/hive'),
+  honeycomb: () => import('./backgrounds/honeycomb'),
 };
 
 export function AnimatedBackground({
