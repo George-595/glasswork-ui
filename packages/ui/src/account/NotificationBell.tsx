@@ -118,7 +118,7 @@ export function NotificationBell<T extends NotificationEntry = NotificationEntry
   }, [ringing]);
 
   const linkClass =
-    'inline-flex min-h-6 items-center rounded-sm text-link underline-offset-2 hover:underline focus-visible:outline-none focus-visible:[box-shadow:var(--ring)] [font:var(--t-small)]';
+    'inline-flex min-h-6 pointer-coarse:min-h-12 pointer-coarse:min-w-12 pointer-coarse:justify-center items-center rounded-sm text-link underline-offset-2 hover:underline focus-visible:outline-none focus-visible:[box-shadow:var(--ring)] [font:var(--t-small)]';
   const viewAll = viewAllHref ? (
     renderLink ? (
       renderLink({ href: viewAllHref, className: linkClass, children: 'View all' })
