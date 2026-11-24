@@ -57,7 +57,9 @@ function measure(known, target, linkTarget) {
     const toggles = el.matches('[role=switch], input[type=checkbox], input[type=radio]');
     // a text input inside a field shell (a combobox, a chip box) is the shell: it takes the click
     const label = toggles ? el.closest('label') || el.labels?.[0] : el.closest('.ui-field-shell');
-    const r = label ? label.getBoundingClientRect() : own;
+    // a slider's range input is clipped to nothing inside its thumb (the UI SDK slider): the thumb is the target
+    const thumb = el.matches('input[type=range]') ? el.closest('.ui-slider-thumb') : null;
+    const r = label ? label.getBoundingClientRect() : (thumb ?? el).getBoundingClientRect();
     // an inline link inside a sentence is exempt
     const inSentence =
       el.matches('a[href]') &&
@@ -71,7 +73,7 @@ function measure(known, target, linkTarget) {
     let w = r.width;
     let h = r.height;
     for (const pseudo of ['::before', '::after']) {
-      const cs = getComputedStyle(el, pseudo);
+      const cs = getComputedStyle(thumb ?? el, pseudo);
       if (cs.content === 'none' || cs.position !== 'absolute') continue;
       w = Math.max(w, Number.parseFloat(cs.width) || 0);
       h = Math.max(h, Number.parseFloat(cs.height) || 0);

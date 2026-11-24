@@ -4,6 +4,7 @@ import { Icon, type IconName } from '../icons/Icon';
 import { cn } from '../lib/cn';
 import { Button } from './button';
 import { PopoverContent, Popover as PopoverRoot, PopoverTrigger } from './ui/popover';
+import { useIsClient } from './ui/use-is-client';
 
 /* Popover — a button that opens a small non-modal panel of controls (a
    filter's checkboxes, a column picker). Vercel's UI SDK popover.
@@ -16,7 +17,8 @@ import { PopoverContent, Popover as PopoverRoot, PopoverTrigger } from './ui/pop
 
    In the glass skin the panel is a LiquidGlass surface on the --raised
    fill, like Menu. `defaultOpen` renders it open (showcase, tests); the SDK
-   renders the panel in place, so it is in the server-rendered HTML too. */
+   renders the panel in place, so it is in the server-rendered HTML too;
+   `data-static` lifts it out of the flow there, until the client places it. */
 export interface PopoverProps {
   /** The trigger's visible content. */
   trigger?: ReactNode;
@@ -54,6 +56,7 @@ export function Popover({
   className,
   contentClassName,
 }: PopoverProps) {
+  const client = useIsClient();
   const content = useRef<HTMLDivElement | null>(null);
   const glass = useLiquidGlass<HTMLDivElement>({ fill: 'raised', band: 10, refraction: 24 });
   const setGlassRef = glass.ref;
@@ -94,6 +97,7 @@ export function Popover({
         aria-labelledby={undefined}
         className={cn('ui-popover', glass.props.className, contentClassName)}
         data-lg={glass.props['data-lg']}
+        data-static={client ? undefined : ''}
         style={glass.props.style}
       >
         {glass.layers}

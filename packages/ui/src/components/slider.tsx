@@ -133,7 +133,7 @@ export function Slider({
             )}
             <SliderThumb
               aria-labelledby={labelId}
-              className="ui-slider-thumb box-border block size-6 cursor-grab rounded-full border-2 border-solid border-primary bg-raised [box-shadow:var(--elev-2)] transition-[background-color,border-color] duration-(--dur-fast) ease-(--ease-out) hover:border-primary-hover has-focus-visible:[box-shadow:var(--ring)] active:cursor-grabbing active:bg-pressed data-dragging:cursor-grabbing data-disabled:cursor-not-allowed data-disabled:border-disabled-border data-disabled:bg-disabled motion-reduce:transition-none forced-colors:border-[Highlight]"
+              className="ui-slider-thumb relative box-border block size-6 cursor-grab pointer-coarse:before:absolute pointer-coarse:before:-inset-3.5 pointer-coarse:before:content-[''] rounded-full border-2 border-solid border-primary bg-raised [box-shadow:var(--elev-2)] transition-[background-color,border-color] duration-(--dur-fast) ease-(--ease-out) hover:border-primary-hover has-focus-visible:[box-shadow:var(--ring)] active:cursor-grabbing active:bg-pressed data-dragging:cursor-grabbing data-disabled:cursor-not-allowed data-disabled:border-disabled-border data-disabled:bg-disabled motion-reduce:transition-none forced-colors:border-[Highlight]"
             />
           </SliderTrack>
         </SliderControl>
