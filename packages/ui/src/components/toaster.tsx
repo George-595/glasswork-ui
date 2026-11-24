@@ -2,7 +2,7 @@ import { type ReactElement, useEffect, useSyncExternalStore } from 'react';
 import type { ToasterProps } from './toast';
 import { selfTime, snapshot, subscribe } from './toast-store';
 
-/* The Toaster facade. The queue is in toast-store.ts (a few hundred bytes); the Radix view is
+/* The Toaster facade. The queue is in toast-store.ts (a few hundred bytes); the UI SDK view is
    heavy (about 13 kB gzip with its stack), so it is fetched after hydration, not shipped in every page's
    first load. */
 
@@ -38,7 +38,7 @@ export function preloadToaster(): Promise<void> {
 }
 
 /** The one Toaster at the app's root. Renders nothing on the server and on the first client render (so
-    hydration matches), then fetches the Radix view: at once if a toast is waiting, else when the browser is
+    hydration matches), then fetches the UI SDK view: at once if a toast is waiting, else when the browser is
     idle (2 s at most). A toast pushed before the view arrives is kept and shown when it does. */
 export function Toaster(props: ToasterProps): ReactElement | null {
   // the server and a hydrating first render read `null`, so the markup matches; a page that is not hydrating

@@ -18,7 +18,7 @@ import { playSound, type SoundName } from '../sound';
 
    States, the same for every level:
    - hover         the level's -hover role;
-   - pressed       `:active`, `aria-pressed="true"` and `data-state="on"` take the
+   - pressed       `:active`, `aria-pressed="true"` and `data-pressed` take the
                    -active role and the inset elevation (--elev-inset);
    - disabled      `disabled` or `aria-disabled`: bg-disabled, text-disabled-fg,
                    border-disabled-border (no opacity); link keeps only the text role;
@@ -90,7 +90,7 @@ const base = [
   'transition-[background-color,color,border-color,transform] duration-(--dur-fast) ease-(--ease-out) motion-reduce:transition-none',
   'active:translate-y-px motion-reduce:active:translate-y-0',
   // pressed: the inset elevation (the -active fill is set per level below)
-  '[&:is(:active,[aria-pressed=true],[data-state=on]):not(:disabled,[aria-disabled=true])]:[--btn-shadow:var(--elev-inset)]',
+  '[&:is(:active,[aria-pressed=true],[data-pressed]):not(:disabled,[aria-disabled=true])]:[--btn-shadow:var(--elev-inset)]',
   'focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]',
   'disabled:pointer-events-none aria-disabled:pointer-events-none',
   'disabled:border-disabled-border disabled:bg-disabled disabled:text-disabled-fg',
@@ -106,35 +106,35 @@ const levels = {
   primary: [
     'border-transparent bg-primary text-on-primary',
     'hover:bg-primary-hover active:bg-primary-active',
-    'not-disabled:not-aria-disabled:aria-pressed:bg-primary-active not-disabled:not-aria-disabled:data-[state=on]:bg-primary-active',
+    'not-disabled:not-aria-disabled:aria-pressed:bg-primary-active not-disabled:not-aria-disabled:data-pressed:bg-primary-active',
     'not-disabled:not-aria-disabled:aria-expanded:bg-primary-hover',
     FILLED_RING,
   ],
   secondary: [
     'border-transparent bg-secondary text-on-secondary',
     'hover:bg-secondary-hover active:bg-secondary-active',
-    'not-disabled:not-aria-disabled:aria-pressed:bg-secondary-active not-disabled:not-aria-disabled:data-[state=on]:bg-secondary-active',
+    'not-disabled:not-aria-disabled:aria-pressed:bg-secondary-active not-disabled:not-aria-disabled:data-pressed:bg-secondary-active',
     'not-disabled:not-aria-disabled:aria-expanded:bg-secondary-hover',
     FLAT,
   ],
   neutral: [
     'border-neutral-border bg-neutral text-on-neutral',
     'hover:bg-neutral-hover active:bg-neutral-active',
-    'not-disabled:not-aria-disabled:aria-pressed:bg-neutral-active not-disabled:not-aria-disabled:data-[state=on]:bg-neutral-active',
+    'not-disabled:not-aria-disabled:aria-pressed:bg-neutral-active not-disabled:not-aria-disabled:data-pressed:bg-neutral-active',
     'not-disabled:not-aria-disabled:aria-expanded:bg-neutral-hover',
     FLAT,
   ],
   outline: [
     'border-outline-border bg-transparent text-on-outline',
     'hover:bg-outline-hover active:bg-outline-active',
-    'not-disabled:not-aria-disabled:aria-pressed:bg-outline-active not-disabled:not-aria-disabled:data-[state=on]:bg-outline-active',
+    'not-disabled:not-aria-disabled:aria-pressed:bg-outline-active not-disabled:not-aria-disabled:data-pressed:bg-outline-active',
     'not-disabled:not-aria-disabled:aria-expanded:bg-outline-hover',
     FLAT,
   ],
   ghost: [
     'border-transparent bg-transparent text-on-ghost',
     'hover:bg-ghost-hover active:bg-ghost-active',
-    'not-disabled:not-aria-disabled:aria-pressed:bg-ghost-active not-disabled:not-aria-disabled:data-[state=on]:bg-ghost-active',
+    'not-disabled:not-aria-disabled:aria-pressed:bg-ghost-active not-disabled:not-aria-disabled:data-pressed:bg-ghost-active',
     'not-disabled:not-aria-disabled:aria-expanded:bg-ghost-hover',
   ],
   link: [
@@ -146,14 +146,14 @@ const levels = {
   danger: [
     'border-transparent bg-danger-solid text-on-danger',
     'hover:bg-danger-solid-hover active:bg-danger-solid-active',
-    'not-disabled:not-aria-disabled:aria-pressed:bg-danger-solid-active not-disabled:not-aria-disabled:data-[state=on]:bg-danger-solid-active',
+    'not-disabled:not-aria-disabled:aria-pressed:bg-danger-solid-active not-disabled:not-aria-disabled:data-pressed:bg-danger-solid-active',
     'not-disabled:not-aria-disabled:aria-expanded:bg-danger-solid-hover',
     FILLED_RING,
   ],
   success: [
     'border-transparent bg-success-solid text-on-success',
     'hover:bg-success-solid-hover active:bg-success-solid-active',
-    'not-disabled:not-aria-disabled:aria-pressed:bg-success-solid-active not-disabled:not-aria-disabled:data-[state=on]:bg-success-solid-active',
+    'not-disabled:not-aria-disabled:aria-pressed:bg-success-solid-active not-disabled:not-aria-disabled:data-pressed:bg-success-solid-active',
     'not-disabled:not-aria-disabled:aria-expanded:bg-success-solid-hover',
     FILLED_RING,
   ],

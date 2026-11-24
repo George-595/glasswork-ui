@@ -1,4 +1,11 @@
-import { Dialog as DialogPrimitive } from 'radix-ui';
+import {
+  DialogBackdrop,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  Dialog as DialogRoot,
+  DialogTitle,
+} from '@ui-sdk/react/dialog';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from '../icons/Icon';
 import { cn } from '../lib/cn';
@@ -7,17 +14,16 @@ import { playSound } from '../sound';
 import { Button } from './button';
 
 /* Sheet — a panel that slides in from an edge, for detail drawers and forms
-   that should not leave the page. Radix Dialog underneath, so it is a real
-   modal: focus is trapped inside, Esc and the Close button dismiss it, the
-   page behind is hidden from assistive tech, and focus returns to whatever
-   opened it. The title and the description are both required, because a
+   that should not leave the page. Vercel's UI SDK dialog underneath, so it is
+   a real modal: focus is trapped inside, Esc and the Close button dismiss it,
+   the page behind is inert, and focus returns to whatever opened it. The title and the description are both required, because a
    dialog without a name or a purpose is unusable by ear; pass `hideDescription`
    to keep the description for screen readers only.
 
    On a touch screen nothing inside takes focus when it opens: the sheet itself does. A
    field that grabs focus raises the keyboard, and the keyboard covers the footer's buttons
    (the Take out button of a scan-out sheet); the person taps the field they want. With a
-   mouse or keyboard the first control is focused, as Radix does.
+   mouse or keyboard the first control is focused.
 
    It slides on a transform only and the slide stops under
    prefers-reduced-motion. Glass: the panel is the raised glass material (the one
@@ -68,17 +74,18 @@ export function Sheet({
   fallbackFocus,
   className,
 }: SheetProps) {
-  // Radix returns focus to a Trigger; a Sheet is opened from anywhere, so it
-  // remembers whatever had focus when it opened and gives it back on close
-  const opener = useRef<Element | null>(null);
-  // the panel mounts a render after `open` (Radix's Portal): the ref is for the focus handler,
-  // which runs as it mounts; the state is what the footer effect waits for
-  const content = useRef<HTMLDivElement | null>(null);
+  /* A Sheet is opened from anywhere, not from a trigger: it remembers whatever had focus as it
+     opened (read while rendering the open, before any effect moves focus) and gives it back on
+     close, or `fallbackFocus` when that is gone */
+  const [opener, setOpener] = useState<Element | null>(null);
+  const [seenOpen, setSeenOpen] = useState(open);
+  if (open !== seenOpen) {
+    setSeenOpen(open);
+    if (open && typeof document !== 'undefined') setOpener(document.activeElement);
+  }
+  // the panel mounts once open: the state is what the footer effect waits for
   const [panel, setPanel] = useState<HTMLDivElement | null>(null);
-  const setContent = useCallback((el: HTMLDivElement | null) => {
-    content.current = el;
-    setPanel(el);
-  }, []);
+  const setContent = useCallback((el: HTMLDivElement | null) => setPanel(el), []);
   // the open and close sounds: on a change of `open`, never on first mount
   const wasOpen = useRef(open);
   useEffect(() => {
@@ -98,77 +105,70 @@ export function Sheet({
     return () => ro.disconnect();
   }, [panel, stickyFooter]);
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="ui-sheet-overlay fixed inset-0 z-50 bg-scrim motion-safe:data-[state=closed]:animate-[ui-fade-out_var(--dur-base)_var(--ease-in)] motion-safe:data-[state=open]:animate-[ui-fade-in_var(--dur-base)_var(--ease-out)]" />
-        <DialogPrimitive.Content
-          ref={setContent}
-          data-side={side}
-          onOpenAutoFocus={(e) => {
-            opener.current = document.activeElement;
-            if (prefersTouch()) {
-              // no keyboard: the sheet takes focus (named by its title), not its first field
-              e.preventDefault();
-              content.current?.focus({ preventScroll: true });
-            }
-          }}
-          onCloseAutoFocus={(e) => {
-            e.preventDefault();
-            const back = opener.current;
-            if (back instanceof HTMLElement && back.isConnected) back.focus();
-            else fallbackFocus?.()?.focus({ preventScroll: false });
-          }}
-          className={cn(
-            'ui-sheet fixed z-50 box-border flex flex-col gap-4 overflow-y-auto border-solid border-border bg-overlay p-6 text-fg glass-chrome',
-            '[box-shadow:var(--elev-3)] focus-visible:outline-none',
-            'scroll-pb-[calc(var(--ui-sheet-footer-h,0px)+8px)]',
-            'motion-safe:data-[state=closed]:animate-(--ui-sheet-out) motion-safe:data-[state=open]:animate-(--ui-sheet-in)',
-            SIDE[side],
-            className,
-          )}
-          style={{
-            ['--ui-sheet-in' as string]: `ui-sheet-in-${side} var(--dur-slow) var(--ease-out)`,
-            ['--ui-sheet-out' as string]: `ui-sheet-out-${side} var(--dur-base) var(--ease-in)`,
-          }}
-        >
-          <div className="ui-sheet-header flex flex-col gap-1.5 pr-8">
-            <DialogPrimitive.Title className="ui-sheet-title m-0 font-sans text-[16px] leading-[1.3] font-semibold tracking-[-0.01em] text-fg">
-              {title}
-            </DialogPrimitive.Title>
-            <DialogPrimitive.Description
-              className={cn(
-                'ui-sheet-description m-0 text-[13px] leading-normal text-fg-subtle',
-                hideDescription && 'ui-sr-only',
-              )}
-            >
-              {description}
-            </DialogPrimitive.Description>
+    <DialogRoot open={open} onOpenChange={(next) => onOpenChange(next)}>
+      <DialogBackdrop className="ui-sheet-overlay fixed inset-0 z-50 bg-scrim motion-safe:data-ending-style:animate-[ui-fade-out_var(--dur-base)_var(--ease-in)] motion-safe:data-open:animate-[ui-fade-in_var(--dur-base)_var(--ease-out)]" />
+      <DialogContent
+        ref={setContent}
+        data-side={side}
+        // no keyboard: the sheet takes focus (named by its title), not its first field
+        initialFocus={prefersTouch() ? 'content' : 'auto'}
+        finalFocus={() => {
+          const back = opener;
+          if (back instanceof HTMLElement && back.isConnected) return back;
+          return fallbackFocus?.() ?? null;
+        }}
+        className={cn(
+          'ui-sheet fixed z-50 m-0 box-border flex max-w-none flex-col gap-4 overflow-y-auto border-solid border-border bg-overlay p-6 text-fg glass-chrome',
+          '[box-shadow:var(--elev-3)] focus-visible:outline-none',
+          'scroll-pb-[calc(var(--ui-sheet-footer-h,0px)+8px)]',
+          'motion-safe:data-ending-style:animate-(--ui-sheet-out) motion-safe:data-open:animate-(--ui-sheet-in)',
+          SIDE[side],
+          className,
+        )}
+        style={{
+          ['--ui-sheet-in' as string]: `ui-sheet-in-${side} var(--dur-slow) var(--ease-out)`,
+          ['--ui-sheet-out' as string]: `ui-sheet-out-${side} var(--dur-base) var(--ease-in)`,
+        }}
+      >
+        <div className="ui-sheet-header flex flex-col gap-1.5 pr-8">
+          <DialogTitle className="ui-sheet-title m-0 font-sans text-[16px] leading-[1.3] font-semibold tracking-[-0.01em] text-fg">
+            {title}
+          </DialogTitle>
+          <DialogDescription
+            className={cn(
+              'ui-sheet-description m-0 text-[13px] leading-normal text-fg-subtle',
+              hideDescription && 'ui-sr-only',
+            )}
+          >
+            {description}
+          </DialogDescription>
+        </div>
+        <div className="ui-sheet-body min-h-0 flex-1">{children}</div>
+        {footer && (
+          <div
+            className={cn(
+              'ui-sheet-footer flex gap-2',
+              footerLayout === 'stretch' ? '[&>*]:min-w-0 [&>*]:flex-1' : 'justify-end',
+              stickyFooter &&
+                'sticky bottom-0 z-10 -mx-6 border-t border-solid border-border bg-overlay px-6 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]',
+            )}
+          >
+            {footer}
           </div>
-          <div className="ui-sheet-body min-h-0 flex-1">{children}</div>
-          {footer && (
-            <div
-              className={cn(
-                'ui-sheet-footer flex gap-2',
-                footerLayout === 'stretch' ? '[&>*]:min-w-0 [&>*]:flex-1' : 'justify-end',
-                stickyFooter &&
-                  'sticky bottom-0 z-10 -mx-6 border-t border-solid border-border bg-overlay px-6 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]',
-              )}
-            >
-              {footer}
-            </div>
-          )}
-          <DialogPrimitive.Close asChild>
+        )}
+        <DialogClose
+          render={
             <Button
               variant="ghost"
               size="icon"
               className="ui-sheet-close absolute top-3.5 right-3.5 pointer-coarse:top-2 pointer-coarse:right-2"
               aria-label="Close"
-            >
-              <Icon name="x" size={15} />
-            </Button>
-          </DialogPrimitive.Close>
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+            />
+          }
+        >
+          <Icon name="x" size={15} />
+        </DialogClose>
+      </DialogContent>
+    </DialogRoot>
   );
 }

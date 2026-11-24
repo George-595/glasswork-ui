@@ -4,15 +4,15 @@ import { type DeferredModule, deferredModule, useDeferredModule } from './deferr
 import type { MenuProps } from './menu';
 import { MenuTrigger } from './menu-trigger';
 
-/* DeferredMenu — Menu with Radix fetched on intent. An always-mounted menu (the shell's user menu) costs one
-   button in the first load; the Radix menu, popper and focus stack arrive when the browser is idle, or at once on
+/* DeferredMenu — Menu with the UI SDK menu fetched on intent. An always-mounted menu (the shell's user menu) costs one
+   button in the first load; the SDK menu, its placement and focus handling arrive when the browser is idle, or at once on
    hover, focus, a press or a key.
 
    Before it arrives the stand-in is the same markup as Menu's closed trigger (MenuTrigger inside the same wrapper),
-   less Radix's id and aria-controls. A press, Enter, Space, ArrowDown or ArrowUp before then is not lost: the menu opens as
-   soon as it arrives, with focus where Radix would have put it. A stand-in that had focus hands it to the real
+   less the SDK's id and aria-controls. A press, Enter, Space, ArrowDown or ArrowUp before then is not lost: the menu opens as
+   soon as it arrives, with focus where the SDK would have put it. A stand-in that had focus hands it to the real
    trigger. */
-/** An open gesture older than this when Radix arrives is ignored. */
+/** An open gesture older than this when the module arrives is ignored. */
 const GESTURE_MS = 2000;
 
 type MenuModule = Pick<typeof import('./menu'), 'Menu'>;
@@ -22,7 +22,7 @@ export function createDeferredMenu(module: DeferredModule<MenuModule>) {
   // biome-ignore lint/correctness/noComponentHookFactories: called once, at module scope (and by tests that hold the module back)
   return function DeferredMenu(props: MenuProps): ReactElement {
     const { module: loaded, request } = useDeferredModule(module);
-    /* The open gesture waiting for Radix. It is dropped when focus leaves, when the fetch fails and after
+    /* The open gesture waiting for the module. It is dropped when focus leaves, when the fetch fails and after
        GESTURE_MS: a gesture that old is not what the person wants now. */
     const gesture = useRef<{ mode: 'pointer' | 'keyboard' | 'keyboard-last'; at: number }>(
       undefined,
@@ -62,9 +62,10 @@ export function createDeferredMenu(module: DeferredModule<MenuModule>) {
           icon={props.icon}
           iconOnly={props.iconOnly}
           iconSize={props.iconSize}
+          data-slot="menu-trigger"
           aria-haspopup="menu"
           aria-expanded="false"
-          data-state="closed"
+          data-closed=""
           type="button"
           onPointerEnter={ask}
           onFocus={() => {
@@ -80,7 +81,7 @@ export function createDeferredMenu(module: DeferredModule<MenuModule>) {
             ask();
             if (e.ctrlKey || e.metaKey || e.altKey) return;
             if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
-              e.preventDefault(); // as Radix's trigger does; Enter would otherwise also click
+              e.preventDefault(); // as the SDK's trigger does; Enter would otherwise also click
               say('keyboard');
             } else if (e.key === 'ArrowUp') {
               e.preventDefault(); // as Menu does: it opens on the last item

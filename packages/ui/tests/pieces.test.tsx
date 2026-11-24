@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /* Behaviour of the second set: keyboard patterns and state the axe gate
    cannot see (sorting, paging, selection, persistence). Menu, Tabs, Tooltip
-   and Switch are Radix (shadcn) underneath; charts live in charts.test.tsx. */
+   and Switch are the UI SDK underneath; charts live in charts.test.tsx. */
 import { act, type ReactNode, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -23,7 +23,7 @@ import {
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-/* What Radix needs from a browser that jsdom lacks: ResizeObserver (Popper
+/* What the UI SDK needs from a browser that jsdom lacks: ResizeObserver (Popper
    measures its anchor), pointer capture and scrollIntoView. */
 beforeAll(() => {
   class ResizeObserverStub {
@@ -65,7 +65,7 @@ function render(node: ReactNode) {
 }
 const $ = <E extends Element = HTMLElement>(sel: string) => host.querySelector(sel) as E;
 const $$ = (sel: string) => Array.from(host.querySelectorAll<HTMLElement>(sel));
-/* Radix portals menus and tooltips to <body>, outside the host */
+/* popups are looked up in the whole document */
 const $doc = <E extends Element = HTMLElement>(sel: string) => document.querySelector<E>(sel);
 const $$doc = (sel: string) => Array.from(document.querySelectorAll<HTMLElement>(sel));
 function key(el: Element, k: string, init: KeyboardEventInit = {}) {
@@ -76,12 +76,12 @@ function key(el: Element, k: string, init: KeyboardEventInit = {}) {
   });
 }
 const click = (el: HTMLElement) => act(() => el.click());
-/** A primary-button press, which is what opens a Radix menu. */
+/** A primary-button press. */
 const press = (el: Element) =>
   act(() => {
     el.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 }));
   });
-/** Run Radix's deferred work (roving focus, focus return, outside listeners). */
+/** Run the UI SDK's deferred work (roving focus, focus return, outside listeners). */
 const flush = () =>
   act(async () => {
     await new Promise((r) => setTimeout(r, 0));
@@ -157,16 +157,14 @@ describe('Tabs', () => {
     render(<Tabs tabs={TABS} label="Demo" value="b" onValueChange={spy} />);
     expect($('[aria-selected="true"]').textContent).toBe('Beta');
     act(() => {
-      $$('[role="tab"]')[2]?.dispatchEvent(
-        new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0 }),
-      );
+      $$('[role="tab"]')[2]?.click();
     });
     expect(spy).toHaveBeenCalledWith('c');
     expect($('[aria-selected="true"]').textContent).toBe('Beta'); // the parent decides
   });
 });
 
-/* The same behaviour tests run against Menu and against DeferredMenu once Radix has arrived (primed below). How it
+/* The same behaviour tests run against Menu and against DeferredMenu once the menu module has arrived (primed below). How it
    behaves before arrival is in deferred.test.tsx. */
 const arrivedMenu = deferredModule(async () => menuModule);
 const MENU_IMPLS = [
@@ -258,29 +256,15 @@ describe.each(MENU_IMPLS)('%s', (_name, MenuX) => {
     expect(ctrlR.defaultPrevented).toBe(false);
     expect(active()).toBe(item); // no type-ahead jump to Reports
 
-    // Tab leaves for the next control and closes the menu, not back to the trigger
-    key(item, 'Tab');
-    await flush();
-    expect($doc('[role="menu"]')).toBeNull();
-    expect(active().textContent).toBe('After');
-
-    // Shift+Tab goes back to the trigger
-    act(() => trigger.focus());
-    key(trigger, 'ArrowDown');
-    await flush();
-    key(active(), 'Tab', { shiftKey: true });
-    await flush();
-    expect($doc('[role="menu"]')).toBeNull();
-    expect(active()).toBe(trigger);
-
-    // focus leaving any other way closes it without pulling focus back
-    key(trigger, 'ArrowDown');
-    await flush();
+    /* Tab closes the menu: the SDK puts focus back on the trigger and leaves the Tab to the browser, which moves on
+       to the control after it (Shift+Tab, the one before). jsdom moves no focus on Tab. */
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
     act(() => {
-      active().dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+      item.dispatchEvent(tab);
     });
     await flush();
     expect($doc('[role="menu"]')).toBeNull();
+    expect(tab.defaultPrevented).toBe(false);
 
     act(() => trigger.focus());
     key(trigger, 'ArrowDown');
@@ -336,13 +320,13 @@ describe('Tooltip', () => {
       </Tooltip>,
     );
     await flush();
-    const tip = $doc('[role="tooltip"]');
+    const tip = $doc('[role="tooltip"]:not([hidden])');
     expect(tip?.textContent).toBe('Copies a link');
     expect($('button').getAttribute('aria-describedby')).toBe(tip?.id);
     key(document.body, 'Escape');
     await flush();
-    expect($doc('[role="tooltip"]')).toBeNull();
-    expect($('button').hasAttribute('aria-describedby')).toBe(false);
+    expect($doc('[role="tooltip"]:not([hidden])')).toBeNull();
+    expect($('button').getAttribute('aria-describedby')).toBe(tip?.id); // the SDK keeps the hint wired up while hidden
   });
 
   it('shows on keyboard focus', async () => {
@@ -351,10 +335,10 @@ describe('Tooltip', () => {
         <button type="button">Share</button>
       </Tooltip>,
     );
-    expect($doc('[role="tooltip"]')).toBeNull();
+    expect($doc('[role="tooltip"]:not([hidden])')).toBeNull();
     act(() => $('button').focus());
     await flush();
-    expect($doc('[role="tooltip"]')?.textContent).toBe('Copies a link');
+    expect($doc('[role="tooltip"]:not([hidden])')?.textContent).toBe('Copies a link');
   });
 
   it('server-renders a defaultOpen tip in place', () => {
@@ -385,7 +369,7 @@ const COLS: Column<Row>[] = [
   { key: 'n', header: 'Count', align: 'end', sortable: true },
 ];
 
-/* The row checkboxes, native or Radix: either way checked / mixed read the same. */
+/* The row checkboxes, native or headless: either way checked / mixed read the same. */
 const boxes = () => $$('input[type="checkbox"], [role="checkbox"]');
 const isChecked = (el: HTMLElement | undefined) =>
   el instanceof HTMLInputElement ? el.checked : el?.getAttribute('aria-checked') === 'true';

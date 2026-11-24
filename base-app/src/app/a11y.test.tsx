@@ -180,7 +180,7 @@ describe('a11y keyboard', () => {
     expect(first.textContent).toBe('Users');
 
     await press(first, 'Escape');
-    await flush(); // Radix hands focus back after the menu has unmounted
+    await flush(); // the menu hands focus back after the menu has unmounted
     expect(document.activeElement).toBe(getByRole(document.body, 'button', 'Admin'));
 
     await view.unmount();

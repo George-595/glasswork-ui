@@ -41,7 +41,7 @@ import {
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-/* What Radix needs from a browser that jsdom lacks. */
+/* What the UI SDK needs from a browser that jsdom lacks. */
 beforeAll(() => {
   class ResizeObserverStub {
     observe() {}
@@ -96,7 +96,7 @@ function render(node: ReactNode) {
 }
 const $ = <E extends Element = HTMLElement>(sel: string) => host.querySelector(sel) as E;
 const $$ = (sel: string) => Array.from(host.querySelectorAll<HTMLElement>(sel));
-/* Radix portals toasts and sheets to <body>, outside the host */
+/* toasts and sheets may sit outside the host */
 const $doc = <E extends Element = HTMLElement>(sel: string) => document.querySelector<E>(sel);
 const $$doc = (sel: string) => Array.from(document.querySelectorAll<HTMLElement>(sel));
 function key(el: Element, k: string, init: KeyboardEventInit = {}) {
@@ -238,14 +238,11 @@ describe('SegmentedControl', () => {
     expect($('[role="radiogroup"]').getAttribute('aria-label')).toBe('Range');
     const radios = $$('[role="radio"]');
     expect(radios.map((r) => r.getAttribute('aria-checked'))).toEqual(['true', 'false', 'false']);
-    // one tab stop: the group, which hands focus to the checked segment
-    const group = $('[role="radiogroup"]');
-    expect(group.tabIndex).toBe(0);
-    act(() => group.focus());
-    expect(active()).toBe(radios[0]);
+    // one tab stop: the checked segment
+    expect(radios.map((r) => r.tabIndex)).toEqual([0, -1, -1]);
   });
 
-  it('arrow keys move focus and choose, wrap, and Home/End jump', async () => {
+  it('arrow keys move focus and choose, and wrap (as native radios: no Home/End)', async () => {
     const spy = vi.fn<(v: string) => void>();
     render(<Controlled spy={spy} />);
     act(() => $$('[role="radio"]')[0]?.focus());
@@ -254,7 +251,7 @@ describe('SegmentedControl', () => {
     expect(active().textContent).toBe('30 days');
     expect(spy).toHaveBeenLastCalledWith('30');
     expect(active().getAttribute('aria-checked')).toBe('true');
-    key(active(), 'End');
+    key(active(), 'ArrowRight');
     await flush();
     expect(active().textContent).toBe('90 days');
     key(active(), 'ArrowRight'); // wraps
@@ -332,9 +329,9 @@ describe('Toaster and toast()', () => {
     // the variant is a word too, not only an icon and a colour
     expect(item?.textContent).toContain('Success:');
     expect(item?.getAttribute('data-variant')).toBe('success');
-    // Radix mirrors it into a polite live region (a frame or two later)
+    // the SDK announces it through a polite live region (a moment later)
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 300));
     });
     const live = $$doc('[role="status"][aria-live="polite"]');
     expect(live.some((l) => l.textContent?.includes('Saved'))).toBe(true);
@@ -351,8 +348,13 @@ describe('Toaster and toast()', () => {
     act(() => {
       toast.error('Could not send', { action: { label: 'Retry', onClick: undo } });
     });
-    await flush();
-    expect($$doc('[role="status"][aria-live="assertive"]').length).toBeGreaterThan(0);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 300));
+    });
+    // announced through the assertive (alert) live region
+    expect(
+      $$doc('[aria-live="assertive"]').some((l) => l.textContent?.includes('Could not send')),
+    ).toBe(true);
     expect($doc('.ui-toast')?.textContent).toContain('Error:');
     const retry = $$doc('.ui-toast button').find((b) => b.textContent === 'Retry') as HTMLElement;
     click(retry);
@@ -473,7 +475,8 @@ describe('Slider', () => {
     );
     const thumb = $('[role="slider"]');
     expect(nameOf(thumb)).toBe('Volume');
-    expect(thumb.getAttribute('aria-valuenow')).toBe('50');
+    // a native range input: its value is the value screen readers read
+    expect((thumb as HTMLInputElement).value).toBe('50');
     expect(thumb.getAttribute('aria-valuetext')).toBe('50 percent');
     act(() => thumb.focus());
     key(thumb, 'ArrowRight');
@@ -483,9 +486,9 @@ describe('Slider', () => {
     key(thumb, 'ArrowLeft');
     expect(spy).toHaveBeenLastCalledWith(45);
     key(thumb, 'Home');
-    expect(thumb.getAttribute('aria-valuenow')).toBe('0');
+    expect((thumb as HTMLInputElement).value).toBe('0');
     key(thumb, 'End');
-    expect(thumb.getAttribute('aria-valuenow')).toBe('100');
+    expect((thumb as HTMLInputElement).value).toBe('100');
     expect(host.textContent).toContain('100 percent');
   });
 

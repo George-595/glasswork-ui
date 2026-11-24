@@ -11,9 +11,9 @@ import {
 import { type DeferredModule, deferredModule, useDeferredModule } from './deferred';
 import type { TooltipProps } from './tooltip';
 
-/* DeferredTooltip — Tooltip with Radix fetched on intent or idle: a rail of always-mounted links costs the links,
+/* DeferredTooltip — Tooltip with the UI SDK tooltip fetched on intent or idle: a rail of always-mounted links costs the links,
    not the tooltip stack. Before it arrives the child sits in the same wrapper span as Tooltip's, and a hover or a
-   focus asks for the module. Radix wraps the child, so React remounts its element on arrival; a child that had
+   focus asks for the module. The SDK trigger wraps the child, so React remounts its element on arrival; a child that had
    focus is focused again. The tooltip is a hint only (see Tooltip): the child's own name never depends on it. */
 type TooltipModule = Pick<typeof import('./tooltip'), 'Tooltip'>;
 
@@ -61,12 +61,7 @@ export function createDeferredTooltip(module: DeferredModule<TooltipModule>) {
       if (defaultOpen) request();
     }, [defaultOpen, request]);
 
-    const child = cloneElement(
-      children,
-      ready
-        ? ({ ref: setTarget } as object)
-        : ({ ref: setTarget, 'data-state': 'closed' } as object),
-    );
+    const child = cloneElement(children, { ref: setTarget } as object);
     if (loaded && ready) {
       const Tooltip = loaded.Tooltip;
       return <Tooltip {...props}>{child}</Tooltip>;

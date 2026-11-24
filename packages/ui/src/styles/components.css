@@ -173,7 +173,7 @@ html:has(.ui-topbar) {
 @keyframes ui-toast-swipe-out {
   to {
     opacity: 0;
-    transform: translateX(var(--radix-toast-swipe-end-x));
+    transform: translateX(calc(var(--toast-swipe-x, 0px) + 100%));
   }
 }
 @keyframes ui-toast-countdown {
@@ -244,8 +244,8 @@ html:has(.ui-topbar) {
   .ui-choice-card[data-checked] {
     outline: 2px solid Highlight;
   }
-  [role="tab"][data-state="active"],
-  .ui-segmented-item[data-state="on"] {
+  [role="tab"][data-selected],
+  .ui-segmented-item[data-checked] {
     border-color: Highlight;
   }
   .ui-table-scroll tr[data-state="selected"] {

@@ -11,7 +11,7 @@ import { cn } from '../lib/cn';
 import { playSound } from '../sound';
 
 /* Checkbox — shadcn's checkbox look on a native <input type="checkbox"> (the
-   native control already has the role, the keys and the form value; Radix's
+   native control already has the role, the keys and the form value; a headless checkbox's
    button version is not needed). The tick and the mixed-state dash are drawn
    by ::after. Colours are roles only: border-border-input at rest (3:1), the primary
    fill when checked or mixed, border-danger when invalid, the disabled roles when

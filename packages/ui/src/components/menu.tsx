@@ -1,11 +1,4 @@
-import {
-  type KeyboardEvent,
-  type PointerEvent,
-  useCallback,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { type ComponentPropsWithRef, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useLiquidGlass } from '../glass/LiquidGlass';
 import { Icon, type IconName } from '../icons/Icon';
 import { cn } from '../lib/cn';
@@ -19,26 +12,22 @@ import {
 } from './ui/dropdown-menu';
 import { useIsClient } from './ui/use-is-client';
 
-/* Menu — the WAI-ARIA menu button pattern on Radix DropdownMenu (shadcn).
+/* Menu — the WAI-ARIA menu button pattern on Vercel's UI SDK
+   (@ui-sdk/react/menu).
 
-   Radix gives the roles, the roving focus, Up/Down (wrapping), Home/End,
-   type-ahead, Esc back to the trigger, a press outside to close, and Space
-   or Enter to activate any item, links included. On top of it:
-   - ArrowUp on the trigger opens on the last item;
-   - Tab and Shift+Tab leave the menu (Radix would swallow Tab) and close it:
-     focus goes to the control after the trigger, or back to the trigger;
-   - focus leaving the menu any other way closes it without pulling focus
-     back;
-   - a click with no pointer press before it (assistive tech, scripts)
-     toggles it too;
-   - Ctrl/Cmd/Alt shortcuts pass through untouched (Radix ignores them).
+   The SDK gives the roles, the roving focus, Up/Down (wrapping), Home/End,
+   type-ahead, Esc back to the trigger, a press outside to close, Enter or
+   Space to activate any item (links included), ArrowUp on the trigger to
+   open on the last item, and Tab and Shift+Tab to close it and move on from
+   the trigger, as from any button. Ctrl/Cmd/Alt shortcuts pass through
+   untouched.
 
    Non-modal, so the rest of the page is not hidden from assistive tech. In
    the glass skin the menu is a LiquidGlass panel on the --raised fill.
-   `defaultOpen` renders it open without moving focus; on the server (and
-   while hydrating) the open menu renders in place, because Radix's portal
-   only mounts on the client, so it is in the static HTML the a11y gate
-   scans. */
+   `defaultOpen` renders it open without moving focus. The SDK renders the
+   content in place (the browser's top layer, no portal), so an open menu is
+   in the server-rendered HTML the a11y gate scans; `data-static` marks it
+   until the client has hydrated, for the CSS that places it there. */
 export type MenuItem =
   | {
       id: string;
@@ -70,26 +59,15 @@ export interface MenuProps {
   className?: string;
 }
 
-/** @internal Set only by DeferredMenu, which mounts a Menu once Radix has arrived. */
+/** @internal Set only by DeferredMenu, which mounts a Menu once the UI SDK menu has arrived. */
 export interface MenuInternalProps {
-  /** Open on the first render, as a press (focus on the content), a key (focus on the first item) or ArrowUp (focus on the last item) would have. */
+  /** Open on the first render, as a press (focus on the menu), a key (focus on the first item) or ArrowUp (focus on the last item) would have. */
   openOnMount?: 'pointer' | 'keyboard' | 'keyboard-last';
   /** Move focus to the trigger on mount: the stand-in it replaces had it. */
   focusOnMount?: boolean;
 }
 
 const isSeparator = (item: MenuItem): item is { separator: true } => 'separator' in item;
-
-const TABBABLE =
-  'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]';
-
-/** The control Tab reaches after `from`, skipping `skip`; `from` if none. */
-function nextTabbable(from: HTMLElement, skip: HTMLElement | null): HTMLElement {
-  const all = Array.from(from.ownerDocument.querySelectorAll<HTMLElement>(TABBABLE)).filter(
-    (el) => el.tabIndex >= 0 && !el.closest('[hidden],[inert]') && !skip?.contains(el),
-  );
-  return all[all.indexOf(from) + 1] ?? from;
-}
 
 export function Menu({
   label,
@@ -107,11 +85,7 @@ export function Menu({
   const client = useIsClient();
   const trigger = useRef<HTMLButtonElement>(null);
   const content = useRef<HTMLDivElement | null>(null);
-  const quietOpen = useRef(defaultOpen); // the defaultOpen mount keeps focus where it is
-  const focusLast = useRef(openOnMount === 'keyboard-last'); // opened by ArrowUp before Radix arrived
-  const focusFirst = useRef(openOnMount === 'keyboard'); // opened by a key before Radix arrived
-  const keepFocus = useRef(false); // focus already moved on: do not send it back
-  const pointerToggled = useRef(false);
+  const pending = useRef(openOnMount); // a gesture made before the module arrived
   const glass = useLiquidGlass<HTMLDivElement>({ fill: 'raised', band: 10, refraction: 24 });
   const setGlassRef = glass.ref;
   const contentRef = useCallback(
@@ -122,101 +96,42 @@ export function Menu({
     [setGlassRef],
   );
 
+  /* Mounted open for a gesture DeferredMenu caught: focus goes where the SDK
+     would have put it for that gesture (a menu rendered open moves none). */
   useLayoutEffect(() => {
     if (focusOnMount) trigger.current?.focus();
+    const mode = pending.current;
+    pending.current = undefined;
+    const menu = content.current;
+    if (!mode || !menu) return;
+    const all = menu.querySelectorAll<HTMLElement>('[role="menuitem"]');
+    if (mode === 'pointer') menu.focus();
+    else if (mode === 'keyboard') all[0]?.focus();
+    else all[all.length - 1]?.focus();
   }, [focusOnMount]);
-
-  const onTriggerKey = (e: KeyboardEvent<HTMLButtonElement>) => {
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      focusLast.current = true;
-      setOpen(true);
-    }
-  };
-  const onTriggerPointer = (e: PointerEvent<HTMLButtonElement>) => {
-    pointerToggled.current = e.button === 0 && !e.ctrlKey;
-  };
-  const onTriggerClick = () => {
-    // Radix opens on pointerdown and on Enter/Space (which cancel the click);
-    // a bare click comes from assistive tech or a script
-    if (!pointerToggled.current) setOpen((o) => !o);
-    pointerToggled.current = false;
-  };
-
-  const onContentKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== 'Tab') return;
-    e.preventDefault(); // Radix skips its own Tab trap once this is prevented
-    const from = trigger.current;
-    if (!from) return;
-    keepFocus.current = true;
-    setOpen(false);
-    (e.shiftKey ? from : nextTabbable(from, content.current)).focus();
-  };
-
-  /* Radix's Menu.Content takes onOpenAutoFocus and DropdownMenu.Content
-     passes it through, but its type leaves it out; spread so it still
-     arrives. It keeps focus put for the defaultOpen mount, and lands on the
-     last item after ArrowUp on the trigger. */
-  const openAutoFocus: { onOpenAutoFocus: (e: Event) => void } = {
-    onOpenAutoFocus: (e) => {
-      if (quietOpen.current) {
-        quietOpen.current = false;
-        e.preventDefault();
-      } else if (focusFirst.current) {
-        focusFirst.current = false;
-        e.preventDefault();
-        content.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
-      } else if (focusLast.current) {
-        focusLast.current = false;
-        e.preventDefault();
-        const all = content.current?.querySelectorAll<HTMLElement>('[role="menuitem"]');
-        all?.[all.length - 1]?.focus();
-      }
-    },
-  };
 
   return (
     <div className={cn('ui-menu-wrap relative inline-flex', className)}>
-      <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
-        <DropdownMenuTrigger asChild>
-          <MenuTrigger
-            ref={trigger}
-            label={label}
-            icon={icon}
-            iconOnly={iconOnly}
-            iconSize={iconSize}
-            onKeyDown={onTriggerKey}
-            onPointerDown={onTriggerPointer}
-            onClick={onTriggerClick}
-          />
-        </DropdownMenuTrigger>
+      <DropdownMenu open={open} onOpenChange={setOpen} modal={false} loop>
+        <DropdownMenuTrigger
+          render={
+            <MenuTrigger
+              ref={trigger}
+              label={label}
+              icon={icon}
+              iconOnly={iconOnly}
+              iconSize={iconSize}
+            />
+          }
+        />
         <DropdownMenuContent
           ref={contentRef}
-          portal={client}
           align={align}
-          loop
           data-align={align}
           data-static={client ? undefined : ''}
           className={cn('ui-menu min-w-[190px]', glass.props.className)}
           data-lg={glass.props['data-lg']}
           style={glass.props.style}
-          onKeyDown={onContentKey}
-          onBlur={(e) => {
-            const to = e.relatedTarget;
-            if (
-              to instanceof Node &&
-              (e.currentTarget.contains(to) || trigger.current?.contains(to))
-            ) {
-              return;
-            }
-            keepFocus.current = true;
-            setOpen(false);
-          }}
-          {...openAutoFocus}
-          onCloseAutoFocus={(e) => {
-            if (keepFocus.current) e.preventDefault();
-            keepFocus.current = false;
-          }}
         >
           {glass.layers}
           {items.map((item, n) => {
@@ -230,26 +145,19 @@ export function Menu({
                 {item.label}
               </>
             );
-            const cls = cn(
-              'ui-menu-item min-h-7 pointer-coarse:min-h-12 no-underline',
-              item.danger && 'text-danger',
-            );
-            return item.href ? (
+            return (
               <DropdownMenuItem
                 key={item.id}
-                asChild
-                className={cls}
+                label={item.label}
+                render={item.href ? <ItemLink href={item.href} /> : undefined}
+                className={cn(
+                  'ui-menu-item min-h-7 pointer-coarse:min-h-12 no-underline',
+                  item.danger && 'text-danger',
+                )}
                 data-danger={item.danger || undefined}
-                onSelect={() => item.onSelect?.()}
-              >
-                <a href={item.href}>{body}</a>
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem
-                key={item.id}
-                className={cls}
-                data-danger={item.danger || undefined}
-                onSelect={() => item.onSelect?.()}
+                onSelect={() => {
+                  item.onSelect?.();
+                }}
               >
                 {body}
               </DropdownMenuItem>
@@ -259,4 +167,9 @@ export function Menu({
       </DropdownMenu>
     </div>
   );
+}
+
+/* A link item: the SDK renders the item's label and props into it */
+function ItemLink({ children, ...props }: ComponentPropsWithRef<'a'>) {
+  return <a {...props}>{children}</a>;
 }

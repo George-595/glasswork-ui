@@ -4,14 +4,13 @@ import { cn } from '../lib/cn';
 import { playSound } from '../sound';
 import { TabsContent, TabsList, Tabs as TabsRoot, TabsTrigger } from './ui/tabs';
 
-/* Tabs — the WAI-ARIA tabs pattern with automatic activation, on Radix Tabs
-   (shadcn). Left/Right move and select (wrapping), Home/End jump to the
-   ends. The selected tab is the one tab stop (roving tabindex); Radix's own
-   default would make the tab list itself the stop, so the list is taken out
-   of the tab order here. Every panel stays rendered and the inactive ones
-   are `hidden`, so aria-controls always points at a real element and panel
-   state survives a switch. A panel is focusable (APG), so content without
-   controls is reachable.
+/* Tabs — the WAI-ARIA tabs pattern with automatic activation, on Vercel's UI
+   SDK tabs. Left/Right move and select (wrapping), Home/End jump to the
+   ends. The selected tab is the one tab stop (roving tabindex). Every panel
+   stays rendered (`keepMounted`) and the inactive ones are `hidden`, so
+   aria-controls always points at a real element and panel state survives a
+   switch. A panel is focusable (APG), so content without controls is
+   reachable.
 
    In the glass skin the tab list is a LiquidGlass track with a glass pill
    on the active tab. Controlled with `value` + onValueChange, or
@@ -54,39 +53,27 @@ export function Tabs({ tabs, value, defaultValue, onValueChange, label, classNam
   return (
     <TabsRoot
       value={current}
-      onValueChange={select}
-      activationMode="automatic"
+      onValueChange={(id) => id !== null && select(id)}
+      activation="automatic"
+      loop
       className={cn('ui-tabs flex flex-col', className)}
     >
       <TabsList
         ref={glassRef}
         aria-label={label}
-        // the selected tab is the tab stop, not the list (overrides Radix's 0)
-        tabIndex={undefined}
         className={cn('ui-tablist self-start', glassProps.className)}
         data-lg={glassProps['data-lg']}
         style={glassProps.style}
       >
         {glassLayers}
         {tabs.map((t) => (
-          <TabsTrigger
-            key={t.id}
-            value={t.id}
-            className="ui-tab"
-            tabIndex={t.id === current ? 0 : -1}
-          >
+          <TabsTrigger key={t.id} value={t.id} className="ui-tab">
             {t.label}
           </TabsTrigger>
         ))}
       </TabsList>
       {tabs.map((t) => (
-        <TabsContent
-          key={t.id}
-          value={t.id}
-          forceMount
-          hidden={t.id !== current}
-          className="ui-tabpanel"
-        >
+        <TabsContent key={t.id} value={t.id} keepMounted tabIndex={0} className="ui-tabpanel">
           {t.content}
         </TabsContent>
       ))}

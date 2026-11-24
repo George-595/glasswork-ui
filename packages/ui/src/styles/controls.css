@@ -1,36 +1,33 @@
 /* ============================================================================
    @apps/ui — interactive controls: Switch, Tabs, Menu, Tooltip, DataTable.
 
-   They are shadcn/Radix components styled with Tailwind utilities on the
-   tokens (src/components/ui/*), so the glass skin reaches them through the
-   colour roles, the material tokens and LiquidGlass. What is left here cannot be a utility on the component.
+   They are Vercel UI SDK (@ui-sdk/react) parts styled with Tailwind utilities
+   on the tokens (src/components/ui/*), so the glass skin reaches them through
+   the colour roles, the material tokens and LiquidGlass. What is left here cannot be a utility on the component.
 ============================================================================ */
 
-/* Server-rendered open overlays (Menu / Tooltip with defaultOpen). Radix
-   positions them on the client; in static HTML they render in place, and
-   Popper's wrapper would park them off screen (fixed, translate -200%)
-   until it measures. Place them under / over their trigger instead, as the
-   wrapper's inline style can only be beaten with !important. */
-[data-radix-popper-content-wrapper]:has(> .ui-menu[data-static]) {
-  position: absolute !important;
-  top: calc(100% + 4px) !important;
-  left: 0 !important;
-  transform: none !important;
+/* Server-rendered open overlays (Menu / Tooltip with defaultOpen). The UI SDK
+   places them in the browser's top layer once the client runs; in static HTML
+   (and until hydration, while `data-static` is set) they are plain elements in
+   place, so put them under / over their trigger, inside the relative wrapper. */
+.ui-menu[data-static] {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
 }
-[data-radix-popper-content-wrapper]:has(> .ui-menu[data-static][data-align="end"]) {
-  left: auto !important;
-  right: 0 !important;
+.ui-menu[data-static][data-align="end"] {
+  left: auto;
+  right: 0;
 }
-[data-radix-popper-content-wrapper]:has(> .ui-tooltip[data-static]) {
-  position: absolute !important;
-  top: auto !important;
-  bottom: calc(100% + 6px) !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
+.ui-tooltip[data-static] {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
 }
-[data-radix-popper-content-wrapper]:has(> .ui-tooltip[data-static][data-side="bottom"]) {
-  top: calc(100% + 6px) !important;
-  bottom: auto !important;
+.ui-tooltip[data-static][data-side="bottom"] {
+  top: calc(100% + 6px);
+  bottom: auto;
 }
 
 /* ---- KpiTile pointer light ----------------------------------------------

@@ -1,10 +1,17 @@
-import { Slider as SliderPrimitive } from 'radix-ui';
+import {
+  SliderControl,
+  SliderIndicator,
+  Slider as SliderRoot,
+  SliderThumb,
+  SliderTrack,
+} from '@ui-sdk/react/slider';
 import { type HTMLAttributes, useId, useState } from 'react';
 import { cn } from '../lib/cn';
 
-/* Slider — one number from a range, on Radix Slider: the thumb is
-   role="slider", so the arrow keys step it, Page Up/Down take bigger steps and
-   Home/End jump to the ends. The visible label names the thumb
+/* Slider — one number from a range, on Vercel's UI SDK slider: the thumb
+   holds a native range input, the slider screen readers know (phones' swipe
+   gestures included), so the arrow keys step it, Page Up/Down take bigger
+   steps and Home/End jump to the ends. The visible label names it
    (aria-labelledby); `formatValue` turns the number into words for
    aria-valuetext ("£40", "3 of 5"), so a screen reader hears what a sighted
    reader sees. Ticks are decorative marks at each step (or at the values you
@@ -87,44 +94,50 @@ export function Slider({
           </span>
         )}
       </div>
-      <SliderPrimitive.Root
+      <SliderRoot
         name={name}
         min={min}
         max={max}
         step={step}
         disabled={disabled}
-        value={[current]}
-        onValueChange={([v]) => {
-          if (v === undefined) return;
-          setInner(v);
-          onValueChange?.(v);
+        value={current}
+        format={(v: number) => formatValue(v)}
+        onValueChange={(v) => {
+          const n = Array.isArray(v) ? v[0] : v;
+          if (n === undefined) return;
+          setInner(n);
+          onValueChange?.(n);
         }}
-        onValueCommit={([v]) => v !== undefined && onValueCommit?.(v)}
-        className="ui-slider-root relative flex h-6 w-full touch-none items-center select-none"
+        onValueCommit={(v) => {
+          const n = Array.isArray(v) ? v[0] : v;
+          if (n !== undefined) onValueCommit?.(n);
+        }}
+        className="ui-slider-root w-full"
       >
-        <SliderPrimitive.Track className="relative h-1.5 grow overflow-hidden rounded-pill border border-solid border-border-input bg-sunken [box-shadow:var(--elev-0)] data-[disabled]:border-disabled-border data-[disabled]:bg-disabled forced-colors:border-[CanvasText]">
-          <SliderPrimitive.Range className="absolute h-full bg-primary data-[disabled]:bg-disabled-fg forced-colors:bg-[Highlight]" />
-        </SliderPrimitive.Track>
-        {marks.length > 0 && (
-          <span
-            aria-hidden="true"
-            className="ui-slider-ticks pointer-events-none absolute inset-x-3 top-1/2 h-3 -translate-y-1/2"
-          >
-            {marks.map((m) => (
+        <SliderControl className="relative flex h-6 w-full touch-none items-center select-none">
+          <SliderTrack className="relative mx-3 h-1.5 grow rounded-pill border border-solid border-border-input bg-sunken [box-shadow:var(--elev-0)] data-disabled:border-disabled-border data-disabled:bg-disabled forced-colors:border-[CanvasText]">
+            <SliderIndicator className="h-full rounded-pill bg-primary data-disabled:bg-disabled-fg forced-colors:bg-[Highlight]" />
+            {marks.length > 0 && (
               <span
-                key={m}
-                className="absolute top-1/2 h-1.5 w-px -translate-x-1/2 -translate-y-1/2 bg-border-strong"
-                style={{ left: `${((m - min) / span) * 100}%` }}
-              />
-            ))}
-          </span>
-        )}
-        <SliderPrimitive.Thumb
-          aria-labelledby={labelId}
-          aria-valuetext={formatValue(current)}
-          className="ui-slider-thumb block size-6 cursor-grab rounded-full border-2 border-solid border-primary bg-raised [box-shadow:var(--elev-2)] transition-[background-color,border-color] duration-(--dur-fast) ease-(--ease-out) hover:border-primary-hover focus-visible:outline-none focus-visible:[box-shadow:var(--ring)] active:cursor-grabbing active:bg-pressed data-[disabled]:cursor-not-allowed data-[disabled]:border-disabled-border data-[disabled]:bg-disabled motion-reduce:transition-none forced-colors:border-[Highlight]"
-        />
-      </SliderPrimitive.Root>
+                aria-hidden="true"
+                className="ui-slider-ticks pointer-events-none absolute inset-x-0 top-1/2 h-3 -translate-y-1/2"
+              >
+                {marks.map((m) => (
+                  <span
+                    key={m}
+                    className="absolute top-1/2 h-1.5 w-px -translate-x-1/2 -translate-y-1/2 bg-border-strong"
+                    style={{ left: `${((m - min) / span) * 100}%` }}
+                  />
+                ))}
+              </span>
+            )}
+            <SliderThumb
+              aria-labelledby={labelId}
+              className="ui-slider-thumb box-border block size-6 cursor-grab rounded-full border-2 border-solid border-primary bg-raised [box-shadow:var(--elev-2)] transition-[background-color,border-color] duration-(--dur-fast) ease-(--ease-out) hover:border-primary-hover has-focus-visible:[box-shadow:var(--ring)] active:cursor-grabbing active:bg-pressed data-dragging:cursor-grabbing data-disabled:cursor-not-allowed data-disabled:border-disabled-border data-disabled:bg-disabled motion-reduce:transition-none forced-colors:border-[Highlight]"
+            />
+          </SliderTrack>
+        </SliderControl>
+      </SliderRoot>
     </div>
   );
 }

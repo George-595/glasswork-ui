@@ -1,23 +1,22 @@
-import { type ReactNode, useCallback, useRef } from 'react';
+import { type ReactElement, type ReactNode, useCallback, useRef } from 'react';
 import { useLiquidGlass } from '../glass/LiquidGlass';
 import { Icon, type IconName } from '../icons/Icon';
 import { cn } from '../lib/cn';
 import { Button } from './button';
 import { PopoverContent, Popover as PopoverRoot, PopoverTrigger } from './ui/popover';
-import { useIsClient } from './ui/use-is-client';
 
 /* Popover — a button that opens a small non-modal panel of controls (a
-   filter's checkboxes, a column picker). shadcn's Popover on Radix.
+   filter's checkboxes, a column picker). Vercel's UI SDK popover.
 
-   Radix gives the dialog role, focus into the panel on open, Esc back to
+   The SDK gives the dialog role, focus into the panel on open, Esc back to
    the trigger, a press outside to close and aria-expanded/aria-controls on
    the trigger. The panel is not modal: the page stays reachable, Tab moves
    on through it and out, and focus leaving it closes it. `label` names the
    panel for assistive tech, so give it something specific ("Status filter").
 
    In the glass skin the panel is a LiquidGlass surface on the --raised
-   fill, like Menu. `defaultOpen` renders it open in place (showcase, tests):
-   Radix's portal only mounts on the client. */
+   fill, like Menu. `defaultOpen` renders it open (showcase, tests); the SDK
+   renders the panel in place, so it is in the server-rendered HTML too. */
 export interface PopoverProps {
   /** The trigger's visible content. */
   trigger?: ReactNode;
@@ -55,7 +54,6 @@ export function Popover({
   className,
   contentClassName,
 }: PopoverProps) {
-  const client = useIsClient();
   const content = useRef<HTMLDivElement | null>(null);
   const glass = useLiquidGlass<HTMLDivElement>({ fill: 'raised', band: 10, refraction: 24 });
   const setGlassRef = glass.ref;
@@ -68,30 +66,32 @@ export function Popover({
   );
 
   return (
-    <PopoverRoot defaultOpen={defaultOpen} open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>
-        {customTrigger ?? (
-          <Button
-            variant="outline"
-            size="sm"
-            className={cn(
-              'ui-popover-trigger',
-              active && 'border-brand bg-selected text-fg',
-              className,
-            )}
-            data-active={active || undefined}
-          >
-            {icon && <Icon name={icon} size={14} />}
-            {trigger}
-            <Icon name="chevron-down" size={13} />
-          </Button>
-        )}
-      </PopoverTrigger>
+    <PopoverRoot defaultOpen={defaultOpen} open={open} onOpenChange={(o) => onOpenChange?.(o)}>
+      <PopoverTrigger
+        render={
+          (customTrigger as ReactElement | undefined) ?? (
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                'ui-popover-trigger',
+                active && 'border-brand bg-selected text-fg',
+                className,
+              )}
+              data-active={active || undefined}
+            >
+              {icon && <Icon name={icon} size={14} />}
+              {trigger}
+              <Icon name="chevron-down" size={13} />
+            </Button>
+          )
+        }
+      />
       <PopoverContent
         ref={contentRef}
-        portal={client}
         align={align}
         aria-label={label}
+        aria-labelledby={undefined}
         className={cn('ui-popover', glass.props.className, contentClassName)}
         data-lg={glass.props['data-lg']}
         style={glass.props.style}

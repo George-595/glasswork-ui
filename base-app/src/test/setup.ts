@@ -81,3 +81,27 @@ beforeEach(() => {
     vi.fn(() => Promise.reject(new TypeError('fetch disabled in tests'))),
   );
 });
+
+/* What the UI SDK (@ui-sdk/react) needs from a browser that jsdom lacks: the popover API (its popups sit in the top
+   layer), animations, layout reads and ResizeObserver. Assigned rather than `??=`: jsdom has some of them without the
+   parts that matter. */
+if (typeof document !== 'undefined') {
+  HTMLElement.prototype.showPopover = function showPopover() {};
+  HTMLElement.prototype.hidePopover = function hidePopover() {};
+  Element.prototype.getAnimations = () => [];
+  Element.prototype.scrollIntoView = function scrollIntoView() {};
+  Element.prototype.checkVisibility = () => true;
+  Element.prototype.getClientRects = () => [] as unknown as DOMRectList;
+  document.elementFromPoint = () => null;
+  document.elementsFromPoint = () => [];
+  globalThis.ResizeObserver ??= class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+  document.head.append(
+    Object.assign(document.createElement('style'), {
+      textContent: '[popover] { display: block !important }',
+    }),
+  );
+}
