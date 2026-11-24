@@ -286,7 +286,7 @@ describe('PointerLight', () => {
 describe('server rendering', () => {
   it('renderToStaticMarkup works for every component and shows static content', () => {
     const cases: Array<[string, ReactNode, string]> = [
-      ['AnimatedBackground', <AnimatedBackground key="a" variant="hive" />, ''],
+      ['AnimatedBackground', <AnimatedBackground key="a" variant="honeycomb" />, ''],
       ['RollingNumber', <RollingNumber key="b" to={1234} />, '1,234'],
       ['PointerLight', <PointerLight key="c">Card</PointerLight>, 'Card'],
     ];

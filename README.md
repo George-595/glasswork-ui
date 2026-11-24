@@ -31,7 +31,7 @@ colour a semantic role, every component checked against WCAG 2.2 AA in all four 
 ## What's in it
 
 - **Two skins × two modes.** Enterprise (graphite and one azure accent) and glass (refractive
-  liquid-glass surfaces over the kit's own `tide` and `hive` WebGL backdrops). Components never ask
+  liquid-glass surfaces over the kit's own `tide` and `honeycomb` WebGL backdrops). Components never ask
   which skin is on: they use roles (`bg-surface`, `text-fg`), and `@apps/colors` gives every role
   a value per theme, with a contrast gate.
 - **A generation reveal for data and AI.** When data arrives, a card is drawn in by a pen plotter

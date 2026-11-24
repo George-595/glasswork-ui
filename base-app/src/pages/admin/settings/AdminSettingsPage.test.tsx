@@ -358,7 +358,7 @@ describe('AdminSettingsPage appearance', () => {
     );
     expect(radios.map((r) => r.value)).toEqual([
       'tide',
-      'hive',
+      'honeycomb',
       'mesh',
       'liquid-metal',
       'aurora-noise',
