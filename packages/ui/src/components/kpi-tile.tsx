@@ -11,8 +11,8 @@ import { Skeleton } from './skeleton';
    file, fetched the first time a tile with one is drawn; until it arrives the tile holds the
    space it will take (the same size, so nothing jumps). */
 const Sparkline = lazy(() => import('../charts/Sparkline').then((m) => ({ default: m.Sparkline })));
-const SPARKLINE_WIDTH = 120;
-const SPARKLINE_HEIGHT = 32;
+const SPARKLINE_WIDTH = 240;
+const SPARKLINE_HEIGHT = 48;
 
 /* KpiTile — one key figure: label, the number, how it moved, a trend line.
    It replaces the two KPI rows the app grew (a StatTile with a Delta and a
@@ -50,6 +50,8 @@ export interface KpiTileProps extends Omit<HTMLAttributes<HTMLDivElement>, 'chil
   /** Format for the change. Passed to Delta. */
   formatDelta?: (ratio: number) => string;
   trend?: readonly number[];
+  /** A goal for the trend: a dashed line across it, and "Target …" under the figure. */
+  target?: number;
   /** Format for the trend's numbers in its accessible name. */
   formatTrend?: (value: number) => string;
   footnote?: ReactNode;
@@ -85,7 +87,7 @@ const surface = cn(
 );
 
 const labelClasses =
-  'ui-kpi-label m-0 font-sans text-[10.5px] leading-[1.3] font-medium tracking-[0.1em] uppercase';
+  'ui-kpi-label m-0 font-sans text-[12px] leading-[1.3] font-medium tracking-[0.08em] uppercase';
 
 export function KpiTile({
   label,
@@ -96,6 +98,7 @@ export function KpiTile({
   deltaLabel,
   formatDelta,
   trend,
+  target,
   formatTrend,
   footnote,
   icon,
@@ -166,7 +169,7 @@ export function KpiTile({
               labelText
             )}
           </p>
-          <p className="ui-kpi-value m-0 font-mono text-[22px] leading-[1.2] font-semibold text-fg tabular-nums">
+          <p className="ui-kpi-value m-0 font-mono text-[30px] leading-[1.15] font-semibold tracking-[-0.01em] text-fg tabular-nums">
             {typeof value === 'number' ? (
               countUp ? (
                 <RollingNumber to={value} format={format} />
@@ -177,33 +180,37 @@ export function KpiTile({
               value
             )}
           </p>
-          {(showDelta || trend?.length) && (
-            <div className="ui-kpi-foot flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
+          {(showDelta || target !== undefined) && (
+            <div className="ui-kpi-foot flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
               {showDelta && (
-                <span className="ui-kpi-change inline-flex items-baseline gap-1.5 text-[12.5px]">
+                <span className="ui-kpi-change inline-flex items-baseline gap-1.5 text-[13px]">
                   <Delta ratio={ratio} format={formatDelta} />
                   {deltaLabel && <span className="text-fg-subtle">{deltaLabel}</span>}
                 </span>
               )}
-              {trend && trend.length > 0 && (
-                <Suspense
-                  fallback={
-                    <span
-                      aria-hidden="true"
-                      className="ui-kpi-trend ml-auto inline-block"
-                      style={{ width: SPARKLINE_WIDTH, height: SPARKLINE_HEIGHT }}
-                    />
-                  }
-                >
-                  <Sparkline
-                    values={trend}
-                    label={`${label} trend`}
-                    format={formatTrend}
-                    className="ui-kpi-trend ml-auto"
-                  />
-                </Suspense>
+              {target !== undefined && (
+                <span className="ui-kpi-target text-[12.5px] text-fg-subtle tabular-nums">
+                  Target {format(target)}
+                </span>
               )}
             </div>
+          )}
+          {trend && trend.length > 0 && (
+            <Suspense
+              fallback={
+                <span aria-hidden="true" className="ui-kpi-trend mt-1 block aspect-[5/1] w-full" />
+              }
+            >
+              <Sparkline
+                values={trend}
+                label={`${label} trend`}
+                format={formatTrend}
+                width={SPARKLINE_WIDTH}
+                height={SPARKLINE_HEIGHT}
+                target={target}
+                className="ui-kpi-trend mt-1 block h-auto w-full"
+              />
+            </Suspense>
           )}
           {footnote && (
             <p className="ui-kpi-footnote m-0 text-[12px] leading-normal text-fg-subtle">
@@ -231,12 +238,10 @@ export function KpiTileSkeleton({ label, className, ...props }: KpiTileSkeletonP
     >
       {label && <span className="ui-sr-only">Loading {label}…</span>}
       <div className="flex flex-col gap-2 px-[13px] py-3" aria-hidden="true">
-        <Skeleton radius="sm" height={10} width="40%" />
-        <Skeleton radius="sm" height={22} width="62%" />
-        <div className="flex items-end justify-between gap-3">
-          <Skeleton radius="sm" height={12} width="28%" />
-          <Skeleton radius="sm" height={32} width={120} />
-        </div>
+        <Skeleton radius="sm" height={12} width="40%" />
+        <Skeleton radius="sm" height={30} width="62%" />
+        <Skeleton radius="sm" height={12} width="28%" />
+        <Skeleton radius="sm" height={48} width="100%" />
       </div>
     </div>
   );

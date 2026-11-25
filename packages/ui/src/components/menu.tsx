@@ -2,6 +2,7 @@ import { type ComponentPropsWithRef, useCallback, useLayoutEffect, useRef, useSt
 import { useLiquidGlass } from '../glass/LiquidGlass';
 import { Icon, type IconName } from '../icons/Icon';
 import { cn } from '../lib/cn';
+import type { ButtonVariant } from './button';
 import { MenuTrigger } from './menu-trigger';
 import {
   DropdownMenu,
@@ -56,6 +57,10 @@ export interface MenuProps {
   /** The trigger icon's size in px. Default 15 (beside a label, or in a dense row). 18 matches the
       top bar's other icon buttons (search, the bell), for a menu that sits among them. */
   iconSize?: number;
+  /** The trigger's button level. Default 'ghost'. */
+  variant?: ButtonVariant;
+  /** Classes for the trigger button (a SplitButton squares its inner corners). */
+  triggerClassName?: string;
   className?: string;
 }
 
@@ -77,6 +82,8 @@ export function Menu({
   defaultOpen = false,
   iconOnly = false,
   iconSize = 15,
+  variant,
+  triggerClassName,
   className,
   openOnMount,
   focusOnMount = false,
@@ -121,6 +128,8 @@ export function Menu({
               icon={icon}
               iconOnly={iconOnly}
               iconSize={iconSize}
+              {...(variant ? { variant } : {})}
+              {...(triggerClassName ? { className: triggerClassName } : {})}
             />
           }
         />

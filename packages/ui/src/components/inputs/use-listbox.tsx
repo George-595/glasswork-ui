@@ -20,6 +20,10 @@ export interface ComboOption {
   label: string;
   description?: string;
   disabled?: boolean;
+  /** A picture at the start of the row: an Avatar, an Icon or a small swatch. Decorative. */
+  leading?: ReactNode;
+  /** A short, quieter word at the end of the row (a count, a shortcut, a role). */
+  hint?: string;
 }
 
 /** The popup surface: the same material as Popover and Menu (glass picks it up from the tokens). */
@@ -27,7 +31,7 @@ export const listSurface =
   'ui-listbox absolute start-0 top-full z-50 mt-1 m-0 max-h-60 w-full min-w-40 list-none overflow-auto rounded-md border border-solid border-border bg-overlay p-1 text-fg [box-shadow:var(--elev-2)] glass-chrome forced-colors:border-[CanvasText]';
 
 const optionBase =
-  'ui-option flex cursor-pointer items-start gap-2 rounded-sm border border-solid border-transparent px-2 py-1.5 text-[13px] leading-[1.3] ' +
+  'ui-option flex cursor-pointer items-center gap-2 rounded-sm border border-solid border-transparent px-2 py-1.5 text-[13px] leading-[1.3] ' +
   'data-[active]:border-brand data-[active]:bg-hover aria-disabled:cursor-not-allowed aria-disabled:text-disabled-fg ' +
   'forced-colors:data-[active]:[outline:2px_solid_Highlight]';
 
@@ -36,7 +40,7 @@ export function filterOptions(options: readonly ComboOption[], query: string): C
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (words.length === 0) return [...options];
   return options.filter((o) => {
-    const hay = `${o.label} ${o.description ?? ''}`.toLowerCase();
+    const hay = `${o.label} ${o.description ?? ''} ${o.hint ?? ''}`.toLowerCase();
     return words.every((w) => hay.includes(w));
   });
 }
@@ -226,9 +230,14 @@ export function useListbox({
               onMouseMove={() => !o.disabled && i !== active && setActive(i)}
               onClick={() => pick(o)}
             >
-              <span className="grid size-4 shrink-0 place-items-center pt-px" aria-hidden="true">
+              <span className="grid size-4 shrink-0 place-items-center" aria-hidden="true">
                 {selected && <Icon name="check" size={14} />}
               </span>
+              {o.leading && (
+                <span className="grid shrink-0 place-items-center" aria-hidden="true">
+                  {o.leading}
+                </span>
+              )}
               <span className="min-w-0 flex-1">
                 <span className="block truncate">{o.label}</span>
                 {o.description && (
@@ -237,6 +246,11 @@ export function useListbox({
                   </span>
                 )}
               </span>
+              {o.hint && (
+                <span className="shrink-0 ps-2 text-[12px] font-normal text-fg-muted tabular-nums">
+                  {o.hint}
+                </span>
+              )}
             </div>
           );
         })}

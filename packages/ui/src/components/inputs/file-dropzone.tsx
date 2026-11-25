@@ -2,7 +2,14 @@
 /* Adapted from Arc's file-dropzone / file-upload (MIT, Elia Kuratli) and BoardUI's file-upload
    (MIT, Mertcan Dundar Esmergul): drop target, accept/size/count rules, the file list.
    Rebuilt on a native file input and our roles. See THIRD_PARTY_NOTICES.md. */
-import { type DragEvent, forwardRef, type InputHTMLAttributes, useId, useState } from 'react';
+import {
+  type DragEvent,
+  forwardRef,
+  type InputHTMLAttributes,
+  useEffect,
+  useId,
+  useState,
+} from 'react';
 import { Icon } from '../../icons/Icon';
 import { cn } from '../../lib/cn';
 import { Glyph } from './glyph';
@@ -37,6 +44,35 @@ export interface FileDropzoneProps
   hint?: string;
   /** Hear about every refusal. */
   onReject?: (rejections: FileRejection[]) => void;
+  /** How far each file's upload has got, 0 to 1 (undefined = not uploading). Drawn as a bar
+      under the row, with the percentage as text. */
+  progressOf?: (file: File) => number | undefined;
+  /** Take an image pasted anywhere on the page (Ctrl or Cmd+V) as if it were dropped. Pastes
+      into a text field are left alone. Default false. */
+  acceptPaste?: boolean;
+  /** Show a small preview of each image instead of the file icon. Default true. */
+  thumbnails?: boolean;
+}
+
+/** A preview of an image file: an object URL made on mount and released on unmount. */
+function Thumb({ file }: { file: File }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof URL.createObjectURL !== 'function') return;
+    const u = URL.createObjectURL(file);
+    // oxlint-disable-next-line react/set-state-in-effect -- the object URL is an external resource, made and released with the file
+    setUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [file]);
+  return url ? (
+    <img
+      src={url}
+      alt=""
+      className="size-9 shrink-0 rounded-xs border border-solid border-border-subtle object-cover"
+    />
+  ) : (
+    <span aria-hidden="true" className="size-9 shrink-0 rounded-xs bg-sunken" />
+  );
 }
 
 export interface FileRejection {
@@ -84,6 +120,9 @@ export const FileDropzone = forwardRef<HTMLInputElement, FileDropzoneProps>(func
     prompt = 'Drop files here or browse',
     hint,
     onReject,
+    progressOf,
+    acceptPaste = false,
+    thumbnails = true,
     disabled,
     className,
     ...rest
@@ -119,6 +158,22 @@ export const FileDropzone = forwardRef<HTMLInputElement, FileDropzoneProps>(func
       setSaid(`Added ${next.at(-1)?.name ?? ''}${added > 1 ? ` and ${added - 1} more` : ''}`);
     }
   };
+
+  // a pasted image (a screenshot) goes in as if it were dropped; text fields keep their paste
+  const takeRef = { current: take };
+  useEffect(() => {
+    if (!acceptPaste || disabled) return;
+    const onPaste = (e: ClipboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t?.closest('input, textarea, [contenteditable="true"]')) return;
+      const pasted = Array.from(e.clipboardData?.files ?? []);
+      if (pasted.length === 0) return;
+      e.preventDefault();
+      takeRef.current(pasted);
+    };
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  });
 
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -200,13 +255,17 @@ export const FileDropzone = forwardRef<HTMLInputElement, FileDropzoneProps>(func
           {files.map((f) => (
             <li
               key={`${f.name}-${f.size}-${f.lastModified}`}
-              className="flex items-center gap-2 rounded-sm border border-solid border-border bg-surface py-1 ps-2.5 pe-1 text-[13px]"
+              className="relative flex items-center gap-2 overflow-hidden rounded-sm border border-solid border-border bg-surface py-1 ps-1.5 pe-1 text-[13px]"
             >
-              <Glyph name="file" size={15} className="shrink-0 text-fg-muted" />
+              {thumbnails && f.type.startsWith('image/') ? (
+                <Thumb file={f} />
+              ) : (
+                <span className="grid size-9 shrink-0 place-items-center text-fg-muted">
+                  <Glyph name="file" size={15} />
+                </span>
+              )}
               <span className="min-w-0 flex-1 truncate">{f.name}</span>
-              <span className="shrink-0 text-[12px] tabular-nums text-fg-muted">
-                {formatBytes(f.size)}
-              </span>
+              <FileProgress file={f} value={progressOf?.(f)} />
               <button
                 type="button"
                 aria-label={`Remove ${f.name}`}
@@ -226,3 +285,40 @@ export const FileDropzone = forwardRef<HTMLInputElement, FileDropzoneProps>(func
     </div>
   );
 });
+
+/** The size, or while uploading the percentage and a thin bar along the row's bottom edge. */
+function FileProgress({ file, value }: { file: File; value: number | undefined }) {
+  if (value === undefined)
+    return (
+      <span className="shrink-0 text-[12px] tabular-nums text-fg-muted">
+        {formatBytes(file.size)}
+      </span>
+    );
+  const pct = Math.round(Math.min(1, Math.max(0, value)) * 100);
+  const done = pct >= 100;
+  return (
+    <>
+      <span
+        className={cn('shrink-0 text-[12px] tabular-nums', done ? 'text-success' : 'text-fg-muted')}
+      >
+        {done ? 'Uploaded' : `${pct}%`}
+      </span>
+      <span
+        role="progressbar"
+        aria-label={`Uploading ${file.name}`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pct}
+        className="absolute inset-x-0 bottom-0 h-0.5 bg-transparent"
+      >
+        <span
+          className={cn(
+            'block h-full transition-[width] duration-(--dur-base) ease-(--ease-out) motion-reduce:transition-none',
+            done ? 'bg-success' : 'bg-primary',
+          )}
+          style={{ width: `${pct}%` }}
+        />
+      </span>
+    </>
+  );
+}

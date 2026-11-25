@@ -10,7 +10,7 @@ import { decorative } from '@tanstack/charts/mark/decorative';
 import { Chart } from '@tanstack/charts/react';
 import { scaleLinear } from '@tanstack/charts/scales/linear';
 import { scalePoint } from '@tanstack/charts/scales/point';
-import { useCallback, useMemo } from 'react';
+import { type PointerEvent, useCallback, useMemo, useRef, useState } from 'react';
 import { useMergedRef } from '../components/useMergedRef';
 import { defaultXFormat, labelRoom, thinLabels } from './axis';
 import {
@@ -51,6 +51,9 @@ import { defaultFormat, monotoneX, niceTicks } from './scale';
      dashed line with no markers or fill, never stacked.
    - The legend is a row of toggles; a hidden series leaves the drawing and the
      readout (the table keeps every series), and one always stays visible.
+   - Drag across the plot to zoom into a stretch of x values (a band shows the pick);
+     double-click, Escape or the "Show all" button resets. The data table keeps every row.
+   - `tone` starts the series colours further along the palette.
    - ISO-date x values are shown as "2 Sept" / "Sept 26" and the axis is thinned
      to the room there is (`xFormat` overrides), so labels never run together. */
 export interface LineSeries {
@@ -67,6 +70,11 @@ export interface LineChartProps extends ChartCommonProps {
   xFormat?: (x: string) => string;
   /** Fill under the lines; 'stacked' piles the (primary) series up. */
   area?: boolean | 'stacked';
+  /** Which palette colour the first series takes (0 = chart-1); the rest follow in order. */
+  tone?: number;
+  /** Drag across the plot to zoom into those x values; double-click, Escape or the
+      "Show all" button goes back. Default true when there are more than 8 x values. */
+  zoomable?: boolean;
 }
 
 const lineId = (i: number) => `series-${i}`;
@@ -104,8 +112,11 @@ function LineChartPlot({
   yFormat = defaultFormat,
   xFormat,
   area = false,
+  tone = 0,
+  zoomable,
 }: LineChartProps) {
   const gid = useSafeId('ui-area');
+  const colorOf = useCallback((i: number) => seriesColor(i + tone), [tone]);
   const { isShown, toggle, shownCount } = useSeriesToggle(series.length);
   const { width, measure } = useChartWidth();
 
@@ -122,6 +133,9 @@ function LineChartPlot({
     return out;
   }, [series]);
   const fmtX = useMemo(() => xFormat ?? defaultXFormat(xs), [xFormat, xs]);
+  const canZoom = zoomable ?? xs.length > 8;
+  const [zoom, setZoom] = useState<readonly [number, number] | null>(null);
+  const view = useMemo(() => (zoom ? xs.slice(zoom[0], zoom[1] + 1) : xs), [xs, zoom]);
   const lookup = useMemo(
     () => series.map((s) => new Map(s.points.map((p) => [p.x, p.y]))),
     [series],
@@ -135,13 +149,14 @@ function LineChartPlot({
       .filter(({ i }) => isShown(i))
       .map(({ s, i }) => ({ ...s, i, comparison: s.variant === 'comparison' }));
     // the rows each shown series draws; stacked ones are running totals, lo is the area's floor
+    const inView = new Set(view);
     const running = new Map<string, number>();
     const rowsOf = new Map<number, Row[]>();
     for (const s of shown) {
       if (stacked && !s.comparison) {
         rowsOf.set(
           s.i,
-          xs.map((x) => {
+          view.map((x) => {
             const lo = running.get(x) ?? 0;
             const y = lo + (lookup[s.i]?.get(x) ?? 0);
             running.set(x, y);
@@ -151,7 +166,7 @@ function LineChartPlot({
       } else {
         rowsOf.set(
           s.i,
-          s.points.map((p) => ({ x: p.x, y: p.y, lo: 0 })),
+          s.points.filter((p) => inView.has(p.x)).map((p) => ({ x: p.x, y: p.y, lo: 0 })),
         );
       }
     }
@@ -168,9 +183,9 @@ function LineChartPlot({
     const hi = ticks[ticks.length - 1] ?? 1;
     const floor = Math.max(lo, Math.min(hi, 0));
     if (area && !stacked) for (const r of all) r.lo = floor;
-    const markers = xs.length <= 31;
+    const markers = view.length <= 31;
     const left = Math.max(...ticks.map((t) => yFormat(t).length)) * CHAR + 12;
-    const labels = xs.map(fmtX);
+    const labels = view.map(fmtX);
     const room = labelRoom(labels);
 
     const gradients: ChartGradient[] = [];
@@ -182,8 +197,8 @@ function LineChartPlot({
             y1: 0,
             y2: 1,
             stops: [
-              { offset: 0, color: seriesColor(s.i), opacity: stacked ? 0.55 : 0.34 },
-              { offset: 1, color: seriesColor(s.i), opacity: stacked ? 0.18 : 0.02 },
+              { offset: 0, color: colorOf(s.i), opacity: stacked ? 0.55 : 0.34 },
+              { offset: 1, color: colorOf(s.i), opacity: stacked ? 0.18 : 0.02 },
             ],
           });
 
@@ -213,7 +228,7 @@ function LineChartPlot({
             id: lineId(s.i),
             x: 'x',
             y: 'y',
-            stroke: seriesColor(s.i),
+            stroke: colorOf(s.i),
             strokeWidth: s.comparison ? 1.5 : 2,
             strokeDasharray: s.comparison ? COMPARISON_DASH : seriesDash(s.i),
             curve: monotoneX,
@@ -226,18 +241,18 @@ function LineChartPlot({
                 seriesMarkers(rowsOf.get(s.i) ?? [], {
                   id: `markers-${s.i}`,
                   shape: s.i,
-                  color: seriesColor(s.i),
+                  color: colorOf(s.i),
                 }),
               )
           : []),
       ],
       scales: {
         x: {
-          scale: scalePoint<string>().domain(xs).padding(0.25),
+          scale: scalePoint<string>().domain(view).padding(0.25),
           axis: {
             line: false,
             ticks: {
-              values: thinLabels(xs, width - left - 16, room),
+              values: thinLabels(view, width - left - 16, room),
               size: 0,
               padding: 10,
               format: (v: unknown) => fmtX(String(v)),
@@ -261,7 +276,7 @@ function LineChartPlot({
       maxFocusDistance: Number.POSITIVE_INFINITY,
       svgAnimation: SVG_ANIMATION,
     });
-  }, [series, isShown, xs, fmtX, lookup, yFormat, area, stacked, gid, width]);
+  }, [series, isShown, view, fmtX, lookup, yFormat, area, stacked, gid, width, colorOf]);
 
   const describe = useCallback(
     (points: readonly ChartPoint[]) => {
@@ -280,16 +295,59 @@ function LineChartPlot({
               key: s.name,
               label: s.name,
               value: v === undefined ? '—' : yFormat(v),
-              color: seriesColor(i),
+              color: colorOf(i),
             },
           ];
         }),
       };
     },
-    [series, lookup, yFormat, fmtX, isShown],
+    [series, lookup, yFormat, fmtX, isShown, colorOf],
   );
   const { plot, readout, show } = useReadout(describe);
   const plotRef = useMergedRef(plot, measure);
+
+  /* Drag to zoom. TanStack's focus follows the pointer, so the x under it is the last focused
+     group: the press anchors there, the release picks the other end. */
+  const focused = useRef<{ x: string; px: number } | null>(null);
+  const anchor = useRef<{ x: string; px: number } | null>(null);
+  const [band, setBand] = useState<{ from: number; to: number } | null>(null);
+  const onFocus = useCallback(
+    (points: readonly ChartPoint[]) => {
+      const p = points[0];
+      focused.current = p ? { x: String(p.xValue), px: p.x } : null;
+      if (anchor.current && focused.current)
+        setBand({ from: anchor.current.px, to: focused.current.px });
+      show(points);
+    },
+    [show],
+  );
+  const zoomHandlers = canZoom
+    ? {
+        onPointerDown: (e: PointerEvent<HTMLDivElement>) => {
+          if (e.button !== 0 || e.pointerType === 'touch') return;
+          anchor.current = focused.current;
+        },
+        onPointerUp: () => {
+          const a = anchor.current;
+          const b = focused.current;
+          anchor.current = null;
+          setBand(null);
+          if (!a || !b) return;
+          const i = xs.indexOf(a.x);
+          const j = xs.indexOf(b.x);
+          if (i < 0 || j < 0 || Math.abs(i - j) < 2) return;
+          setZoom([Math.min(i, j), Math.max(i, j)]);
+        },
+        onPointerLeave: () => {
+          anchor.current = null;
+          setBand(null);
+        },
+        onDoubleClick: () => setZoom(null),
+        onKeyDown: (e: { key: string }) => {
+          if (e.key === 'Escape') setZoom(null);
+        },
+      }
+    : {};
 
   const first = xs[0] ?? '';
   const last = xs[xs.length - 1] ?? '';
@@ -306,6 +364,7 @@ function LineChartPlot({
             items={series.map((s, i) => ({
               label: s.name,
               index: i,
+              color: colorOf(i),
               kind: s.variant === 'comparison' ? ('comparison' as const) : ('line' as const),
             }))}
             isShown={isShown}
@@ -325,15 +384,36 @@ function LineChartPlot({
         ]),
       }}
     >
-      <div ref={plotRef} className={CHART_PLOT}>
+      <div
+        ref={plotRef}
+        className={CHART_PLOT}
+        data-zoomed={zoom ? '' : undefined}
+        {...zoomHandlers}
+      >
         <Chart
           definition={definition}
           height={height}
           initialWidth={SSR_WIDTH}
           ariaLabel={summary}
-          onFocusGroupChange={show}
+          onFocusGroupChange={onFocus}
         />
+        {band && Math.abs(band.to - band.from) > 4 && (
+          <span
+            aria-hidden="true"
+            className="ui-chart-zoom-band pointer-events-none absolute inset-y-0 rounded-xs border-x border-primary bg-brand-soft"
+            style={{ left: Math.min(band.from, band.to), width: Math.abs(band.to - band.from) }}
+          />
+        )}
         <Readout state={readout} />
+        {zoom && (
+          <button
+            type="button"
+            onClick={() => setZoom(null)}
+            className="ui-chart-zoom-reset absolute end-1 top-0 inline-flex min-h-6 pointer-coarse:min-h-12 cursor-pointer items-center rounded-xs border border-border bg-surface-solid px-2 text-xs text-fg hover:bg-ghost-hover focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]"
+          >
+            Show all ({fmtX(view[0] ?? '')} to {fmtX(view[view.length - 1] ?? '')} shown)
+          </button>
+        )}
       </div>
     </ChartFigure>
   );

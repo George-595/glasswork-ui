@@ -1,4 +1,4 @@
-import type { HTMLAttributes } from 'react';
+import { type HTMLAttributes, useEffect, useState } from 'react';
 import { type MeterTone, meterTone } from '../components/meter';
 import { cn } from '../lib/cn';
 
@@ -30,6 +30,10 @@ export interface GaugeProps extends Omit<HTMLAttributes<HTMLDivElement>, 'childr
   formatValue?: (value: number) => string;
   /** Small text under the figure, e.g. "of 240 payments". */
   caption?: string;
+  /** A goal: a marker outside the dial, and "target 95" in what a screen reader hears. */
+  target?: number;
+  /** Draw a needle that swings in from the start of the dial on first show. Default true. */
+  needle?: boolean;
 }
 
 const WORD: Record<MeterTone, string | null> = {
@@ -73,9 +77,17 @@ export function Gauge({
   optimum,
   formatValue = (v) => num.format(v),
   caption,
+  target,
+  needle = true,
   className,
   ...props
 }: GaugeProps) {
+  // the needle starts at the dial's start and swings to the value once mounted
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
   const clamped = Math.min(max, Math.max(min, value));
   const span = max - min;
   const ratio = span === 0 ? 0 : (clamped - min) / span;
@@ -85,6 +97,10 @@ export function Gauge({
   const frac = (v: number) => (span === 0 ? 0 : Math.min(1, Math.max(0, (v - min) / span)));
   const ticks = [low, high].flatMap((v) => (v === undefined ? [] : [frac(v)]));
   const arc = `M${CX - R} ${CY}A${R} ${R} 0 0 1 ${CX + R} ${CY}`;
+  const goal = target === undefined ? null : frac(target);
+  const spoken = [text, word, target === undefined ? null : `target ${formatValue(target)}`]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: <meter> cannot hold the dial, the word or the glass look
@@ -95,7 +111,7 @@ export function Gauge({
       aria-valuemin={min}
       aria-valuemax={max}
       aria-valuenow={clamped}
-      aria-valuetext={word ? `${text}, ${word}` : text}
+      aria-valuetext={spoken}
       data-tone={tone}
       className={cn('ui-gauge mx-auto flex w-full max-w-64 flex-col items-center gap-1', className)}
     >
@@ -137,6 +153,29 @@ export function Gauge({
               />
             );
           })}
+          {goal !== null &&
+            (() => {
+              const [tx, ty] = at(goal, R + STROKE / 2 + 4);
+              const deg = 90 - goal * 180;
+              return (
+                <path
+                  className="ui-gauge-target fill-fg"
+                  d="M0 0L-5 -8H5Z"
+                  transform={`translate(${tx} ${ty}) rotate(${-deg})`}
+                />
+              );
+            })()}
+          {needle && (
+            <g
+              className="ui-gauge-needle origin-[100px_100px] transition-transform duration-[900ms] ease-[cubic-bezier(.34,1.45,.5,1)] motion-reduce:transition-none"
+              style={{ transform: `rotate(${(shown ? ratio : 0) * 180}deg)` }}
+            >
+              <path
+                d={`M${CX - R + STROKE / 2 + 4} ${CY}L${CX - 34} ${CY - 3}L${CX - 34} ${CY + 3}Z`}
+                className="fill-fg"
+              />
+            </g>
+          )}
         </svg>
         <div className="absolute inset-x-0 bottom-0 flex flex-col items-center leading-tight">
           <span

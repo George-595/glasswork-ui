@@ -1,11 +1,15 @@
 import { cva } from 'class-variance-authority';
-import type { CSSProperties, HTMLAttributes } from 'react';
+import { type CSSProperties, type HTMLAttributes, type ReactNode, useState } from 'react';
+import { Generate } from '../effects/generate/Generate';
 import { cn } from '../lib/cn';
 
 /* Skeleton — shadcn's loading placeholder. Decorative: every shape is
    aria-hidden with no role; the region that is loading carries aria-busy
-   (the page sets it, not this). A shimmer sweeps across it, and stops under
-   prefers-reduced-motion. In the glass skin it is the glass material: blur,
+   (the page sets it, not this). One soft sweep crosses the screen and lights
+   every placeholder in turn (the band is fixed to the viewport, so a card of
+   skeletons reads as one surface loading, not many blinking bars); it stops
+   under prefers-reduced-motion. SkeletonSwap hands over to the real content
+   with the generation reveal when it lands. In the glass skin it is the glass material: blur,
    a translucent fill and the specular rim. */
 export type SkeletonRadius = 'sm' | 'md' | 'pill' | 'circle';
 
@@ -22,10 +26,10 @@ export const skeletonVariants = cva(
   [
     'ui-skeleton relative block h-4 w-full shrink-0 overflow-hidden bg-hover',
     'glass:[box-shadow:var(--elev-0)]',
-    // the shimmer: a soft band of the shine colour sweeping left to right
-    "after:absolute after:inset-0 after:content-[''] after:-translate-x-full",
-    'after:bg-linear-90 after:from-transparent after:via-(--shine) after:to-transparent',
-    'after:animate-[ui-skeleton-shimmer_1.6s_var(--ease-in-out)_infinite] motion-reduce:after:hidden',
+    // the sweep: one soft band of the shine colour crossing the whole screen, so every
+    // placeholder on the page lights up in step (styles/components.css, .ui-skeleton::after)
+    "after:absolute after:inset-0 after:content-['']",
+    'motion-reduce:after:hidden',
   ],
   {
     variants: {
@@ -145,6 +149,49 @@ export function SkeletonTable({
             />
           </div>
         )),
+      )}
+    </div>
+  );
+}
+
+export interface SkeletonSwapProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
+  /** True while the data is on its way. */
+  loading: boolean;
+  /** The placeholder: a Skeleton, SkeletonText, SkeletonTable or a layout of them. */
+  skeleton: ReactNode;
+  /** What is loading; read as "Loading <label>". */
+  label: string;
+  children: ReactNode;
+}
+
+/** A region that shows `skeleton` while `loading`, then draws the content in with the generation
+    reveal (Generate) — only when it really was loading first, so content already there on the
+    first render appears as it is. The region carries aria-busy while it waits. */
+export function SkeletonSwap({
+  loading,
+  skeleton,
+  label,
+  children,
+  className,
+  ...props
+}: SkeletonSwapProps) {
+  const [waited, setWaited] = useState(loading);
+  if (loading && !waited) setWaited(true);
+  return (
+    <div
+      {...props}
+      aria-busy={loading || undefined}
+      className={cn('ui-skeleton-swap min-w-0', className)}
+    >
+      {loading ? (
+        <>
+          <span className="ui-sr-only">Loading {label}…</span>
+          {skeleton}
+        </>
+      ) : (
+        <Generate play={waited} render="ascii">
+          {children}
+        </Generate>
       )}
     </div>
   );

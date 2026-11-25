@@ -13,7 +13,20 @@ import { TextShimmer } from './TextShimmer';
 
    Announcing: the label is the only thing a screen reader needs while it works, and it sits
    inside the thread's `log`, so it is read once when it appears; the trace itself is hidden
-   while closed and is not announced as it streams. */
+   while closed and is not announced as it streams.
+
+   `steps` is the plan as it streams in: each step is a row with a state icon (a ring while it
+   runs, a check when done) and, once known, how long it took. A new row slides in (a fade
+   under reduced motion). The rows show whether or not the trace is open, because they are
+   the short version of it; they are an ordered list, so a screen reader can walk them. */
+export interface ThinkingStep {
+  id: string;
+  label: string;
+  /** 'active' while it runs. Default 'done'. */
+  status?: 'active' | 'done';
+  /** How long it took, in ms. */
+  durationMs?: number;
+}
 export interface ThinkingProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
   /** Still reasoning: the label shimmers. */
   active?: boolean;
@@ -23,6 +36,8 @@ export interface ThinkingProps extends Omit<HTMLAttributes<HTMLDivElement>, 'chi
   duration?: number;
   /** The reasoning text. */
   children?: ReactNode;
+  /** The steps so far, oldest first. */
+  steps?: readonly ThinkingStep[];
   defaultOpen?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -33,6 +48,7 @@ export function Thinking({
   label,
   duration,
   children,
+  steps,
   defaultOpen = false,
   open: openProp,
   onOpenChange,
@@ -86,6 +102,40 @@ export function Thinking({
             {seconds}
           </TextShimmer>
         </span>
+      )}
+      {steps && steps.length > 0 && (
+        <ol className="ui-thinking-steps m-0 mt-1 ms-1 flex list-none flex-col gap-1 p-0 font-sans text-[13px]">
+          {steps.map((st) => {
+            const running = st.status === 'active';
+            return (
+              <li
+                key={st.id}
+                data-status={running ? 'active' : 'done'}
+                className="flex items-center gap-2 motion-safe:animate-[ui-step-in_var(--dur-slow)_var(--ease-out)] motion-reduce:animate-[ui-fade-in_var(--dur-base)]"
+              >
+                {running ? (
+                  <span
+                    aria-hidden="true"
+                    className="size-3.5 shrink-0 rounded-full border-2 border-solid border-border-strong border-t-brand motion-safe:animate-spin"
+                  />
+                ) : (
+                  <Icon name="check" size={14} className="shrink-0 text-success" />
+                )}
+                <span className={cn('min-w-0 flex-1', running ? 'text-fg' : 'text-fg-muted')}>
+                  {st.label}
+                  <span className="ui-sr-only">{running ? ', in progress' : ', done'}</span>
+                </span>
+                {st.durationMs !== undefined && (
+                  <span className="font-mono text-[12px] text-fg-subtle tabular-nums">
+                    {st.durationMs < 1000
+                      ? `${Math.round(st.durationMs)} ms`
+                      : `${(st.durationMs / 1000).toLocaleString('en-GB', { maximumFractionDigits: 1 })} s`}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
       )}
       {hasTrace && (
         <div

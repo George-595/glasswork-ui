@@ -9,7 +9,7 @@ import { Input, Label } from '../input';
 import { NativeSelect } from '../native-select';
 import { Popover } from '../popover';
 import { DENSITIES, type Density } from './table-core';
-import type { ActiveFilter, DataTableApi, FacetModel } from './useDataTable';
+import type { ActiveFilter, DataTableApi, DataTableState, FacetModel } from './useDataTable';
 
 /* The composable parts of the table system. Each is a plain component that
    takes either a value and a callback, or a slice of what `useDataTable`
@@ -542,5 +542,196 @@ export function BulkActionBar({
         Clear selection
       </Button>
     </LiquidGlass>
+  );
+}
+
+/* ---- saved views --------------------------------------------------------- */
+
+/** A named snapshot of how the table looks: sort, search, filters, columns, density. */
+export interface TableView {
+  name: string;
+  state: Partial<DataTableState>;
+}
+
+/** The parts of the state a view keeps (never the selection, the page or the open rows). */
+export const VIEW_KEYS = [
+  'sort',
+  'search',
+  'facets',
+  'hidden',
+  'density',
+  'widths',
+  'pinned',
+  'pageSize',
+] as const satisfies readonly (keyof DataTableState)[];
+
+export function snapshotView(state: DataTableState): Partial<DataTableState> {
+  const out: Partial<DataTableState> = {};
+  for (const k of VIEW_KEYS) Object.assign(out, { [k]: state[k] });
+  return out;
+}
+
+const sameView = (a: Partial<DataTableState>, b: Partial<DataTableState>) =>
+  VIEW_KEYS.every((k) => JSON.stringify(a[k]) === JSON.stringify(b[k]));
+
+export interface SavedViewsProps<T> {
+  table: DataTableApi<T>;
+  /** The views on offer. Controlled with `onViewsChange`; otherwise kept here. */
+  views?: readonly TableView[];
+  onViewsChange?: (views: TableView[]) => void;
+  /** Remember the views in this browser under this key (localStorage). */
+  storageKey?: string;
+  className?: string;
+}
+
+/** SavedViews — a row of view chips (the one that matches the table is pressed), a "Save view"
+    button that names the current look, and a remove button on each saved chip. */
+export function SavedViews<T>({
+  table,
+  views: viewsProp,
+  onViewsChange,
+  storageKey,
+  className,
+}: SavedViewsProps<T>) {
+  const [inner, setInner] = useState<TableView[]>(() => {
+    if (!storageKey || typeof localStorage === 'undefined') return [];
+    try {
+      return JSON.parse(localStorage.getItem(storageKey) ?? '[]') as TableView[];
+    } catch {
+      return [];
+    }
+  });
+  const views = viewsProp ?? inner;
+  const [naming, setNaming] = useState(false);
+  const [name, setName] = useState('');
+  const [said, setSaid] = useState('');
+  const nameId = useId();
+  const field = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (naming) field.current?.focus();
+  }, [naming]);
+
+  const commit = (next: TableView[]) => {
+    if (viewsProp === undefined) setInner(next);
+    onViewsChange?.(next);
+    if (storageKey && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(next));
+      } catch {
+        /* private mode: the views last for this visit */
+      }
+    }
+  };
+  const save = () => {
+    const n = name.trim();
+    if (!n) return;
+    const snap = snapshotView(table.state);
+    commit([...views.filter((v) => v.name !== n), { name: n, state: snap }]);
+    setNaming(false);
+    setName('');
+    setSaid(`Saved view ${n}`);
+  };
+  const current = snapshotView(table.state);
+  const chip =
+    'ui-view-chip inline-flex min-h-8 pointer-coarse:min-h-12 cursor-pointer items-center gap-1.5 rounded-full border border-solid px-3 text-[13px] font-medium focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]';
+
+  return (
+    <div className={cn('ui-saved-views flex flex-wrap items-center gap-1.5', className)}>
+      <ul
+        aria-label="Saved views"
+        className="m-0 flex list-none flex-wrap items-center gap-1.5 p-0"
+      >
+        {views.map((v) => {
+          const on = sameView(v.state, current);
+          return (
+            <li key={v.name} className="inline-flex items-center">
+              <button
+                type="button"
+                aria-pressed={on}
+                onClick={() => {
+                  table.setState({ ...v.state, pageIndex: 0 });
+                  setSaid(`Showing view ${v.name}`);
+                }}
+                className={cn(
+                  chip,
+                  on
+                    ? 'border-primary bg-brand-soft text-fg'
+                    : 'border-border bg-surface text-fg-muted hover:border-border-strong hover:text-fg',
+                  'rounded-e-none border-e-0',
+                )}
+              >
+                {on && <Icon name="check" size={13} />}
+                {v.name}
+              </button>
+              <button
+                type="button"
+                aria-label={`Delete view ${v.name}`}
+                onClick={() => {
+                  commit(views.filter((x) => x !== v));
+                  setSaid(`Deleted view ${v.name}`);
+                }}
+                className={cn(
+                  chip,
+                  'rounded-s-none px-2',
+                  on
+                    ? 'border-primary bg-brand-soft text-fg'
+                    : 'border-border bg-surface text-fg-muted hover:text-fg',
+                )}
+              >
+                <Icon name="x" size={12} />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {naming ? (
+        <form
+          className="inline-flex items-center gap-1.5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            save();
+          }}
+        >
+          <label htmlFor={nameId} className="sr-only">
+            View name
+          </label>
+          <Input
+            ref={field}
+            id={nameId}
+            value={name}
+            placeholder="View name"
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setNaming(false);
+            }}
+            className="h-8 w-36"
+          />
+          <Button
+            type="submit"
+            size="sm"
+            variant="primary"
+            aria-disabled={!name.trim() || undefined}
+          >
+            Save
+          </Button>
+          <Button type="button" size="sm" variant="ghost" onClick={() => setNaming(false)}>
+            Cancel
+          </Button>
+        </form>
+      ) : (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setNaming(true)}
+          className={cn(views.some((v) => sameView(v.state, current)) && 'hidden')}
+        >
+          <Icon name="plus" size={14} />
+          Save view
+        </Button>
+      )}
+      <span role="status" className="sr-only">
+        {said}
+      </span>
+    </div>
   );
 }

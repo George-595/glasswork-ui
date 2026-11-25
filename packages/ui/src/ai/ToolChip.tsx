@@ -8,7 +8,12 @@ import { SpinnerGlyph } from './icons';
    name and the state in words (running, done, failed), so colour is never the only signal.
    With `detail` the chip is a disclosure button (aria-expanded) that opens the input / output
    under it; without it the chip is plain, non-interactive text. Failed chips take the danger
-   boundary. The spinner stops under prefers-reduced-motion and stays a ring. */
+   boundary. The spinner stops under prefers-reduced-motion and stays a ring.
+
+   `args` are the arguments the agent passed, shown as name = value rows when the chip is
+   opened (with `detail`, the result, under them); `durationMs` writes how long the call took
+   after the status ("Done · 1.2 s"). ToolTimeline lays several calls out as the steps of a
+   run: an ordered list on a rail, each step's time on its right and the total at the foot. */
 export type ToolStatus = 'running' | 'done' | 'failed';
 
 export interface ToolChipProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
@@ -19,7 +24,37 @@ export interface ToolChipProps extends Omit<HTMLAttributes<HTMLDivElement>, 'chi
   summary?: string;
   /** The input / output, shown when the chip is opened. */
   detail?: ReactNode;
+  /** The arguments the call was made with, shown as rows when the chip is opened. */
+  args?: Readonly<Record<string, unknown>>;
+  /** How long the call took, in ms (shown after the status). */
+  durationMs?: number;
   defaultOpen?: boolean;
+}
+
+/** "840 ms", "1.2 s", "1 min 4 s". */
+export function formatDuration(ms: number): string {
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  if (ms < 60_000) return `${(ms / 1000).toLocaleString('en-GB', { maximumFractionDigits: 1 })} s`;
+  const m = Math.floor(ms / 60_000);
+  return `${m} min ${Math.round((ms % 60_000) / 1000)} s`;
+}
+
+const argText = (v: unknown) =>
+  typeof v === 'string' ? JSON.stringify(v) : v === undefined ? 'undefined' : JSON.stringify(v);
+
+function ArgRows({ args }: { args: Readonly<Record<string, unknown>> }) {
+  const entries = Object.entries(args);
+  if (entries.length === 0) return null;
+  return (
+    <dl className="ui-tool-args m-0 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-0.5">
+      {entries.map(([k, v]) => (
+        <div key={k} className="contents">
+          <dt className="text-fg-muted">{k}</dt>
+          <dd className="m-0 text-fg [overflow-wrap:anywhere]">{argText(v)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
 }
 
 const STATUS_WORD: Record<ToolStatus, string> = {
@@ -49,13 +84,16 @@ export function ToolChip({
   status = 'done',
   summary,
   detail,
+  args,
+  durationMs,
   defaultOpen = false,
   className,
   ...props
 }: ToolChipProps) {
   const [open, setOpen] = useState(defaultOpen);
   const panelId = useId();
-  const expandable = detail !== undefined && detail !== null;
+  const hasArgs = args !== undefined && Object.keys(args).length > 0;
+  const expandable = (detail !== undefined && detail !== null) || hasArgs;
   const label = (
     <>
       <StatusIcon status={status} />
@@ -63,6 +101,7 @@ export function ToolChip({
       <span className="text-fg-muted">
         {STATUS_WORD[status]}
         {summary ? ` · ${summary}` : ''}
+        {durationMs !== undefined ? ` · ${formatDuration(durationMs)}` : ''}
       </span>
       {expandable && (
         <Icon
@@ -109,8 +148,71 @@ export function ToolChip({
           hidden={!open}
           className="w-full min-w-0 rounded-md border border-solid border-border-subtle bg-sunken p-2.5 font-mono text-[12.5px] leading-normal whitespace-pre-wrap text-fg [overflow-wrap:anywhere]"
         >
+          {hasArgs && args && <ArgRows args={args} />}
+          {hasArgs && detail !== undefined && detail !== null && (
+            <hr className="my-2 border-0 border-t border-solid border-border-subtle" />
+          )}
           {detail}
         </div>
+      )}
+    </div>
+  );
+}
+
+export interface ToolTimelineProps extends Omit<HTMLAttributes<HTMLOListElement>, 'children'> {
+  /** The calls, oldest first. */
+  steps: readonly (ToolChipProps & { id: string })[];
+  /** Names the list ("Steps the assistant took"). */
+  label?: string;
+}
+
+export function ToolTimeline({
+  steps,
+  label = 'Steps the assistant took',
+  className,
+  ...props
+}: ToolTimelineProps) {
+  const total = steps.reduce((a, s) => a + (s.durationMs ?? 0), 0);
+  const timed = steps.some((s) => s.durationMs !== undefined);
+  return (
+    <div className="ui-tool-timeline flex flex-col gap-1.5">
+      <ol
+        {...props}
+        aria-label={label}
+        className={cn('m-0 flex list-none flex-col p-0', className)}
+      >
+        {steps.map(({ id, durationMs, ...step }, i) => (
+          <li key={id} className="relative grid grid-cols-[18px_1fr] gap-x-2.5 pb-2.5 last:pb-0">
+            <span aria-hidden="true" className="relative flex justify-center">
+              <span
+                className={cn(
+                  'z-[1] mt-[7px] size-2.5 rounded-full border-2 border-solid',
+                  step.status === 'failed'
+                    ? 'border-danger bg-danger-soft'
+                    : step.status === 'running'
+                      ? 'border-brand bg-surface-solid'
+                      : 'border-success bg-success-soft',
+                )}
+              />
+              {i < steps.length - 1 && (
+                <span className="absolute top-[17px] bottom-[-7px] w-px bg-border-strong" />
+              )}
+            </span>
+            <span className="flex min-w-0 flex-wrap items-start justify-between gap-x-3">
+              <ToolChip {...step} />
+              {durationMs !== undefined && (
+                <span className="pt-0.5 font-mono text-[12px] text-fg-subtle tabular-nums">
+                  {formatDuration(durationMs)}
+                </span>
+              )}
+            </span>
+          </li>
+        ))}
+      </ol>
+      {timed && (
+        <p className="m-0 ps-7 text-[12px] text-fg-muted">
+          {steps.length} {steps.length === 1 ? 'step' : 'steps'} · {formatDuration(total)} in all
+        </p>
       )}
     </div>
   );

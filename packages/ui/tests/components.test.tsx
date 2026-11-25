@@ -390,7 +390,8 @@ describe('Skeleton', () => {
     expect(s.className).toContain('x');
     // the shimmer stops under reduced motion; glass material in the glass skin
     expect(s.className).toContain('motion-reduce:after:hidden');
-    expect(s.className).toContain('after:via-(--shine)');
+    // the sweep itself is one viewport-wide band in components.css (.ui-skeleton::after)
+    expect(s.className).toContain('ui-skeleton');
   });
 
   it('defaults to a full-width md rectangle', () => {

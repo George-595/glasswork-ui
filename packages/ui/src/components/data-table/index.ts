@@ -13,10 +13,15 @@ export {
   type FacetFilterProps,
   FilterChips,
   type FilterChipsProps,
+  SavedViews,
+  type SavedViewsProps,
+  snapshotView,
   TablePagination,
   type TablePaginationProps,
   TableSearch,
   type TableSearchProps,
+  type TableView,
+  VIEW_KEYS,
 } from './parts';
 export {
   type Column,

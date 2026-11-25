@@ -18,7 +18,26 @@ export interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'chil
   name: string;
   src?: string;
   size?: AvatarSize;
+  /** A presence dot at the lower edge. It is added to the accessible name ("Ada Lovelace, online"),
+      so the colour is never the only signal. */
+  status?: AvatarStatus;
 }
+
+export type AvatarStatus = 'online' | 'away' | 'busy' | 'offline';
+
+const STATUS_DOT: Record<AvatarStatus, string> = {
+  online: 'bg-success',
+  away: 'bg-warning',
+  busy: 'bg-danger',
+  offline: 'bg-fg-subtle',
+};
+
+const DOT_SIZE: Record<AvatarSize, string> = {
+  xs: 'size-2',
+  sm: 'size-2.5',
+  md: 'size-3',
+  lg: 'size-3.5',
+};
 
 /** Up to two initials: first and last word ("Ada Lovelace" -> "AL"). */
 export function initialsOf(name: string): string {
@@ -56,7 +75,33 @@ export const AVATAR_TONE = [
   'bg-avatar-6 border-avatar-6-edge',
 ] as const;
 
-export function Avatar({ name, src, size = 'md', className, ...props }: AvatarProps) {
+export function Avatar({ status, ...props }: AvatarProps) {
+  if (!status) return <AvatarFace {...props} />;
+  const size = props.size ?? 'md';
+  return (
+    <span className="ui-avatar-wrap relative inline-flex shrink-0">
+      <AvatarFace {...props} spoken={`${props.name}, ${status}`} />
+      <span
+        aria-hidden="true"
+        data-status={status}
+        className={cn(
+          'ui-avatar-status absolute end-0 bottom-0 rounded-full ring-2 ring-surface-solid',
+          STATUS_DOT[status],
+          DOT_SIZE[size],
+        )}
+      />
+    </span>
+  );
+}
+
+function AvatarFace({
+  name,
+  src,
+  size = 'md',
+  className,
+  spoken,
+  ...props
+}: Omit<AvatarProps, 'status'> & { spoken?: string }) {
   const [failed, setFailed] = useState(false);
   const showImage = src && !failed;
   return (
@@ -64,7 +109,7 @@ export function Avatar({ name, src, size = 'md', className, ...props }: AvatarPr
     <span
       {...props}
       role={showImage ? undefined : 'img'}
-      aria-label={showImage ? undefined : name}
+      aria-label={showImage ? undefined : (spoken ?? name)}
       data-size={size}
       className={cn(
         'ui-avatar relative inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full',
@@ -77,7 +122,7 @@ export function Avatar({ name, src, size = 'md', className, ...props }: AvatarPr
       {showImage ? (
         <img
           src={src}
-          alt={name}
+          alt={spoken ?? name}
           className="size-full object-cover"
           onError={() => setFailed(true)}
         />

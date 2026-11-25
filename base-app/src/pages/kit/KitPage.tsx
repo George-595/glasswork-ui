@@ -19,6 +19,7 @@ import { ChartsSection, EffectsSection, TablesSection } from './KitData';
 import { KitLoadingContext } from './KitParts';
 import { CardsSection, FeedbackSection, OverlaysSection } from './KitSurfaces';
 import { AiSection } from './sections/KitAi';
+import { ImprovedSection } from './sections/KitImproved';
 import { PickersSection } from './sections/KitInputs';
 import { SeaGlassSection } from './sections/KitSeaGlass';
 import { SoundsSection } from './sections/KitSounds';
@@ -26,7 +27,7 @@ import { VizSection } from './sections/KitViz';
 
 /* The kit page: a living reference of every @apps/ui component in its states, for signed-in
    users. It is where the look of both skins and both modes is judged, so a skin and mode switcher
-   sits at the top (the same shared theme state as the topbar). Fourteen sections, an in-page nav.
+   sits at the top (the same shared theme state as the topbar). Fifteen sections, an in-page nav.
 
    The nav links are real anchors to this route (so they work in a new tab) whose click is
    taken over to scroll to the section and move focus to its heading: the app routes on the
@@ -35,6 +36,7 @@ import { VizSection } from './sections/KitViz';
    Toasts show through the app's one Toaster (App.tsx). */
 
 const SECTIONS = [
+  { id: 'improved', label: "What's new" },
   { id: 'buttons', label: 'Buttons' },
   { id: 'inputs', label: 'Inputs and choices' },
   { id: 'pickers', label: 'Pickers and chips' },
@@ -146,6 +148,7 @@ export default function KitPage() {
           </nav>
 
           <Stack gap={7}>
+            <ImprovedSection />
             <ButtonsSection />
             <InputsSection />
             <PickersSection />

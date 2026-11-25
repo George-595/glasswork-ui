@@ -45,7 +45,7 @@ export interface CalendarBaseProps {
   weekStart?: number;
   /** Override "today" (tests, a server clock). */
   today?: IsoDate;
-  /** Month shown first (any day in it). Defaults to the value, else today. */
+  /** Month shown first (any day in it). Default: the value's month, else today's. */
   defaultMonth?: IsoDate;
   /** Names the grid for assistive tech (the month is added). */
   label?: string;
@@ -87,7 +87,8 @@ export function Calendar(props: CalendarProps) {
   const value = props.mode === 'range' ? null : (props.value ?? null);
 
   const today = useMemo(() => todayProp ?? todayIso(), [todayProp]);
-  const anchor = value ?? range?.from ?? defaultMonth ?? today;
+  // an explicit month wins (the second month of a two-month range picker)
+  const anchor = defaultMonth ?? value ?? range?.from ?? today;
   const [month, setMonth] = useState<IsoDate>(() => startOfMonth(clampDay(anchor, min, max)));
   const [focusDay, setFocusDay] = useState<IsoDate>(() => clampDay(anchor, min, max));
   const wantFocus = useRef(false);

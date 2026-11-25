@@ -1,14 +1,16 @@
 import type { HTMLAttributes } from 'react';
 import { cn } from '../lib/cn';
-import { Avatar, type AvatarSize } from './avatar';
+import { Avatar, type AvatarSize, type AvatarStatus } from './avatar';
 
 /* AvatarGroup — a row of overlapping avatars ("who is on this"). It is a list,
    so a screen reader hears how many people there are; people past `max` fold
    into a "+N" chip whose name says who they are not ("and 3 more"). Each
-   avatar has a ring in the surface colour so the overlap stays legible. */
+   avatar is cut where the next one overlaps it (a mask, not a painted ring), so
+   the overlap stays clean on a translucent glass card as well as a solid one. */
 export interface AvatarGroupPerson {
   name: string;
   src?: string;
+  status?: AvatarStatus;
 }
 
 export interface AvatarGroupProps extends Omit<HTMLAttributes<HTMLUListElement>, 'children'> {
@@ -37,17 +39,18 @@ export function AvatarGroup({
 }: AvatarGroupProps) {
   const shown = people.slice(0, Math.max(1, max));
   const rest = people.length - shown.length;
-  const ring = 'rounded-full ring-2 ring-surface-solid';
+  const ring = 'ui-avatar-slot rounded-full';
   return (
     <ul
       {...props}
       aria-label={label}
+      data-size={size}
       className={cn('ui-avatar-group m-0 flex list-none items-center p-0', className)}
     >
       {shown.map((p, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: two people can share a name; the row is positional
         <li key={`${p.name}-${i}`} className={cn('flex', i > 0 && '-ml-2', ring)}>
-          <Avatar name={p.name} src={p.src} size={size} />
+          <Avatar name={p.name} src={p.src} size={size} status={p.status} />
         </li>
       ))}
       {rest > 0 && (

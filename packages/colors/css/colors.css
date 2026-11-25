@@ -120,7 +120,7 @@
   --glass-rim: 0 0 rgba(0, 0, 0, 0);
   --sheen: 0 0 rgba(0, 0, 0, 0);
   --highlight: #1c1c1f;
-  --shine: rgba(250, 250, 250, 0.08);
+  --shine: rgba(250, 250, 250, 0.13);
   --glare: rgba(250, 250, 250, 0.08);
   --spotlight: rgba(31, 127, 240, 0.12);
   --grid-dot: rgba(255, 255, 255, 0.035);
@@ -248,7 +248,7 @@
   --glass-rim: 0 0 rgba(0, 0, 0, 0);
   --sheen: 0 0 rgba(0, 0, 0, 0);
   --highlight: #f4f4f5;
-  --shine: rgba(10, 10, 11, 0.06);
+  --shine: rgba(255, 255, 255, 0.75);
   --glare: rgba(10, 10, 11, 0.06);
   --spotlight: rgba(31, 127, 240, 0.1);
   --grid-dot: rgba(10, 10, 11, 0.05);
@@ -377,7 +377,7 @@
     --glass-rim: 0 0 rgba(0, 0, 0, 0);
     --sheen: 0 0 rgba(0, 0, 0, 0);
     --highlight: #f4f4f5;
-    --shine: rgba(10, 10, 11, 0.06);
+    --shine: rgba(255, 255, 255, 0.75);
     --glare: rgba(10, 10, 11, 0.06);
     --spotlight: rgba(31, 127, 240, 0.1);
     --grid-dot: rgba(10, 10, 11, 0.05);
@@ -506,7 +506,7 @@
   --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
   --sheen: inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 10px 14px -12px rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(0, 0, 0, 0.3);
   --highlight: rgba(255, 255, 255, 0.08);
-  --shine: rgba(250, 250, 250, 0.08);
+  --shine: rgba(250, 250, 250, 0.13);
   --glare: rgba(250, 250, 250, 0.08);
   --spotlight: rgba(31, 127, 240, 0.14);
   --grid-dot: rgba(255, 255, 255, 0.035);
@@ -634,7 +634,7 @@
   --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(10, 10, 11, 0.04);
   --sheen: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 10px 14px -12px rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.25);
   --highlight: rgba(10, 10, 11, 0.06);
-  --shine: rgba(10, 10, 11, 0.06);
+  --shine: rgba(255, 255, 255, 0.75);
   --glare: rgba(10, 10, 11, 0.06);
   --spotlight: rgba(31, 127, 240, 0.1);
   --grid-dot: rgba(10, 10, 11, 0.05);
@@ -763,7 +763,7 @@
     --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(10, 10, 11, 0.04);
     --sheen: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 10px 14px -12px rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.25);
     --highlight: rgba(10, 10, 11, 0.06);
-    --shine: rgba(10, 10, 11, 0.06);
+    --shine: rgba(255, 255, 255, 0.75);
     --glare: rgba(10, 10, 11, 0.06);
     --spotlight: rgba(31, 127, 240, 0.1);
     --grid-dot: rgba(10, 10, 11, 0.05);

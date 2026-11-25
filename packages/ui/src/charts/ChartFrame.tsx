@@ -410,6 +410,8 @@ export interface LegendItem {
   /** 'bar' draws a filled swatch (with `fill`); 'comparison' a muted dashed line. */
   kind?: 'line' | 'bar' | 'comparison';
   fill?: string;
+  /** The colour, when it is not the index's own (a chart drawn from a later palette tone). */
+  color?: string;
 }
 
 /** A legend: one row per series with its colour, line style and marker (or bar pattern).
@@ -434,6 +436,7 @@ export function Legend({
     >
       {items.map((it, row) => {
         const i = it.index ?? row;
+        const col = it.color ?? seriesColor(i);
         const on = isShown ? isShown(i) : true;
         const comparison = it.kind === 'comparison';
         const body = (
@@ -453,8 +456,8 @@ export function Legend({
                   width="20"
                   height="10"
                   rx="2"
-                  fill={it.fill ?? seriesColor(i)}
-                  stroke={seriesColor(i)}
+                  fill={it.fill ?? col}
+                  stroke={col}
                   strokeWidth="1.5"
                 />
               ) : (
@@ -464,11 +467,11 @@ export function Legend({
                     x2="25"
                     y1="6"
                     y2="6"
-                    stroke={seriesColor(i)}
+                    stroke={col}
                     strokeWidth={comparison ? 1.5 : 2}
                     strokeDasharray={comparison ? COMPARISON_DASH : seriesDash(i)}
                   />
-                  {!comparison && <Marker i={i} x={13} y={6} color={seriesColor(i)} />}
+                  {!comparison && <Marker i={i} x={13} y={6} color={col} />}
                 </>
               )}
             </svg>
@@ -548,7 +551,9 @@ export function Readout({ state }: { state: ReadoutState | null }) {
   return (
     <div
       className={cn(
-        'ui-chart-readout pointer-events-none absolute z-[1] ml-3 flex min-w-32 flex-col gap-[3px] whitespace-nowrap rounded-xs border border-border bg-surface-solid px-2.5 py-[7px] font-sans text-xs/[1.4] tabular-nums text-fg [box-shadow:var(--shadow-md)]',
+        'ui-chart-readout pointer-events-none absolute z-[1] ml-3 flex min-w-32 flex-col gap-[3px] whitespace-nowrap rounded-sm border border-border bg-surface-solid px-2.5 py-[7px] font-sans text-xs/[1.4] tabular-nums text-fg [box-shadow:var(--shadow-md)]',
+        // glass: the readout is a tooltip, which is fixed chrome over the plot, so it may frost
+        'glass:bg-overlay glass-chrome',
         'data-[flip]:-ml-3 data-[flip]:-translate-x-full',
         'motion-safe:[transition:left_var(--t-fast),top_var(--t-fast)]',
       )}

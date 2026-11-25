@@ -168,6 +168,30 @@
   mask-image: radial-gradient(ellipse at center, currentColor 25%, transparent 80%);
 }
 
+/* the accent without a live scene (no WebGPU, reduced motion, a GPU yielded to a backdrop):
+   the scene's own three colours, not the page washes, which are mixed so far toward the page
+   that a small accent made of them read as nothing. Under motion they drift slowly. */
+.ui-shader.ui-shader-accent:not([data-live], [data-view="solid"]) {
+  background-color: transparent;
+  background-image:
+    radial-gradient(45% 55% at 28% 35%, var(--shader-a), transparent 70%),
+    radial-gradient(40% 50% at 72% 40%, var(--shader-b), transparent 70%),
+    radial-gradient(50% 45% at 50% 78%, var(--shader-c), transparent 72%);
+  background-size: 130% 130%;
+  background-position: 0% 0%;
+  opacity: calc(var(--ui-shader-opacity) * var(--ui-shader-intensity, 1));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ui-shader.ui-shader-accent:not([data-live], [data-view="solid"]) {
+    animation: ui-accent-drift 16s var(--ease-in-out, ease-in-out) infinite alternate;
+  }
+}
+@keyframes ui-accent-drift {
+  to {
+    background-position: 100% 70%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ui-shader-canvas {
     display: none;

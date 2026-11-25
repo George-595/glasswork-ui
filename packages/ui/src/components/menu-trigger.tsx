@@ -1,5 +1,6 @@
 import { type ButtonHTMLAttributes, forwardRef } from 'react';
 import { Icon, type IconName } from '../icons/Icon';
+import { cn } from '../lib/cn';
 import { Button } from './button';
 
 /* MenuTrigger — the button of a Menu, with no UI SDK import. Menu renders it as DropdownMenuTrigger's element
@@ -14,7 +15,7 @@ export interface MenuTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement
 }
 
 export const MenuTrigger = forwardRef<HTMLButtonElement, MenuTriggerProps>(function MenuTrigger(
-  { label, icon, iconOnly = false, iconSize = 15, ...rest },
+  { label, icon, iconOnly = false, iconSize = 15, className, ...rest },
   ref,
 ) {
   return (
@@ -22,11 +23,10 @@ export const MenuTrigger = forwardRef<HTMLButtonElement, MenuTriggerProps>(funct
       ref={ref}
       variant="ghost"
       size="md"
-      className={
-        iconOnly && icon
-          ? 'size-6 min-h-6 p-0 pointer-coarse:size-12 pointer-coarse:min-h-12'
-          : undefined
-      }
+      className={cn(
+        iconOnly && icon && 'size-6 min-h-6 p-0 pointer-coarse:size-12 pointer-coarse:min-h-12',
+        className,
+      )}
       {...rest}
     >
       {icon && <Icon name={icon} size={iconSize} />}

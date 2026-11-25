@@ -30,7 +30,11 @@ import {
    pauses while the pointer is over the stack or focus is inside it, a swipe or
    Escape dismisses, and F8 jumps to the stack. The kit's store (toast-store.ts)
    stays the queue: this view mirrors it into an SDK toaster and hands every
-   dismissal back to it. On top of that: at most three
+   dismissal back to it. The toasts stack like a deck (the newest in front,
+   two peeking behind it) and fan out while the pointer is over them or focus is
+   inside, so a burst of messages never covers half the screen; each one swipes
+   away sideways. toast.promise(work, { loading, success, error }) is one toast
+   that spins while the work runs and then becomes the result. On top of that: at most three
    show at once (the oldest leaves when a fourth arrives), each variant has an
    icon AND a spoken/visible word, not colour alone (WCAG 1.4.1), an optional
    action button, and a Dismiss button. Errors stay until dismissed unless you
@@ -57,11 +61,29 @@ const WORD: Record<ToastVariant, string | null> = {
   success: 'Success',
   error: 'Error',
   info: 'Note',
+  loading: 'Working',
 };
 
 function VariantIcon({ variant }: { variant: ToastVariant }) {
   if (variant === 'success') return <Icon name="check" size={16} />;
   if (variant === 'error') return <Icon name="alert" size={16} />;
+  if (variant === 'loading')
+    return (
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        className="motion-safe:animate-spin"
+      >
+        <circle cx="12" cy="12" r="9" className="opacity-25" />
+        <path d="M21 12a9 9 0 0 0-9-9" />
+      </svg>
+    );
   if (variant === 'info')
     return (
       <span className="inline-flex size-4 items-center justify-center rounded-full border-[1.5px] border-solid border-current font-serif text-[10px] leading-none font-bold">
@@ -76,6 +98,7 @@ const ICON_TONE: Record<ToastVariant, string> = {
   success: 'text-success',
   error: 'text-danger',
   info: 'text-info',
+  loading: 'text-fg-muted',
 };
 
 export interface ToasterProps {
@@ -100,14 +123,16 @@ export function ToasterView({ label = 'Notifications', className }: ToasterProps
   const undoable = list.filter((t) => t.open && t.undo && !settled.has(t.id));
   const newest = undoable[undoable.length - 1]?.id;
   const [sdk] = useState(() => createToaster<ReactNode>());
-  const shown = useRef(new Set<string>());
+  const shown = useRef(new Map<string, ToastItem>());
 
   // mirror the store into the SDK toaster: new open toasts in, closed ones out
   useEffect(() => {
     for (const t of list) {
       const variant = t.variant ?? 'default';
-      if (t.open && !shown.current.has(t.id)) {
-        shown.current.add(t.id);
+      const before = shown.current.get(t.id);
+      if (t.open && before !== t) {
+        // new, or changed in place (a promise toast that finished): the SDK updates a known id
+        shown.current.set(t.id, t);
         sdk({
           id: t.id,
           title: t.title,
@@ -115,7 +140,10 @@ export function ToasterView({ label = 'Notifications', className }: ToasterProps
           type: variant,
           priority: variant === 'error' ? 'assertive' : 'polite',
           duration:
-            t.duration ?? (variant === 'error' ? Number.POSITIVE_INFINITY : DEFAULT_DURATION),
+            t.duration ??
+            (variant === 'error' || variant === 'loading'
+              ? Number.POSITIVE_INFINITY
+              : DEFAULT_DURATION),
           data: t,
           // the SDK timed it out, or a swipe, Escape or Dismiss closed it: the store decides what that means
           onDismiss: () => dismiss(t.id),
@@ -149,11 +177,12 @@ export function ToasterView({ label = 'Notifications', className }: ToasterProps
       side="bottom"
       align="end"
       maxVisible={3}
-      expanded
+      expanded={false}
       shortcut="F8"
       className={cn(
-        // above the bars at the bottom of the screen; with none, 1rem (or the safe area) clear of the edge
-        'ui-toaster fixed inset-auto right-4 bottom-[calc(var(--ui-bottom-inset,max(0px,env(safe-area-inset-bottom)_-_1rem))_+_1rem)] z-[100] m-0 w-[min(24rem,calc(100vw-2rem))] border-0 bg-transparent p-0 outline-none [&>ol]:m-0 [&>ol]:flex [&>ol]:list-none [&>ol]:flex-col [&>ol]:gap-2 [&>ol]:p-0',
+        // above the bars at the bottom of the screen; with none, 1rem (or the safe area) clear of the edge.
+        // The toasts stack like cards and fan out on hover or focus (styles/components.css)
+        'ui-toaster fixed inset-auto right-4 bottom-[calc(var(--ui-bottom-inset,max(0px,env(safe-area-inset-bottom)_-_1rem))_+_1rem)] z-[100] m-0 w-[min(24rem,calc(100vw-2rem))] border-0 bg-transparent p-0 outline-none [&>ol]:m-0 [&>ol]:list-none [&>ol]:p-0',
         className,
       )}
     >
