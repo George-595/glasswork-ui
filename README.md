@@ -66,6 +66,7 @@ for every component in its states. To start an app of your own: `cd base-app && 
 | [`packages/colors/`](packages/colors/README.md) | `@apps/colors`: every colour, as roles per skin and mode, with the contrast gate |
 | [`base-app/`](base-app/README.md) | the app template |
 | [`ENGINEERING.md`](ENGINEERING.md) | the standards everything here is held to |
+| [`docs/USING-THE-KIT.md`](docs/USING-THE-KIT.md) | how an app takes the kit (`scripts/kit-sync.mjs`) and the app frame every app uses |
 
 These documents were written inside my own monorepo, where this workspace is the `apps/` folder:
 wherever they say `apps/`, read the repo root. Every dependency is an exact pin at least 7 days

@@ -7,28 +7,40 @@ import { type RefObject, useEffect } from 'react';
    Two things read it and neither needs to know which bar is there:
    - `scroll-padding-bottom` (styles/components.css): moving focus to a control scrolls it
      clear of the bar instead of to the screen's edge, behind the bar (WCAG 2.4.11);
-   - the Toaster rests above the bars instead of on them. */
-const heights = new Map<symbol, number>();
+   - the Toaster and the floating stack (shell/Floating.tsx) rest above the bars instead of on
+     them.
 
-function publish() {
+   The floating stack (back to top, the main action) reports its own height the same way, as
+   `--ui-float-inset`: the Toaster stacks above it, and the shell's <main> pads its end by it so
+   the last row of a page can always scroll out from under the buttons. */
+const registries = new Map<string, Map<symbol, number>>();
+
+function publish(name: string) {
   if (typeof document === 'undefined') return;
   let total = 0;
-  for (const h of heights.values()) total += h;
+  for (const h of registries.get(name)?.values() ?? []) total += h;
   const style = document.documentElement.style;
-  if (total > 0) style.setProperty('--ui-bottom-inset', `${Math.ceil(total)}px`);
-  else style.removeProperty('--ui-bottom-inset');
+  if (total > 0) style.setProperty(name, `${Math.ceil(total)}px`);
+  else style.removeProperty(name);
 }
 
-/** Report this element's height as bottom chrome while it is mounted (0 when it is hidden, as
-    the tab bar is from 768px). `active` false reports nothing. */
-export function useBottomInset(ref: RefObject<HTMLElement | null>, active = true) {
+/** Report this element's height as the CSS variable `name` on <html> while it is mounted (the
+    sum over every element reporting the same name; 0 while it is hidden). `active` false
+    reports nothing. */
+export function useInsetVar(ref: RefObject<HTMLElement | null>, name: string, active = true) {
   useEffect(() => {
     const el = ref.current;
     if (!el || !active) return;
-    const key = Symbol('bottom-inset');
+    let heights = registries.get(name);
+    if (!heights) {
+      heights = new Map();
+      registries.set(name, heights);
+    }
+    const own = heights;
+    const key = Symbol(name);
     const measure = () => {
-      heights.set(key, el.getBoundingClientRect().height);
-      publish();
+      own.set(key, el.getBoundingClientRect().height);
+      publish(name);
     };
     measure();
     let ro: ResizeObserver | undefined;
@@ -38,8 +50,14 @@ export function useBottomInset(ref: RefObject<HTMLElement | null>, active = true
     }
     return () => {
       ro?.disconnect();
-      heights.delete(key);
-      publish();
+      own.delete(key);
+      publish(name);
     };
-  }, [ref, active]);
+  }, [ref, name, active]);
+}
+
+/** Report this element's height as bottom chrome while it is mounted (0 when it is hidden, as
+    the tab bar is from 768px). `active` false reports nothing. */
+export function useBottomInset(ref: RefObject<HTMLElement | null>, active = true) {
+  useInsetVar(ref, '--ui-bottom-inset', active);
 }

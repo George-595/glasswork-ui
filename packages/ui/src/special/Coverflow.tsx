@@ -31,13 +31,22 @@ export interface CoverflowProps {
   defaultIndex?: number;
   /** The front cover was pressed (Enter, or a press on the front cover). */
   onSelect?: (item: CoverflowItem) => void;
+  /** A different cover came to the front (drag, keys, scrubber or a press on a side cover). */
+  onFrontChange?: (item: CoverflowItem, index: number) => void;
   className?: string;
 }
 
 const STEP = 0.42; // of the cover width, between side covers
 const DRAG = 160; // px of drag per cover
 
-export function Coverflow({ items, label, defaultIndex = 0, onSelect, className }: CoverflowProps) {
+export function Coverflow({
+  items,
+  label,
+  defaultIndex = 0,
+  onSelect,
+  onFrontChange,
+  className,
+}: CoverflowProps) {
   const [index, setIndex] = useState(Math.min(defaultIndex, Math.max(0, items.length - 1)));
   const [drag, setDrag] = useState(0);
   const grab = useRef<{ x: number; id: number; moved: boolean } | null>(null);
@@ -46,7 +55,11 @@ export function Coverflow({ items, label, defaultIndex = 0, onSelect, className 
 
   const go = (to: number, focus = false) => {
     const next = Math.max(0, Math.min(last, to));
-    if (next !== index) playSound('tick');
+    if (next !== index) {
+      playSound('tick');
+      const it = items[next];
+      if (it) onFrontChange?.(it, next);
+    }
     setIndex(next);
     if (focus) {
       requestAnimationFrame(() =>

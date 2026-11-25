@@ -323,6 +323,7 @@ export {
   ResizableHandle,
   type ResizableHandleProps,
   ResizablePane,
+  type ResizablePaneProps,
 } from './components/resizable';
 export {
   type DockItem,
@@ -454,12 +455,24 @@ export { AppRoot, type AppRootProps } from './shell/AppRoot';
 export {
   AppShell,
   type AppShellProps,
+  type ShellHome,
   Sidebar,
   type SidebarGroup,
   type SidebarProps,
   Topbar,
   type TopbarProps,
 } from './shell/AppShell';
+export {
+  BackToTop,
+  type BackToTopProps,
+  Fab,
+  type FabProps,
+  Floating,
+  type FloatingProps,
+  FloatingRoot,
+  FloatingStack,
+  type FloatingStackProps,
+} from './shell/Floating';
 export { PageEnter } from './shell/PageEnter';
 /* ---- Interface sounds (tests/sound.test.tsx) ---- */
 export * from './sound';

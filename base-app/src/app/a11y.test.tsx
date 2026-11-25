@@ -41,8 +41,13 @@ function isLoading(): boolean {
   );
 }
 
+/* jsdom never decodes an image, so a photo cropper (busy until its photo has loaded) would be
+   busy for ever: it is left out of the wait. */
 function isBusy(): boolean {
-  return isLoading() || document.querySelector('[aria-busy="true"]') !== null;
+  return (
+    isLoading() ||
+    document.querySelector('[aria-busy="true"]:not([data-slot="image-cropper"])') !== null
+  );
 }
 
 /* The session and lazy pages resolve after a fetch or an import, so wait in short steps until

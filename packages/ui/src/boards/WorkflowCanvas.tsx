@@ -47,6 +47,9 @@ export interface WorkflowCanvasProps {
   edges: readonly WorkflowEdge[];
   label: string;
   onChange?: (nodes: WorkflowNode[], edges: WorkflowEdge[]) => void;
+  /** Fit the whole workflow in view when the canvas is first measured (zooming out only,
+      never in), for a flow wider than the box it sits in. Default false. */
+  fitOnStart?: boolean;
   /** Height of the canvas. Default 26rem. */
   className?: string;
 }
@@ -95,7 +98,14 @@ type Drag =
   | { kind: 'node'; id: string; x0: number; y0: number; nx: number; ny: number }
   | { kind: 'wire'; from: string; x: number; y: number };
 
-export function WorkflowCanvas({ nodes, edges, label, onChange, className }: WorkflowCanvasProps) {
+export function WorkflowCanvas({
+  nodes,
+  edges,
+  label,
+  onChange,
+  fitOnStart = false,
+  className,
+}: WorkflowCanvasProps) {
   const [ns, setNs] = useState<WorkflowNode[]>(() => [...nodes]);
   const [es, setEs] = useState<WorkflowEdge[]>(() => [...edges]);
   const [view, setView] = useState({ x: 24, y: 24, k: 1 });
@@ -108,12 +118,16 @@ export function WorkflowCanvas({ nodes, edges, label, onChange, className }: Wor
   const [said, setSaid] = useState('');
   const [size, setSize] = useState({ w: 800, h: 420 });
   const box = useRef<HTMLDivElement>(null);
+  const measured = useRef(false);
   const descId = useId();
 
   useEffect(() => {
     const el = box.current;
     if (!el || typeof ResizeObserver !== 'function') return;
-    const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }));
+    const ro = new ResizeObserver(() => {
+      measured.current = true;
+      setSize({ w: el.clientWidth, h: el.clientHeight });
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -139,16 +153,29 @@ export function WorkflowCanvas({ nodes, edges, label, onChange, className }: Wor
       const oy = cy === undefined ? (r?.height ?? 0) / 2 : cy - (r?.top ?? 0);
       return { k, x: ox - ((ox - v.x) * k) / v.k, y: oy - ((oy - v.y) * k) / v.k };
     });
-  const fit = () => {
+  const fit = (most = 1.4) => {
     const xs = ns.map((n) => n.x);
     const ys = ns.map((n) => n.y);
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
     const wW = Math.max(...xs) + W - minX;
     const wH = Math.max(...ys) + H - minY;
-    const k = Math.min(1.4, Math.max(0.4, Math.min((size.w - 64) / wW, (size.h - 64) / wH)));
+    const k = Math.min(most, Math.max(0.4, Math.min((size.w - 64) / wW, (size.h - 64) / wH)));
     setView({ k, x: (size.w - wW * k) / 2 - minX * k, y: (size.h - wH * k) / 2 - minY * k });
   };
+
+  // the first real measurement (the ResizeObserver's) fits the flow once, if asked
+  const fitted = useRef(false);
+  const fitRef = useRef(fit);
+  useEffect(() => {
+    fitRef.current = fit;
+  });
+  useEffect(() => {
+    // a canvas in a hidden tab measures 0 × 0 first: wait until it has a real box
+    if (!fitOnStart || fitted.current || !measured.current || size.w < 120 || size.h < 120) return;
+    fitted.current = true;
+    fitRef.current(1);
+  }, [fitOnStart, size]);
 
   // pinch or Ctrl/Cmd + wheel zooms about the pointer; a plain wheel still scrolls the page
   const zoomRef = useRef(zoomBy);
@@ -463,7 +490,7 @@ export function WorkflowCanvas({ nodes, edges, label, onChange, className }: Wor
         </button>
         <button
           type="button"
-          onClick={fit}
+          onClick={() => fit()}
           aria-label="Fit every step in view"
           className="ui-wf-tool"
         >

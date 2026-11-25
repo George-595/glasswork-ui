@@ -19,6 +19,7 @@ import { ChartsSection, EffectsSection, TablesSection } from './KitData';
 import { KitLoadingContext } from './KitParts';
 import { CardsSection, FeedbackSection, OverlaysSection } from './KitSurfaces';
 import { AiSection } from './sections/KitAi';
+import { FrameSection } from './sections/KitFrame';
 import { ImprovedSection } from './sections/KitImproved';
 import { PickersSection } from './sections/KitInputs';
 import { SeaGlassSection } from './sections/KitSeaGlass';
@@ -37,6 +38,7 @@ import { VizSection } from './sections/KitViz';
    Toasts show through the app's one Toaster (App.tsx). */
 
 const SECTIONS = [
+  { id: 'frame', label: 'App frame' },
   { id: 'studio', label: 'New components' },
   { id: 'improved', label: "What's new" },
   { id: 'buttons', label: 'Buttons' },
@@ -150,6 +152,7 @@ export default function KitPage() {
           </nav>
 
           <Stack gap={7}>
+            <FrameSection />
             <StudioSection />
             <ImprovedSection />
             <ButtonsSection />

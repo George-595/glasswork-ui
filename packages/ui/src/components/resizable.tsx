@@ -44,13 +44,20 @@ export function ResizableGroup({
   );
 }
 
-export function ResizablePane({
-  className,
-  ...props
-}: ComponentPropsWithoutRef<typeof ResizablePanelPart>) {
+export interface ResizablePaneProps extends ComponentPropsWithoutRef<typeof ResizablePanelPart> {
+  /** Pads the content under a PaneHeader (12px), for panes that hold plain content rather than
+      a list or tree with its own padding. Default false. */
+  padded?: boolean;
+}
+
+export function ResizablePane({ className, padded = false, ...props }: ResizablePaneProps) {
   return (
     <ResizablePanelPart
-      className={cn('ui-resizable-pane relative min-h-0 min-w-0 overflow-auto', className)}
+      className={cn(
+        'ui-resizable-pane relative min-h-0 min-w-0 overflow-auto',
+        padded && '[&>:not(.ui-pane-header)]:m-3',
+        className,
+      )}
       {...props}
     />
   );
