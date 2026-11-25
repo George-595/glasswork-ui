@@ -84,6 +84,14 @@ const CHECKS: readonly Check[] = [
   ...([1, 2, 3, 4, 5, 6] as const).map(
     (n) => ['fg', ['surface-solid', `avatar-${n}` as Role], 4.5] as const,
   ),
+  // Photo's corner chip: what sits over a photograph (the "Best match" badge, Retake, the select
+  // checkbox) sits on a solid surface, so it is measured on that, not on the picture
+  ['fg', ['surface-solid'], 4.5],
+  ['brand', ['surface-solid', 'brand-soft'], 4.5],
+  ...(['neutral', 'neutral-hover', 'neutral-active'] as const).map(
+    (b) => ['on-neutral', ['surface-solid', b], 4.5] as const,
+  ),
+  ['border-input', ['surface-solid'], 3],
   // boundaries and the focus colour
   ['border-input', ['canvas'], 3],
   ['border-input', ['surface'], 3],

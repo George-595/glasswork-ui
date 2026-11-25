@@ -36,6 +36,9 @@ export interface AssistantLayoutProps extends Omit<HTMLAttributes<HTMLDivElement
   /** A side column (a ConversationList): beside the thread from the md breakpoint, above it
       below that. */
   aside?: ReactNode;
+  /** Fill the box it is in (a flex column, such as a `fill` Sheet's body) instead of sizing itself
+      to the viewport, which overflows a sheet that is shorter than the screen. */
+  fill?: boolean;
 }
 
 export const AssistantLayout = forwardRef<ChatThreadHandle, AssistantLayoutProps>(
@@ -52,6 +55,7 @@ export const AssistantLayout = forwardRef<ChatThreadHandle, AssistantLayoutProps
       threadLabel,
       busy,
       aside,
+      fill = false,
       className,
       ...props
     },
@@ -61,7 +65,8 @@ export const AssistantLayout = forwardRef<ChatThreadHandle, AssistantLayoutProps
       <div
         {...props}
         className={cn(
-          'ui-assistant-layout flex h-[clamp(24rem,calc(100dvh-15rem),52rem)] min-w-0 flex-col gap-3',
+          'ui-assistant-layout flex min-w-0 flex-col gap-3',
+          fill ? 'min-h-0 flex-1' : 'h-[clamp(24rem,calc(100dvh-15rem),52rem)]',
           className,
         )}
       >

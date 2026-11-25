@@ -211,9 +211,13 @@ export interface CsvSink {
   save?: (filename: string, csv: string) => void;
 }
 
+/* A UTF-8 byte-order mark first: without it Excel on Windows reads the file as the local code
+   page and shows Zoë or O’Brien as garbled text. Every other reader ignores it. */
+export const CSV_BOM = '\uFEFF';
+
 function browserSave(filename: string, csv: string): void {
   if (typeof document === 'undefined' || typeof URL.createObjectURL !== 'function') return;
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const url = URL.createObjectURL(new Blob([CSV_BOM, csv], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
