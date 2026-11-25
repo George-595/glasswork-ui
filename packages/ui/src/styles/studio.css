@@ -384,15 +384,71 @@
   inset: 0;
   overflow: hidden;
   border-radius: 9999px;
+  /* A soft edge, and a mask rather than overflow alone, so Safari clips the blobs to the
+     circle (it ignores overflow: hidden on a rounded box whose children animate). */
+  mask-image: radial-gradient(closest-side, currentColor 58%, transparent 100%);
   background: radial-gradient(circle at 50% 60%, var(--shader-a), var(--brand) 70%);
-  box-shadow:
-    inset 0 -6px 14px var(--scrim),
-    0 0 0 1px var(--border),
-    var(--elev-2);
   scale: calc(1 + var(--orb-level, 0) * 0.16);
   transition:
     scale 90ms var(--ease-out),
     background var(--dur-slow);
+}
+/* The glow: the same colours, turning and breathing behind the orb, faded to nothing at its
+   edge, so there is never a box behind it. */
+.ui-orb-glow {
+  position: absolute;
+  inset: -42%;
+  border-radius: 9999px;
+  background: conic-gradient(
+    var(--shader-a),
+    var(--shader-b),
+    var(--shader-c),
+    var(--brand),
+    var(--shader-a)
+  );
+  mask-image: radial-gradient(closest-side, currentColor 30%, transparent 100%);
+  filter: blur(14px) saturate(1.4);
+  opacity: 0.75;
+  scale: calc(1 + var(--orb-level, 0) * 0.35);
+  transition:
+    opacity var(--dur-slow),
+    scale 120ms var(--ease-out);
+  animation:
+    ui-orb-turn calc(var(--orb-speed) * 1.4) linear infinite,
+    ui-orb-breathe 4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes ui-orb-turn {
+  to {
+    rotate: 360deg;
+  }
+}
+@keyframes ui-orb-breathe {
+  50% {
+    opacity: calc(var(--orb-glow, 0.75) * 0.65);
+  }
+}
+.ui-orb[data-state="thinking"] .ui-orb-glow {
+  --orb-glow: 1;
+  opacity: 1;
+  animation-duration: calc(var(--orb-speed) * 1.4), 1.4s;
+}
+.ui-orb[data-state="listening"] .ui-orb-glow {
+  --orb-glow: 0.95;
+  opacity: 0.95;
+}
+.ui-orb[data-state="speaking"] .ui-orb-glow {
+  --orb-glow: 1;
+  opacity: 1;
+  animation-duration: calc(var(--orb-speed) * 1.4), 0.9s;
+}
+.ui-orb[data-state="done"] .ui-orb-glow {
+  background: radial-gradient(closest-side, var(--success), var(--success-solid));
+  opacity: 0.6;
+}
+.ui-orb[data-state="error"] .ui-orb-glow {
+  background: radial-gradient(closest-side, var(--warning), var(--danger-solid));
+  opacity: 0.6;
 }
 .ui-orb-blob {
   position: absolute;
@@ -459,6 +515,7 @@
     linear-gradient(currentColor 0 0) content-box,
     linear-gradient(currentColor 0 0);
   mask-composite: exclude;
+  filter: blur(3px);
   transition: opacity var(--dur-slow);
 }
 .ui-orb-ripple {
@@ -543,6 +600,7 @@
 @media (prefers-reduced-motion: reduce) {
   .ui-orb[data-state] .ui-orb-core,
   .ui-orb[data-state] .ui-orb-blob,
+  .ui-orb[data-state] .ui-orb-glow,
   .ui-orb[data-state] .ui-orb-rim,
   .ui-orb[data-state] .ui-orb-ripple,
   .ui-orb[data-state] .ui-orb-mark {
@@ -790,4 +848,9 @@
   .ui-droplet-ripple {
     animation: none;
   }
+}
+
+/* Menubar: switching between open menus is instant (see Menubar). */
+.ui-menubar[data-instant] [data-slot="menu-content"] {
+  transition: none;
 }

@@ -1,6 +1,6 @@
 import { MenuContextTrigger, Menu as MenuRoot, MenuTrigger } from '@ui-sdk/react/menu';
 import { Menubar as MenubarRoot } from '@ui-sdk/react/menubar';
-import type { ReactNode } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { cn } from '../lib/cn';
 import { type MenuEntry, MenuSurface } from './menu-parts';
 
@@ -89,8 +89,22 @@ export function Menubar({
   end,
   className,
 }: MenubarProps) {
+  /* Moving from one open menu to the next swaps them at once, as a desktop menubar does: no
+     fade out, no scale in, so the menus never look like they jump. The first open and the last
+     close still animate. */
+  const [instant, setInstant] = useState(false);
+  const switchedAt = useRef(-1);
+  const onOpenChange = (open: boolean, reason: string) => {
+    if (!open && reason === 'submenu-switch') {
+      switchedAt.current = performance.now();
+      setInstant(true);
+    } else if (open) {
+      setInstant(performance.now() - switchedAt.current < 120);
+    }
+  };
   return (
     <div
+      data-instant={instant || undefined}
       className={cn(
         'ui-menubar flex min-h-10 w-full min-w-0 items-center gap-2 rounded-lg border border-solid border-border bg-surface px-1 [box-shadow:var(--elev-1)] glass-chrome',
         className,
@@ -101,6 +115,7 @@ export function Menubar({
           <MenuRoot
             key={m.id}
             loop
+            onOpenChange={(open, d) => onOpenChange(open, String(d.reason))}
             onAction={(id) => onAction?.(m.id, id)}
             onCheckedChange={(checked, d) => onCheckedChange?.(String(d.value), checked)}
             onValueChange={(value, d) => onValueChange?.(String(d.group ?? ''), value)}

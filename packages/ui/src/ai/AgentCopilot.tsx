@@ -256,7 +256,7 @@ export function AgentCopilot({
         className="ui-copilot-aura pointer-events-none absolute -inset-px rounded-[inherit] opacity-0 transition-opacity duration-(--dur-slow) data-[on]:opacity-100"
         data-on={busy || undefined}
       />
-      <header className="relative flex items-center gap-3">
+      <header className="relative flex flex-wrap items-center gap-3">
         <span
           aria-hidden="true"
           className="ui-copilot-mark relative inline-flex size-9 items-center justify-center rounded-full bg-brand text-on-primary"
@@ -264,7 +264,7 @@ export function AgentCopilot({
         >
           <Icon name="sparkles" size={17} />
         </span>
-        <div className="flex min-w-0 flex-col">
+        <div className="flex min-w-0 flex-1 basis-48 flex-col">
           <h3 id={`${panelId}-t`} className="m-0 font-sans text-[15px] font-semibold text-fg">
             {name}
           </h3>
@@ -279,7 +279,7 @@ export function AgentCopilot({
         <Button
           variant="ghost"
           size="sm"
-          className="ms-auto"
+          className="ms-auto shrink-0"
           disabled={!canUndo || busy}
           onClick={undo}
         >
