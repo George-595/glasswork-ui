@@ -12,6 +12,7 @@ workspace is the `apps/` folder: wherever they say `apps/`, read the repo root.)
 | `packages/ui/` | `@apps/ui`: the components, tokens, the enterprise and glass skins, light/dark |
 | `base-app/` | the template app (React + Vite client, Node API server, SQLite/MySQL/Postgres, Anthropic + Gemini) |
 | `scripts/demo/` | the README's demo film (`record.mjs`) |
+| `scripts/kit-sync.mjs` | **how every app takes the kit**: an exact copy with a drift check. Kit fixes land here first, then sync. See `docs/USING-THE-KIT.md` |
 
 Commands, from the repo root: `npm install`, `npm run dev`, `npm run verify` (biome + oxlint +
 the colour, page and craft checks + the 7-day dependency quarantine + typecheck + tests + axe +

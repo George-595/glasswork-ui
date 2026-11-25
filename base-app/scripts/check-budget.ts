@@ -35,7 +35,7 @@ export type Manifest = Record<string, ManifestChunk>;
    fails and noise does not. */
 export const BUDGETS: Readonly<Record<Scenario, number>> = {
   'sign-in': 135_000,
-  home: 221_000, // +3 kB, 25 Nov 2026: the studio set's context menu, menubar and hover card pull more of the UI SDK's menu and popup modules into the chunks the shell shares (measured +3.4 kB); +4 kB, 25 Nov 2026: the kit's improvement pass (stacked toasts, sliding tab pill, chart colours and zoom, data table resize/pin/views/virtual rows, markdown replies); +7 kB earlier in Nov: the UI SDK replaced Radix
+  home: 224_000, // +3 kB, 25 Nov 2026: the app frame (floating stack with Back to top and Fab, breadcrumbs and the hub link, pull to refresh built into AppShell; measured +2 kB); +3 kB, 25 Nov 2026: the studio set's context menu, menubar and hover card pull more of the UI SDK's menu and popup modules into the chunks the shell shares (measured +3.4 kB); +4 kB, 25 Nov 2026: the kit's improvement pass (stacked toasts, sliding tab pill, chart colours and zoom, data table resize/pin/views/virtual rows, markdown replies); +7 kB earlier in Nov: the UI SDK replaced Radix
 };
 
 /* The manifest key of the route file each non-entry scenario adds. */

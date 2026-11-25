@@ -180,9 +180,10 @@ export function ToasterView({ label = 'Notifications', className }: ToasterProps
       expanded={false}
       shortcut="F8"
       className={cn(
-        // above the bars at the bottom of the screen; with none, 1rem (or the safe area) clear of the edge.
+        // above the bars at the bottom of the screen and the floating buttons (back to top, the main
+        // action: shell/Floating.tsx); with none, 1rem (or the safe area) clear of the edge.
         // The toasts stack like cards and fan out on hover or focus (styles/components.css)
-        'ui-toaster fixed inset-auto right-4 bottom-[calc(var(--ui-bottom-inset,max(0px,env(safe-area-inset-bottom)_-_1rem))_+_1rem)] z-[100] m-0 w-[min(24rem,calc(100vw-2rem))] border-0 bg-transparent p-0 outline-none [&>ol]:m-0 [&>ol]:list-none [&>ol]:p-0',
+        'ui-toaster fixed inset-auto right-4 bottom-[calc(var(--ui-bottom-inset,max(0px,env(safe-area-inset-bottom)_-_1rem))_+_var(--ui-float-inset,0px)_+_1rem)] z-[100] m-0 w-[min(24rem,calc(100vw-2rem))] border-0 bg-transparent p-0 outline-none [&>ol]:m-0 [&>ol]:list-none [&>ol]:p-0',
         className,
       )}
     >

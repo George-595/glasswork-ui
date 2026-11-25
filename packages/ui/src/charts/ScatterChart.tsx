@@ -93,8 +93,12 @@ export function ScatterChart({
   );
   const full = useMemo<Domain>(() => {
     if (all.length === 0) return [0, 1, 0, 1];
-    const xs = niceTicks(...padded(Math.min(...all.map((p) => p.x)), Math.max(...all.map((p) => p.x))));
-    const ys = niceTicks(...padded(Math.min(...all.map((p) => p.y)), Math.max(...all.map((p) => p.y))));
+    const xs = niceTicks(
+      ...padded(Math.min(...all.map((p) => p.x)), Math.max(...all.map((p) => p.x))),
+    );
+    const ys = niceTicks(
+      ...padded(Math.min(...all.map((p) => p.y)), Math.max(...all.map((p) => p.y))),
+    );
     return [xs[0] ?? 0, xs[xs.length - 1] ?? 1, ys[0] ?? 0, ys[ys.length - 1] ?? 1];
   }, [all]);
   const target = zooms[zooms.length - 1] ?? full;

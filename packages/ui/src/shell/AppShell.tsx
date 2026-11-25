@@ -11,6 +11,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
+import { type BreadcrumbItem, Breadcrumbs } from '../components/breadcrumbs';
 import { Button } from '../components/button';
 import { AnimatedBackground } from '../effects/AnimatedBackground';
 import { isShaderPreset } from '../effects/shaders/presets';
@@ -19,7 +20,9 @@ import { type Backdrop, useBackdrop } from '../effects/useBackdrop';
 import { Icon, type IconName } from '../icons/Icon';
 import { cn } from '../lib/cn';
 import { type SectionDef, SectionNav } from '../nav/SectionNav';
+import { PullToRefresh } from '../patterns/PullToRefresh';
 import { useDocumentSkin } from '../theme/useDocumentSkin';
+import { BackToTop, FloatingRoot, FloatingStack } from './Floating';
 
 /* AppShell + Sidebar + Topbar — the frame every app page sits in, ported
    from the design skill's strategies kit (ui_kits/strategies) with the a11y
@@ -36,7 +39,17 @@ import { useDocumentSkin } from '../theme/useDocumentSkin';
    - Under 768px the sidebar is an off-canvas drawer opened by the topbar's
      menu button. While it is open the rest of the page is inert, focus moves
      into it, and Esc, the close button, a scrim click or following a link
-     closes it and puts focus back on the menu button. */
+     closes it and puts focus back on the menu button.
+   - Without a `sidebar` (a one-page app) there is no column, no drawer and no menu button; the
+     Topbar shows the brand at every width.
+
+   It also carries George's standing rules for every app, so no app hand-rolls them:
+   - `home`: the way back to the hub, in the sidebar's foot and as the first breadcrumb (or a
+     "‹ Hub" link at the top of the page when there are no breadcrumbs).
+   - `breadcrumbs`: where you are, at the top of <main>.
+   - `onRefresh`: pull to refresh on a phone, with a keyboard-reachable Refresh button.
+   - The floating stack (./Floating): Back to top and the page's main action share one
+     managed corner that never overlaps itself, the tab bar or the toasts. */
 const COLLAPSE_KEY = 'ui-sidebar-collapsed';
 const DESKTOP = '(min-width: 768px)';
 
@@ -57,6 +70,8 @@ interface ShellState {
   rail: boolean;
   /** A bottom tab bar is present (phones): the topbar hides its drawer button. */
   hasBottomNav: boolean;
+  /** There is a sidebar at all (a one-page app has none: no menu button, brand always shown). */
+  hasSidebar: boolean;
   sidebarId: string;
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
@@ -82,11 +97,18 @@ function writeCollapsed(v: boolean) {
   }
 }
 
+/** The way back to the hub (George's apps all live under one). */
+export interface ShellHome {
+  href: string;
+  /** Default "Hub". */
+  label?: string;
+}
+
 export interface AppShellProps {
   /** Logo and name at the top of the sidebar. */
   brand: ReactNode;
-  /** Usually a <Sidebar>. */
-  sidebar: ReactNode;
+  /** Usually a <Sidebar>. Leave unset for a one-page app: no column, no drawer. */
+  sidebar?: ReactNode;
   /** Usually a <Topbar>. */
   topbar: ReactNode;
   /** A full-width announcement under the top bar, usually a <Banner> (maintenance mode, an
@@ -106,6 +128,22 @@ export interface AppShellProps {
       preset ('mesh', 'liquid-metal', 'aurora-noise', 'glass-caustics'), or false for none.
       Unset: the reader's saved choice (`useBackdrop()`), which defaults to 'tide'. */
   background?: Backdrop | false;
+  /** The link back to the hub: in the sidebar's foot and first in the breadcrumbs. */
+  home?: ShellHome;
+  /** Where this page is, shown at the top of <main> (after the hub, when `home` is set). The
+      last item is the current page. */
+  breadcrumbs?: readonly BreadcrumbItem[];
+  /** Fetch the page again: pull down on a phone, or the Refresh button a keyboard can reach. */
+  onRefresh?: () => unknown;
+  /** Items for the floating stack, usually a <Fab>. Pages can also add their own with
+      <Floating> or <Fab> anywhere inside the shell. */
+  floating?: ReactNode;
+  /** Back to top in the floating stack after scrolling down. Default true; false for none, or
+      a number for the scroll distance (px) at which it shows (default 600). */
+  backToTop?: boolean | number;
+  /** A live activity pill (usually a <LiveIsland>), centred under the top bar and kept there
+      while the page scrolls. */
+  live?: ReactNode;
 }
 
 export function AppShell({
@@ -118,6 +156,12 @@ export function AppShell({
   background,
   collapsed: collapsedProp,
   onCollapsedChange,
+  home,
+  breadcrumbs,
+  onRefresh,
+  floating,
+  backToTop = true,
+  live,
 }: AppShellProps) {
   const skin = useDocumentSkin();
   const [preferred] = useBackdrop();
@@ -211,106 +255,177 @@ export function AppShell({
   }, []);
   const rail = collapsed && desktop;
   const hasBottomNav = bottomNav !== undefined && bottomNav !== null && bottomNav !== false;
+  const hasSidebar = sidebar !== undefined && sidebar !== null && sidebar !== false;
   const ctx = useMemo(
-    () => ({ rail, hasBottomNav, sidebarId, drawerOpen, setDrawerOpen, registerMenuButton }),
-    [rail, hasBottomNav, sidebarId, drawerOpen, setDrawerOpen, registerMenuButton],
+    () => ({
+      rail,
+      hasBottomNav,
+      hasSidebar,
+      sidebarId,
+      drawerOpen,
+      setDrawerOpen,
+      registerMenuButton,
+    }),
+    [rail, hasBottomNav, hasSidebar, sidebarId, drawerOpen, setDrawerOpen, registerMenuButton],
+  );
+  const homeLabel = home?.label ?? 'Hub';
+  const trail: readonly BreadcrumbItem[] | undefined =
+    breadcrumbs && breadcrumbs.length > 0
+      ? home
+        ? [{ label: homeLabel, href: home.href }, ...breadcrumbs]
+        : breadcrumbs
+      : undefined;
+  const page = onRefresh ? (
+    <PullToRefresh onRefresh={onRefresh} button="focus">
+      {children}
+    </PullToRefresh>
+  ) : (
+    children
   );
 
   return (
     <ShellContext.Provider value={ctx}>
-      <div
-        className="ui-shell group/shell relative isolate grid min-h-dvh overflow-clip grid-cols-[minmax(0,1fr)] [--bottom-nav-h:64px] [--sidebar-w:240px] data-[collapsed]:md:[--sidebar-w:64px] md:grid-cols-[var(--sidebar-w)_minmax(0,1fr)]"
-        data-collapsed={collapsed || undefined}
-        data-drawer-open={drawerOpen || undefined}
-        data-generate-host=""
-      >
-        {/* the glass skin's animated backdrop: what the glass refracts */}
-        {skin === 'glass' &&
-          backdrop !== false &&
-          (isShaderPreset(backdrop) ? (
-            <ShaderBackdrop preset={backdrop} />
-          ) : (
-            <AnimatedBackground variant={backdrop} />
-          ))}
-        {/* Visually hidden until a keyboard focuses it: moved off screen it still showed in iOS's
-            pull-down overscroll and after a tap (George, 16 Nov 2026). */}
-        {/* biome-ignore lint/a11y/useValidAnchor: a skip link is a link (and works without JS); the click handler only keeps a hash router from taking #main as a route */}
-        <a
-          className="ui-skip-link sr-only rounded-sm bg-primary text-[13px]/[1.3] font-semibold text-on-primary no-underline focus-visible:not-sr-only focus-visible:px-3.5 focus-visible:py-2 focus-visible:absolute focus-visible:top-2 focus-visible:left-2 focus-visible:z-100 focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]"
-          href="#main"
-          onClick={skipToMain}
-        >
-          Skip to main content
-        </a>
-        {/* The sidebar and top bar are frosted (the CSS blur material), not lensed: a lens
-            rim round full-height chrome reads as a grey bevel and a halo (§14). */}
-        <aside
-          ref={aside}
-          id={sidebarId}
+      <FloatingRoot>
+        <div
           className={cn(
-            'ui-sidebar glass-chrome sticky top-0 box-border flex h-dvh flex-col border-r border-solid border-border bg-surface [box-shadow:var(--glass-rim)]',
-            // under 768px: an off-canvas drawer over the scrim
-            'max-md:invisible max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:w-[min(280px,85vw)] max-md:-translate-x-full max-md:bg-surface-solid! max-md:[box-shadow:var(--shadow-lg)]',
-            'group-data-[drawer-open]/shell:max-md:visible group-data-[drawer-open]/shell:max-md:translate-x-0',
-            'motion-safe:max-md:[transition:transform_var(--t-slow),visibility_var(--t-slow)]',
+            'ui-shell group/shell relative isolate grid min-h-dvh overflow-clip grid-cols-[minmax(0,1fr)] [--bottom-nav-h:64px] [--sidebar-w:240px] data-[collapsed]:md:[--sidebar-w:64px]',
+            hasSidebar && 'md:grid-cols-[var(--sidebar-w)_minmax(0,1fr)]',
           )}
-          aria-label="Sidebar"
+          data-collapsed={(hasSidebar && collapsed) || undefined}
+          data-drawer-open={drawerOpen || undefined}
+          data-generate-host=""
         >
-          <div className="ui-sidebar-head box-border flex min-h-14 items-center justify-between gap-2 pt-[calc(0.625rem+env(safe-area-inset-top))] pr-2.5 pb-2.5 pl-[max(1rem,env(safe-area-inset-left))] group-data-[collapsed]/shell:md:justify-center group-data-[collapsed]/shell:md:px-2">
-            <div className="ui-sidebar-brand flex min-w-0 items-center gap-2 text-[15px]/[1.2] font-semibold text-fg group-data-[collapsed]/shell:md:sr-only">
-              {brand}
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="ui-sidebar-collapse max-md:hidden"
-              aria-label="Full sidebar"
-              aria-expanded={!collapsed}
-              aria-controls={sidebarId}
-              onClick={toggleCollapsed}
-            >
-              <Icon name="panel-left" size={16} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="ui-sidebar-close md:hidden"
-              aria-label="Close navigation"
-              onClick={() => setDrawerOpen(false)}
-            >
-              <Icon name="x" size={16} />
-            </Button>
-          </div>
-          <div className="ui-sidebar-body min-h-0 flex-1 overflow-y-auto px-2.5 pt-2 pb-4 group-data-[collapsed]/shell:md:px-2">
-            {sidebar}
-          </div>
-        </aside>
-        <div
-          ref={scrim}
-          className="ui-drawer-scrim hidden bg-scrim group-data-[drawer-open]/shell:max-md:fixed group-data-[drawer-open]/shell:max-md:inset-0 group-data-[drawer-open]/shell:max-md:z-45 group-data-[drawer-open]/shell:max-md:block"
-          aria-hidden="true"
-        />
-        <div
-          className="ui-shell-column flex min-w-0 flex-col [background-image:radial-gradient(var(--grid-dot)_1px,transparent_1px)] [background-size:24px_24px]"
-          inert={drawerOpen}
-        >
-          {topbar}
-          {banner}
-          <main
-            ref={main}
-            id="main"
-            className={cn(
-              'ui-main min-w-0 flex-1 scroll-mt-14 p-4 outline-none md:p-6',
-              hasBottomNav &&
-                'max-md:pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+16px)]',
-            )}
-            tabIndex={-1}
+          {/* the glass skin's animated backdrop: what the glass refracts */}
+          {skin === 'glass' &&
+            backdrop !== false &&
+            (isShaderPreset(backdrop) ? (
+              <ShaderBackdrop preset={backdrop} />
+            ) : (
+              <AnimatedBackground variant={backdrop} />
+            ))}
+          {/* Visually hidden until a keyboard focuses it: moved off screen it still showed in iOS's
+            pull-down overscroll and after a tap (George, 16 Nov 2026). */}
+          {/* biome-ignore lint/a11y/useValidAnchor: a skip link is a link (and works without JS); the click handler only keeps a hash router from taking #main as a route */}
+          <a
+            className="ui-skip-link sr-only rounded-sm bg-primary text-[13px]/[1.3] font-semibold text-on-primary no-underline focus-visible:not-sr-only focus-visible:px-3.5 focus-visible:py-2 focus-visible:absolute focus-visible:top-2 focus-visible:left-2 focus-visible:z-100 focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]"
+            href="#main"
+            onClick={skipToMain}
           >
-            {children}
-          </main>
-          {hasBottomNav && bottomNav}
+            Skip to main content
+          </a>
+          {/* The sidebar and top bar are frosted (the CSS blur material), not lensed: a lens
+            rim round full-height chrome reads as a grey bevel and a halo (§14). */}
+          {hasSidebar && (
+            <aside
+              ref={aside}
+              id={sidebarId}
+              className={cn(
+                'ui-sidebar glass-chrome sticky top-0 box-border flex h-dvh flex-col border-r border-solid border-border bg-surface [box-shadow:var(--glass-rim)]',
+                // under 768px: an off-canvas drawer over the scrim
+                'max-md:invisible max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:w-[min(280px,85vw)] max-md:-translate-x-full max-md:bg-surface-solid! max-md:[box-shadow:var(--shadow-lg)]',
+                'group-data-[drawer-open]/shell:max-md:visible group-data-[drawer-open]/shell:max-md:translate-x-0',
+                'motion-safe:max-md:[transition:transform_var(--t-slow),visibility_var(--t-slow)]',
+              )}
+              aria-label="Sidebar"
+            >
+              <div className="ui-sidebar-head box-border flex min-h-14 items-center justify-between gap-2 pt-[calc(0.625rem+env(safe-area-inset-top))] pr-2.5 pb-2.5 pl-[max(1rem,env(safe-area-inset-left))] group-data-[collapsed]/shell:md:justify-center group-data-[collapsed]/shell:md:px-2">
+                <div className="ui-sidebar-brand flex min-w-0 items-center gap-2 text-[15px]/[1.2] font-semibold text-fg group-data-[collapsed]/shell:md:sr-only">
+                  {brand}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="ui-sidebar-collapse max-md:hidden"
+                  aria-label="Full sidebar"
+                  aria-expanded={!collapsed}
+                  aria-controls={sidebarId}
+                  onClick={toggleCollapsed}
+                >
+                  <Icon name="panel-left" size={16} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="ui-sidebar-close md:hidden"
+                  aria-label="Close navigation"
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  <Icon name="x" size={16} />
+                </Button>
+              </div>
+              <div className="ui-sidebar-body min-h-0 flex-1 overflow-y-auto px-2.5 pt-2 pb-4 group-data-[collapsed]/shell:md:px-2">
+                {sidebar}
+              </div>
+              {home && (
+                <div className="ui-sidebar-foot border-t border-solid border-border px-2.5 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] group-data-[collapsed]/shell:md:px-2">
+                  <a
+                    href={home.href}
+                    className="ui-sidebar-home flex min-h-10 items-center gap-2.5 rounded-md px-2.5 text-[13.5px] font-medium text-fg-muted no-underline hover:bg-hover hover:text-fg focus-visible:outline-none focus-visible:[box-shadow:var(--ring)] group-data-[collapsed]/shell:md:justify-center group-data-[collapsed]/shell:md:px-0"
+                  >
+                    <Icon name="chevron-left" size={16} />
+                    <span className="group-data-[collapsed]/shell:md:sr-only">
+                      Back to {homeLabel}
+                    </span>
+                  </a>
+                </div>
+              )}
+            </aside>
+          )}
+          {hasSidebar && (
+            <div
+              ref={scrim}
+              className="ui-drawer-scrim hidden bg-scrim group-data-[drawer-open]/shell:max-md:fixed group-data-[drawer-open]/shell:max-md:inset-0 group-data-[drawer-open]/shell:max-md:z-45 group-data-[drawer-open]/shell:max-md:block"
+              aria-hidden="true"
+            />
+          )}
+          <div
+            className="ui-shell-column flex min-w-0 flex-col [background-image:radial-gradient(var(--grid-dot)_1px,transparent_1px)] [background-size:24px_24px]"
+            inert={drawerOpen}
+          >
+            {topbar}
+            {banner}
+            {live && (
+              <div className="ui-shell-live pointer-events-none sticky top-[calc(3.5rem_+_env(safe-area-inset-top))] z-15 flex h-0 justify-center overflow-visible">
+                <div className="pointer-events-auto pt-2">{live}</div>
+              </div>
+            )}
+            <main
+              ref={main}
+              id="main"
+              className={cn(
+                // the end pads by the floating stack's height too, so the last row scrolls clear of it
+                'ui-main min-w-0 flex-1 scroll-mt-14 p-4 pb-[calc(1rem_+_var(--ui-float-inset,0px))] outline-none md:p-6 md:pb-[calc(1.5rem_+_var(--ui-float-inset,0px))]',
+                hasBottomNav &&
+                  'max-md:pb-[calc(var(--bottom-nav-h)_+_env(safe-area-inset-bottom)_+_16px_+_var(--ui-float-inset,0px))]',
+                live && 'pt-14 md:pt-16',
+              )}
+              tabIndex={-1}
+            >
+              {trail ? (
+                <Breadcrumbs items={trail} className="ui-shell-crumbs mb-3" />
+              ) : (
+                home && (
+                  <a
+                    href={home.href}
+                    className="ui-shell-home mb-3 inline-flex min-h-6 items-center gap-1 rounded-xs text-[13px] font-medium text-brand no-underline hover:underline focus-visible:outline-none focus-visible:[box-shadow:var(--ring)] pointer-coarse:min-h-11"
+                  >
+                    <Icon name="chevron-left" size={14} />
+                    {homeLabel}
+                  </a>
+                )
+              )}
+              {page}
+            </main>
+            <FloatingStack>
+              {backToTop !== false && (
+                <BackToTop {...(typeof backToTop === 'number' ? { threshold: backToTop } : {})} />
+              )}
+              {floating}
+            </FloatingStack>
+            {hasBottomNav && bottomNav}
+          </div>
         </div>
-      </div>
+      </FloatingRoot>
     </ShellContext.Provider>
   );
 }
@@ -394,7 +509,7 @@ export function Topbar({ title, actions, variant = 'default', leading, brand }: 
       className="ui-topbar glass-chrome sticky top-0 z-20 box-border flex min-h-14 items-center gap-3 border-b border-solid border-border bg-bar pt-[calc(0.5rem+env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-2 pl-[max(0.75rem,env(safe-area-inset-left))] md:pr-[max(1.25rem,env(safe-area-inset-right))] md:pl-[max(1.25rem,env(safe-area-inset-left))] [box-shadow:var(--glass-rim)]"
       data-variant={variant}
     >
-      {shell && !shell.hasBottomNav && variant !== 'flow' && (
+      {shell?.hasSidebar && !shell.hasBottomNav && variant !== 'flow' && (
         <Button
           ref={menuButton}
           variant="ghost"
@@ -410,7 +525,14 @@ export function Topbar({ title, actions, variant = 'default', leading, brand }: 
       )}
       {leading && <div className="ui-topbar-leading flex shrink-0 items-center">{leading}</div>}
       {brand && (
-        <div className="ui-topbar-brand flex min-w-0 flex-1 items-center md:hidden">{brand}</div>
+        <div
+          className={cn(
+            'ui-topbar-brand flex min-w-0 items-center',
+            shell?.hasSidebar === false ? 'shrink-0 max-md:flex-1' : 'flex-1 md:hidden',
+          )}
+        >
+          {brand}
+        </div>
       )}
       <p
         className={cn(
