@@ -49,7 +49,7 @@ const CHECKS: readonly Check[] = [
     [s, ['surface', `${s}-soft` as Role], 4.5] as const,
   ]),
   // body text on a tone's wash (Notice, ErrorState), on a card and straight on the page
-  ...(['success', 'warning', 'danger', 'info'] as const).flatMap((s) =>
+  ...(['success', 'warning', 'danger', 'info', 'brand'] as const).flatMap((s) =>
     (['fg', 'fg-muted'] as const).flatMap((t) => [
       [t, ['surface', `${s}-soft` as Role], 4.5] as const,
       [t, ['canvas', `${s}-soft` as Role], 4.5] as const,

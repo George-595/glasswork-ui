@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Icon } from '../icons/Icon';
 import { cn } from '../lib/cn';
 
@@ -13,7 +13,8 @@ import { cn } from '../lib/cn';
      Retake button. The photograph under it can be any colour (a white mattress, a dark
      wardrobe), so no contrast can be promised against it: the slot sits on a solid chip
      (`surface-solid`, lifted), and whatever a page puts in it is measured on that. */
-export type PhotoRatio = '4/3' | '1/1' | '16/9';
+/* '2/1' and '4/1' are for wide figures: diagrams and banners, shown whole with `fit="contain"`. */
+export type PhotoRatio = '4/3' | '1/1' | '16/9' | '2/1' | '4/1';
 
 export interface PhotoProps {
   /** The picture's URL, or null when the item has none. */
@@ -32,6 +33,8 @@ const RATIO: Record<PhotoRatio, string> = {
   '4/3': 'aspect-4/3',
   '1/1': 'aspect-square',
   '16/9': 'aspect-video',
+  '2/1': 'aspect-2/1',
+  '4/1': 'aspect-4/1',
 };
 
 export function Photo({
@@ -50,6 +53,15 @@ export function Photo({
     setShown(src);
     setState('loading');
   }
+  /* A server-rendered picture can finish loading before React hydrates, and then its onLoad never
+     fires here: read the element once mounted instead of waiting for an event that has passed. */
+  const img = useRef<HTMLImageElement>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: read again whenever the picture changes
+  useEffect(() => {
+    const el = img.current;
+    if (!el?.complete) return;
+    setState(el.naturalWidth > 0 ? 'loaded' : 'failed');
+  }, [src]);
   const failed = src === null || state === 'failed';
   return (
     <div
@@ -62,6 +74,7 @@ export function Photo({
     >
       {!failed && (
         <img
+          ref={img}
           src={src ?? undefined}
           alt={alt}
           loading={eager ? 'eager' : 'lazy'}

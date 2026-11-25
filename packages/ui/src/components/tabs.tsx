@@ -41,10 +41,21 @@ export interface TabsProps {
   onValueChange?: (id: string) => void;
   /** Names the tab list for assistive tech. */
   label: string;
+  /** Stretch the tab list across its box, each tab an equal share (a phone's segmented
+      switcher). Default false: the list is as wide as its tabs. */
+  fill?: boolean;
   className?: string;
 }
 
-export function Tabs({ tabs, value, defaultValue, onValueChange, label, className }: TabsProps) {
+export function Tabs({
+  tabs,
+  value,
+  defaultValue,
+  onValueChange,
+  label,
+  fill = false,
+  className,
+}: TabsProps) {
   const [inner, setInner] = useState(defaultValue ?? tabs[0]?.id ?? '');
   const current = value ?? inner;
   const {
@@ -117,7 +128,9 @@ export function Tabs({ tabs, value, defaultValue, onValueChange, label, classNam
       loop
       className={cn('ui-tabs flex flex-col', className)}
     >
-      <div className="ui-tabs-bar relative flex max-w-full self-start">
+      <div
+        className={cn('ui-tabs-bar relative flex max-w-full', fill ? 'self-stretch' : 'self-start')}
+      >
         <TabsList
           ref={setListRef}
           aria-label={label}
@@ -126,6 +139,7 @@ export function Tabs({ tabs, value, defaultValue, onValueChange, label, classNam
           data-overflow-end={edges.end ? '' : undefined}
           className={cn(
             'ui-tablist group/tabs relative [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+            fill && 'flex flex-1',
             'data-overflow-start:[mask-image:linear-gradient(to_right,transparent,currentColor_2.5rem)] data-overflow-end:[mask-image:linear-gradient(to_left,transparent,currentColor_2.5rem)]',
             'data-overflow-start:data-overflow-end:[mask-image:linear-gradient(to_right,transparent,currentColor_2.5rem,currentColor_calc(100%-2.5rem),transparent)]',
             glassProps.className,
@@ -155,7 +169,10 @@ export function Tabs({ tabs, value, defaultValue, onValueChange, label, classNam
             <TabsTrigger
               key={t.id}
               value={t.id}
-              className="ui-tab relative z-[1] group-data-[ready]/tabs:data-selected:border-transparent group-data-[ready]/tabs:data-selected:bg-transparent"
+              className={cn(
+                'ui-tab relative z-[1] group-data-[ready]/tabs:data-selected:border-transparent group-data-[ready]/tabs:data-selected:bg-transparent',
+                fill && 'min-w-0 flex-1',
+              )}
             >
               {t.label}
             </TabsTrigger>

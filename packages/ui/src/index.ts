@@ -117,6 +117,7 @@ export {
   CardDescription,
   CardFooter,
   CardHeader,
+  CardLink,
   type CardPadding,
   type CardProps,
   CardTitle,
@@ -317,6 +318,7 @@ export {
 } from './components/progress';
 export { PromptDialog, type PromptDialogProps } from './components/prompt-dialog';
 export {
+  PaneBody,
   PaneHeader,
   ResizableGroup,
   type ResizableGroupProps,
