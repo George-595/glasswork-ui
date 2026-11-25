@@ -181,7 +181,7 @@ export interface BackToTopProps {
   label?: string;
   /** Its place in the stack (default 10: above the main action). */
   order?: number;
-  /** Scroll this element instead of the page. */
+  /** Scroll this element instead of finding the page's scroller. */
   scroller?: HTMLElement | null;
 }
 
@@ -192,9 +192,19 @@ function prefersReducedMotion() {
   );
 }
 
+/* The page's scroller: the window, or (in an app that scrolls a column instead, as a home-screen
+   app does to keep its bars still) the element holding <main id="main">. Found from the scroll
+   events themselves, so it needs no setting. */
+function isPageScroller(el: EventTarget | null): el is HTMLElement {
+  if (!(el instanceof HTMLElement)) return false;
+  const main = document.getElementById('main');
+  return main !== null && (el === main || el.contains(main));
+}
+
 /** Back to top: appears once the page is scrolled past `threshold`, scrolls to the top and puts
     focus on <main id="main"> (so a keyboard carries on from the top too). Solid, never
-    see-through; a round arrow on a phone, a labelled pill from 768px. */
+    see-through; a round arrow on a phone, a labelled pill from 768px. Works whether the window
+    scrolls or a column round <main> does. */
 export function BackToTop({
   threshold = 600,
   label = 'Back to top',
@@ -202,28 +212,36 @@ export function BackToTop({
   scroller,
 }: BackToTopProps) {
   const [shown, setShown] = useState(false);
+  const found = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    const target: HTMLElement | Window = scroller ?? window;
-    const top = () => (scroller ? scroller.scrollTop : window.scrollY);
     let frame = 0;
+    const top = () => {
+      const el = scroller ?? found.current;
+      return el ? el.scrollTop : window.scrollY;
+    };
     const check = () => {
       frame = 0;
       setShown(top() > threshold);
     };
-    const onScroll = () => {
+    const onScroll = (e: Event) => {
+      if (!scroller && isPageScroller(e.target)) found.current = e.target;
       if (!frame) frame = requestAnimationFrame(check);
     };
     check();
-    target.addEventListener('scroll', onScroll, { passive: true });
+    // capture on the window: scroll events do not bubble, so this hears the page and any column
+    const target: HTMLElement | Window = scroller ?? window;
+    target.addEventListener('scroll', onScroll, { passive: true, capture: !scroller });
     return () => {
-      target.removeEventListener('scroll', onScroll);
+      target.removeEventListener('scroll', onScroll, { capture: !scroller });
       if (frame) cancelAnimationFrame(frame);
     };
   }, [scroller, threshold]);
 
   const go = () => {
     const behavior: ScrollBehavior = prefersReducedMotion() ? 'auto' : 'smooth';
-    (scroller ?? window).scrollTo({ top: 0, behavior });
+    const el = scroller ?? found.current;
+    if (el && el.scrollTop > 0) el.scrollTo({ top: 0, behavior });
+    else window.scrollTo({ top: 0, behavior });
     document.getElementById('main')?.focus({ preventScroll: true });
   };
 
