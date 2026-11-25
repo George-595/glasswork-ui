@@ -17,15 +17,21 @@ const popoverSurface =
 const PopoverContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentPropsWithoutRef<typeof PopoverPart> & { portal?: boolean }
->(({ className, align = 'start', sideOffset = 4, portal: _portal, ...props }, ref) => (
-  <PopoverPart
-    ref={ref}
-    align={align}
-    sideOffset={sideOffset}
-    className={cn(popoverSurface, className)}
-    {...props}
-  />
-));
+>(
+  (
+    { className, align = 'start', sideOffset = 4, collisionPadding = 8, portal: _portal, ...props },
+    ref,
+  ) => (
+    <PopoverPart
+      ref={ref}
+      align={align}
+      sideOffset={sideOffset}
+      collisionPadding={collisionPadding}
+      className={cn(popoverSurface, className)}
+      {...props}
+    />
+  ),
+);
 PopoverContent.displayName = 'PopoverContent';
 
 export { PopoverContent, PopoverTrigger };

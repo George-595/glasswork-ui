@@ -28,6 +28,8 @@ export interface NotificationBellProps<T extends NotificationEntry = Notificatio
   onSelect?: (item: T) => void;
   /** Where "View all" goes. */
   viewAllHref?: string;
+  /** Where "Settings" goes (the notification settings), beside "View all". */
+  settingsHref?: string;
   /** Draw "View all" with your router's link. Receives the className to apply. */
   renderLink?: (props: { href: string; className: string; children: ReactNode }) => ReactNode;
   loading?: boolean;
@@ -87,6 +89,7 @@ export function NotificationBell<T extends NotificationEntry = NotificationEntry
   onMarkAllRead,
   onSelect,
   viewAllHref,
+  settingsHref,
   renderLink,
   loading,
   error,
@@ -119,15 +122,18 @@ export function NotificationBell<T extends NotificationEntry = NotificationEntry
 
   const linkClass =
     'inline-flex min-h-6 pointer-coarse:min-h-12 pointer-coarse:min-w-12 pointer-coarse:justify-center items-center rounded-sm text-link underline-offset-2 hover:underline focus-visible:outline-none focus-visible:[box-shadow:var(--ring)] [font:var(--t-small)]';
-  const viewAll = viewAllHref ? (
-    renderLink ? (
-      renderLink({ href: viewAllHref, className: linkClass, children: 'View all' })
-    ) : (
-      <a href={viewAllHref} className={linkClass}>
-        View all
-      </a>
-    )
-  ) : null;
+  const footerLink = (href: string | undefined, text: string) =>
+    href ? (
+      renderLink ? (
+        renderLink({ href, className: linkClass, children: text })
+      ) : (
+        <a href={href} className={linkClass}>
+          {text}
+        </a>
+      )
+    ) : null;
+  const viewAll = footerLink(viewAllHref, 'View all');
+  const settings = footerLink(settingsHref, 'Settings');
 
   return (
     <>
@@ -181,9 +187,15 @@ export function NotificationBell<T extends NotificationEntry = NotificationEntry
               />
             )}
           </div>
-          {viewAll && (
-            <div className="flex justify-center border-0 border-t border-solid border-border-subtle px-3 py-2">
+          {(viewAll || settings) && (
+            <div
+              className={cn(
+                'flex items-center gap-2 border-0 border-t border-solid border-border-subtle px-3 py-2',
+                viewAll && settings ? 'justify-between' : 'justify-center',
+              )}
+            >
               {viewAll}
+              {settings}
             </div>
           )}
         </div>

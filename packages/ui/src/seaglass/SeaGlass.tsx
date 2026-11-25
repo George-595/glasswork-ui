@@ -1,4 +1,5 @@
 import {
+  type AnchorHTMLAttributes,
   type ButtonHTMLAttributes,
   forwardRef,
   type HTMLAttributes,
@@ -14,7 +15,7 @@ import type { PieceState } from './engine';
 import { useSeaGlassStage } from './SeaGlassStage';
 
 /* SeaGlass — one piece of sea glass on a SeaGlassStage. It is an ordinary element (a div, or a
-   real button when it acts); the stage's canvas draws the frosted pebble under it. A piece
+   real button when it acts, or a link when it goes somewhere); the stage's canvas draws the frosted pebble under it. A piece
    inside another piece rests on it (a selected tab on its bar, a button on its card).
 
    Text on a piece is `fg` or `fg-muted`: the gate measures both on every tint. Without a
@@ -119,6 +120,7 @@ export type SeaGlassProps = CommonProps &
   (
     | ({ as?: 'div' | 'span' | 'li' } & HTMLAttributes<HTMLElement>)
     | ({ as: 'button' } & ButtonHTMLAttributes<HTMLButtonElement>)
+    | ({ as: 'a'; href: string } & AnchorHTMLAttributes<HTMLAnchorElement>)
   );
 
 export const SeaGlass = forwardRef<HTMLElement, SeaGlassProps>(function SeaGlass(
@@ -197,10 +199,11 @@ export const SeaGlass = forwardRef<HTMLElement, SeaGlassProps>(function SeaGlass
         grow && 'flex-1',
         block && 'w-full',
         Tag === 'button' && 'text-start',
+        Tag === 'a' && 'no-underline',
         painting || bare
           ? 'border-transparent bg-transparent'
           : cn(FILL[tint], 'border-border-subtle [box-shadow:var(--elev-1)]'),
-        Tag === 'button' &&
+        (Tag === 'button' || Tag === 'a') &&
           'cursor-pointer font-[inherit] focus-visible:outline-none focus-visible:[box-shadow:var(--ring)] disabled:cursor-not-allowed',
         className,
       )}

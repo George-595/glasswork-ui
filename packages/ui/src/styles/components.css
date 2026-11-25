@@ -38,6 +38,9 @@ html {
 }
 html:has(.ui-topbar) {
   scroll-padding-top: 4rem;
+  /* An app screen does not bounce: on a phone the pull-down overscroll dragged the sticky top
+     bar away from the top edge and showed the page behind it (George, 18 Nov 2026). */
+  overscroll-behavior-y: none;
 }
 
 .ui-sr-only {

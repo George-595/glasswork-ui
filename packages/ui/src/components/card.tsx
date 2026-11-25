@@ -1,4 +1,10 @@
-import { createElement, forwardRef, type HTMLAttributes, type Ref } from 'react';
+import {
+  type AnchorHTMLAttributes,
+  createElement,
+  forwardRef,
+  type HTMLAttributes,
+  type Ref,
+} from 'react';
 import { LiquidGlass } from '../glass/LiquidGlass';
 import { cn } from '../lib/cn';
 
@@ -137,12 +143,40 @@ export function CardDescription({ className, ...props }: HTMLAttributes<HTMLPara
   );
 }
 
+/* Content and footer sit under a header, which carries the top padding. When either is the
+   card's first part (no header), it carries the top padding itself, so text never touches the
+   card's top edge. */
 export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('ui-card-content px-4 pb-4', className)} {...props} />;
+  return <div className={cn('ui-card-content px-4 pb-4 first:pt-4', className)} {...props} />;
 }
 
 export function CardFooter({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('ui-card-footer flex items-center gap-2 px-4 pb-4', className)} {...props} />
+    <div
+      className={cn('ui-card-footer flex items-center gap-2 px-4 pb-4 first:pt-4', className)}
+      {...props}
+    />
+  );
+}
+
+/** A link that makes a whole `interactive` card its tap target: its ::after covers the card, so
+    a tap anywhere opens it, while buttons and links inside stay their own (give them `relative`
+    stacking by putting them after it, or keep them out of the card). Put the card's name in it:
+    that is the link's accessible name. */
+export function CardLink({
+  className,
+  children,
+  ...props
+}: AnchorHTMLAttributes<HTMLAnchorElement>) {
+  return (
+    <a
+      className={cn(
+        'ui-card-link text-inherit no-underline after:absolute after:inset-0 after:rounded-[inherit] after:content-[""] focus-visible:outline-none',
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </a>
   );
 }

@@ -104,3 +104,11 @@ export function PaneHeader({ title, actions }: { title: ReactNode; actions?: Rea
     </div>
   );
 }
+
+/** The padded body of a pane, under its PaneHeader: the content's gutter, so a page never
+    styles a pane itself. */
+export function PaneBody({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={cn('ui-pane-body flex min-w-0 flex-col gap-3 p-4', className)}>{children}</div>
+  );
+}

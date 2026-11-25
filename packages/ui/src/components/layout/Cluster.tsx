@@ -22,6 +22,8 @@ export interface ClusterProps extends Omit<StackProps, 'justify' | 'align' | 'ga
   align?: Align;
   /** Keep to one line instead of wrapping. */
   nowrap?: boolean;
+  /** The first child takes the free space (a search field with a button beside it). */
+  growFirst?: boolean;
 }
 
 export function Cluster({
@@ -29,6 +31,7 @@ export function Cluster({
   justify = 'start',
   align = 'center',
   nowrap,
+  growFirst,
   as = 'div',
   className,
   ...props
@@ -38,6 +41,7 @@ export function Cluster({
     className: cn(
       'ui-cluster flex min-w-0 *:min-w-0',
       nowrap ? 'flex-nowrap' : 'flex-wrap',
+      growFirst && '*:first:flex-1',
       responsive(gap, GAP),
       ALIGN[align],
       JUSTIFY[justify],
