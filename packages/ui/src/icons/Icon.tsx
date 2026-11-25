@@ -251,6 +251,108 @@ const ICONS = {
     />,
     <path key="d" d="m2 2 20 20" />,
   ],
+  folder: [
+    <path
+      key="a"
+      d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+    />,
+  ],
+  'folder-open': [
+    <path
+      key="a"
+      d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"
+    />,
+  ],
+  file: [
+    <path key="a" d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />,
+    <path key="b" d="M14 2v4a2 2 0 0 0 2 2h4" />,
+  ],
+  calendar: [
+    <rect key="a" x="3" y="4" width="18" height="18" rx="2" />,
+    <path key="b" d="M16 2v4M8 2v4M3 10h18" />,
+  ],
+  grip: [
+    <circle key="a" cx="9" cy="5" r="1" />,
+    <circle key="b" cx="9" cy="12" r="1" />,
+    <circle key="c" cx="9" cy="19" r="1" />,
+    <circle key="d" cx="15" cy="5" r="1" />,
+    <circle key="e" cx="15" cy="12" r="1" />,
+    <circle key="f" cx="15" cy="19" r="1" />,
+  ],
+  bold: [
+    <path key="a" d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8" />,
+  ],
+  italic: [<path key="a" d="M19 4h-9M14 20H5M15 4 9 20" />],
+  underline: [<path key="a" d="M6 4v6a6 6 0 0 0 12 0V4M4 20h16" />],
+  link: [
+    <path key="a" d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />,
+    <path key="b" d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />,
+  ],
+  list: [<path key="a" d="M3 6h.01M3 12h.01M3 18h.01M8 6h13M8 12h13M8 18h13" />],
+  code: [<path key="a" d="m16 18 6-6-6-6M8 6l-6 6 6 6" />],
+  play: [
+    <path
+      key="a"
+      d="M6 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L7.5 3.64A1 1 0 0 0 6 4.5Z"
+    />,
+  ],
+  pause: [
+    <rect key="a" x="6" y="4" width="4" height="16" rx="1" />,
+    <rect key="b" x="14" y="4" width="4" height="16" rx="1" />,
+  ],
+  'zoom-in': [
+    <circle key="a" cx="11" cy="11" r="8" />,
+    <path key="b" d="m21 21-4.3-4.3M11 8v6M8 11h6" />,
+  ],
+  'zoom-out': [
+    <circle key="a" cx="11" cy="11" r="8" />,
+    <path key="b" d="m21 21-4.3-4.3M8 11h6" />,
+  ],
+  maximize: [
+    <path
+      key="a"
+      d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"
+    />,
+  ],
+  crop: [<path key="a" d="M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2" />],
+  pipette: [
+    <path key="a" d="m2 22 1-1h3l9-9M3 21v-3l9-9" />,
+    <path
+      key="b"
+      d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"
+    />,
+  ],
+  flip: [
+    <path
+      key="a"
+      d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M12 2v2M12 8v2M12 14v2M12 20v2"
+    />,
+  ],
+  'rotate-cw': [<path key="a" d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8M21 3v5h-5" />],
+  bot: [
+    <path key="a" d="M12 8V4H8M2 14h2M20 14h2M15 13v2M9 13v2" />,
+    <rect key="b" x="4" y="8" width="16" height="12" rx="2" />,
+  ],
+  zap: [
+    <path
+      key="a"
+      d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
+    />,
+  ],
+  branch: [
+    <circle key="a" cx="18" cy="6" r="3" />,
+    <circle key="b" cx="6" cy="18" r="3" />,
+    <path key="c" d="M6 3v12M18 9a9 9 0 0 1-9 9" />,
+  ],
+  music: [
+    <path key="a" d="M9 18V5l12-2v13" />,
+    <circle key="b" cx="6" cy="18" r="3" />,
+    <circle key="c" cx="18" cy="16" r="3" />,
+  ],
+  layers: [
+    <path key="a" d="m12 2 10 5-10 5L2 7Z" />,
+    <path key="b" d="m2 17 10 5 10-5M2 12l10 5 10-5" />,
+  ],
 } satisfies Record<string, ReactElement[]>;
 
 export type IconName = keyof typeof ICONS;

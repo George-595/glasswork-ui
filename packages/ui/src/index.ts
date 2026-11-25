@@ -11,6 +11,7 @@
 /* ---- Account parts: notifications, sessions, avatar, password strength, banner (tests/account.test.tsx) ---- */
 export * from './account';
 export * from './ai';
+export * from './boards';
 export {
   type ActivityDay,
   ActivityHeatmap,
@@ -36,6 +37,7 @@ export {
 } from './charts/FlowDiagram';
 export { biggestDrop, FunnelChart, type FunnelChartProps } from './charts/FunnelChart';
 export { Gauge, type GaugeProps } from './charts/Gauge';
+export { GlassHeatmap, type GlassHeatmapProps } from './charts/GlassHeatmap';
 export { AreaChart, LineChart, type LineChartProps, type LineSeries } from './charts/LineChart';
 export {
   agoLabel,
@@ -44,10 +46,26 @@ export {
   type LiveLineChartProps,
   type LivePoint,
 } from './charts/LiveLineChart';
+export {
+  NetworkGraph,
+  type NetworkGraphProps,
+  type NetworkLink,
+  type NetworkNode,
+} from './charts/NetworkGraph';
+export { PrismDonut, type PrismDonutProps } from './charts/PrismDonut';
+export { RadarChart, type RadarChartProps, type RadarSeries } from './charts/RadarChart';
+export {
+  ScatterChart,
+  type ScatterChartProps,
+  type ScatterPoint,
+  type ScatterSeries,
+} from './charts/ScatterChart';
 export { Sparkline, type SparklineProps } from './charts/Sparkline';
 export { type Rect, squarify } from './charts/squarify';
 export { fitLabel, Treemap, type TreemapProps } from './charts/Treemap';
 export { UsageMeter, type UsageMeterProps, type UsageSegment } from './charts/UsageMeter';
+/* ---- The studio set: layout, menus, pickers, boards, charts and the specials ---- */
+export { Accordion, type AccordionProps, type AccordionSection } from './components/accordion';
 /* ---- Kit v2: states, inputs, overlays, data display (kit-v2.test.tsx) ---- */
 export {
   Avatar,
@@ -108,6 +126,7 @@ export {
   type PanelProps,
 } from './components/card';
 export { Checkbox, type CheckboxProps } from './components/checkbox';
+export { ColourPicker, type ColourPickerProps, contrastRatio } from './components/colour-picker';
 /* ---- Command palette (command-palette.test.tsx) ---- */
 export {
   type CommandItem,
@@ -121,6 +140,14 @@ export {
   useIsMacLike,
 } from './components/command-palette-button';
 export { ConfirmDialog, type ConfirmDialogProps } from './components/confirm-dialog';
+export {
+  ContextMenu,
+  type ContextMenuProps,
+  Menubar,
+  type MenubarMenu,
+  type MenubarProps,
+  type MenuEntry,
+} from './components/context-menu';
 // Tables: the composable table system (useDataTable + parts) and Popover.
 export {
   type ActiveFilter,
@@ -189,6 +216,8 @@ export {
 } from './components/empty-state';
 export { ErrorBoundary, type ErrorBoundaryProps } from './components/error-boundary';
 export { ErrorState, type ErrorStateProps } from './components/error-state';
+export { HistogramRange, type HistogramRangeProps } from './components/histogram-range';
+export { HoverCard, type HoverCardProps, ProfilePreview } from './components/hover-card';
 export { IconCircle, type IconCircleProps, type IconCircleSize } from './components/icon-circle';
 export { fieldClasses, Input, Label, type LabelProps, Textarea } from './components/input';
 /* ---- Inputs: dates, choices, chips, numbers, files, confirm (tests/inputs.test.tsx) ---- */
@@ -275,6 +304,7 @@ export { NativeSelect } from './components/native-select';
 export { Notice, type NoticeProps, type NoticeTone } from './components/notice';
 export { PanelHeader, type PanelHeaderProps } from './components/panel-header';
 export { PasswordInput, type PasswordInputProps } from './components/password-input';
+export { PhotoCropper, type PhotoCropperProps } from './components/photo-cropper';
 export { Popover, type PopoverProps } from './components/popover';
 export {
   Progress,
@@ -286,6 +316,14 @@ export {
   type ProgressTone,
 } from './components/progress';
 export { PromptDialog, type PromptDialogProps } from './components/prompt-dialog';
+export {
+  PaneHeader,
+  ResizableGroup,
+  type ResizableGroupProps,
+  ResizableHandle,
+  type ResizableHandleProps,
+  ResizablePane,
+} from './components/resizable';
 export {
   type DockItem,
   Pebble,
@@ -320,9 +358,16 @@ export {
   Slider,
   type SliderProps,
 } from './components/slider';
+export { SnapDrawer, type SnapDrawerProps } from './components/snap-drawer';
 export { type Direction, StatTile, type StatTileProps } from './components/stat-tile';
 export { Switch, type SwitchProps } from './components/switch';
 export { type TabItem, Tabs, type TabsProps } from './components/tabs';
+export {
+  TimeField,
+  type TimeFieldProps,
+  TimeRange,
+  type TimeRangeProps,
+} from './components/time-field';
 export {
   Timeline,
   TimelineItem,
@@ -346,7 +391,9 @@ export {
   type ToggleProps,
   toggleVariants,
 } from './components/toggle';
+export { Toolbar, type ToolbarItem, type ToolbarProps } from './components/toolbar';
 export { Tooltip, type TooltipProps } from './components/tooltip';
+export { type TreeNode, TreeView, type TreeViewProps } from './components/tree-view';
 export {
   Heading,
   type HeadingLevel,
@@ -416,6 +463,7 @@ export {
 export { PageEnter } from './shell/PageEnter';
 /* ---- Interface sounds (tests/sound.test.tsx) ---- */
 export * from './sound';
+export * from './special';
 export {
   AppearanceControls,
   type AppearanceControlsProps,

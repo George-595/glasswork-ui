@@ -13,6 +13,7 @@
 @import "./controls.css";
 @import "./effects.css";
 @import "./liquid-glass.css";
+@import "./studio.css";
 
 /* Tailwind scans this package for the components' classes */
 @source "../";

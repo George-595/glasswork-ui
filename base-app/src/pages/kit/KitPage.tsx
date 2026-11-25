@@ -23,6 +23,7 @@ import { ImprovedSection } from './sections/KitImproved';
 import { PickersSection } from './sections/KitInputs';
 import { SeaGlassSection } from './sections/KitSeaGlass';
 import { SoundsSection } from './sections/KitSounds';
+import { StudioSection } from './sections/KitStudio';
 import { VizSection } from './sections/KitViz';
 
 /* The kit page: a living reference of every @apps/ui component in its states, for signed-in
@@ -36,6 +37,7 @@ import { VizSection } from './sections/KitViz';
    Toasts show through the app's one Toaster (App.tsx). */
 
 const SECTIONS = [
+  { id: 'studio', label: 'New components' },
   { id: 'improved', label: "What's new" },
   { id: 'buttons', label: 'Buttons' },
   { id: 'inputs', label: 'Inputs and choices' },
@@ -148,6 +150,7 @@ export default function KitPage() {
           </nav>
 
           <Stack gap={7}>
+            <StudioSection />
             <ImprovedSection />
             <ButtonsSection />
             <InputsSection />

@@ -1,4 +1,10 @@
 export {
+  AgentCopilot,
+  type AgentCopilotProps,
+  type CopilotPlan,
+  type CopilotStep,
+} from './AgentCopilot';
+export {
   ApprovalCard,
   type ApprovalCardProps,
   type ApprovalChange,
