@@ -85,6 +85,31 @@ function walk(dir, out = [], rel = '') {
   return out;
 }
 const hash = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
+/* Only what glasswork-ui tracks: build output and caches (.a11y, dist) never travel. */
+const tracked = (pkgDir) =>
+  execFileSync('git', ['ls-files', '-z', '--', pkgDir], { cwd: ROOT, encoding: 'utf8' })
+    .split('\0')
+    .filter(Boolean)
+    .map((f) => f.slice(pkgDir.length + 1));
+/* What the app has in a target: its git's view (tracked plus new, minus ignored) when it is a
+   repo, so ignored build output is never taken for drift; a plain walk otherwise. */
+function present(dir) {
+  try {
+    return execFileSync(
+      'git',
+      ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', '.'],
+      {
+        cwd: dir,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      },
+    )
+      .split('\0')
+      .filter((f) => f && existsSync(join(dir, f)));
+  } catch {
+    return walk(dir);
+  }
+}
 
 const files = {};
 let copied = 0;
@@ -92,7 +117,9 @@ let removed = 0;
 for (const [pkg, target] of Object.entries(cfg.targets ?? {})) {
   const src = join(ROOT, PACKAGES[pkg] ?? '');
   if (!PACKAGES[pkg]) throw new Error(`unknown package "${pkg}" (ui or colors)`);
-  const keep = walk(src).filter((f) => profile === 'full' || RUNTIME.some((re) => re.test(f)));
+  const keep = tracked(PACKAGES[pkg]).filter(
+    (f) => profile === 'full' || RUNTIME.some((re) => re.test(f)),
+  );
   const wanted = new Set(keep.map((f) => `${target}/${f}`));
   for (const f of keep) {
     const rel = `${target}/${f}`;
@@ -109,7 +136,7 @@ for (const [pkg, target] of Object.entries(cfg.targets ?? {})) {
     if (dry) console.log(`copy   ${rel}`);
   }
   // anything in the target that upstream no longer has (and the app does not own) goes
-  const there = existsSync(join(base, target)) ? walk(join(base, target)) : [];
+  const there = existsSync(join(base, target)) ? present(join(base, target)) : [];
   for (const f of there) {
     const rel = `${target}/${f}`;
     if (wanted.has(rel) || local.has(rel)) continue;
