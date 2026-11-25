@@ -1,4 +1,5 @@
 import { type KeyboardEvent, useRef, useState } from 'react';
+import { cn } from '../lib/cn';
 import {
   type ChartCommonProps,
   ChartFigure,
@@ -79,6 +80,10 @@ export function PrismDonut({
   const sweep = useEntrance(900);
   const [active, setActive] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
+  // a tap or click picks a slice and it stays picked until tapped again; a mouse hover only
+  // previews. Nothing moves: the picked slice keeps its place and the others dim, so a slice never
+  // slides out from under the pointer (which made it flicker on and off)
+  const [picked, setPicked] = useState<number | null>(null);
   const [focused, setFocused] = useState(false);
   const list = useRef<SVGGElement>(null);
 
@@ -90,7 +95,9 @@ export function PrismDonut({
     const a1 = a0 + (d.value / (total || 1)) * TAU * sweep;
     return { ...d, i, a0, a1, mid: (a0 + a1) / 2 };
   });
-  const lit = hover ?? (focused ? active : null);
+  const lit = hover ?? picked ?? (focused ? active : null);
+  // whole numbers stay whole while the centre counts; money and other fractions keep theirs
+  const whole = parts.every((d) => Number.isInteger(d.value));
   const litSlice = lit === null ? undefined : slices[lit];
   const [shownValue, shownShare] = useTweened([
     litSlice ? litSlice.value : total,
@@ -158,8 +165,6 @@ export function PrismDonut({
           <g ref={list} role="list" aria-label={`${title}: parts`}>
             {painted.map((s) => {
               const on = s.i === lit;
-              const dx = on ? Math.cos(s.mid) * 14 : 0;
-              const dy = on ? Math.sin(s.mid) * 14 * TILT - 8 : 0;
               const top = `M${[...arc(s.a0, s.a1, RO), ...arc(s.a1, s.a0, RI)].join('L')}Z`;
               return (
                 // biome-ignore lint/a11y/useSemanticElements: SVG has no list element
@@ -170,15 +175,16 @@ export function PrismDonut({
                   data-slice={s.i}
                   tabIndex={s.i === active ? 0 : -1}
                   aria-label={`${s.label}: ${valueFormat(s.value)}, ${percent.format(s.value / total)}`}
-                  className="ui-prism-slice group/slice cursor-default outline-none forced-colors:[forced-color-adjust:none]"
-                  style={{ transform: `translate(${dx}px, ${dy}px)` }}
+                  className="ui-prism-slice group/slice cursor-pointer outline-none transition-opacity duration-(--dur-base) ease-(--ease-out) motion-reduce:transition-none forced-colors:[forced-color-adjust:none]"
+                  style={{ opacity: lit === null || on ? 1 : 0.35 }}
+                  onClick={() => setPicked((p) => (p === s.i ? null : s.i))}
                   onFocus={() => {
                     setActive(s.i);
                     setFocused(true);
                   }}
                   onBlur={() => setFocused(false)}
                   onKeyDown={(e) => onKey(e, s.i)}
-                  onPointerEnter={() => setHover(s.i)}
+                  onPointerEnter={(e) => e.pointerType === 'mouse' && setHover(s.i)}
                   onPointerLeave={() => setHover(null)}
                 >
                   {within(s.a0, s.a1, FAR).map(([a, b]) => (
@@ -211,8 +217,11 @@ export function PrismDonut({
                   <path
                     d={top}
                     fill="none"
-                    strokeWidth={3}
-                    className="pointer-events-none stroke-transparent group-focus-visible/slice:stroke-focus"
+                    strokeWidth={on ? 2.5 : 3}
+                    className={cn(
+                      'pointer-events-none group-focus-visible/slice:stroke-focus',
+                      on ? 'stroke-fg' : 'stroke-transparent',
+                    )}
                   />
                 </g>
               );
@@ -225,7 +234,7 @@ export function PrismDonut({
               textAnchor="middle"
               className="fill-fg text-[26px] font-semibold tabular-nums"
             >
-              {valueFormat(Math.round(shownValue ?? 0))}
+              {valueFormat(whole ? Math.round(shownValue ?? 0) : (shownValue ?? 0))}
             </text>
             <text x={CX} y={CY + 32} textAnchor="middle" className="fill-fg-muted text-xs">
               {litSlice ? `${litSlice.label} · ${percent.format(shownShare ?? 0)}` : totalLabel}
@@ -241,7 +250,7 @@ export function PrismDonut({
               key={s.label}
               data-on={s.i === lit || undefined}
               className="flex flex-col gap-1 rounded-md px-2 py-1.5 transition-colors duration-(--dur-fast) data-on:bg-hover"
-              onPointerEnter={() => setHover(s.i)}
+              onPointerEnter={(e) => e.pointerType === 'mouse' && setHover(s.i)}
               onPointerLeave={() => setHover(null)}
             >
               <span className="flex items-center gap-2 text-[13px]">
