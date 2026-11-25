@@ -125,7 +125,10 @@ describe('the bell', () => {
     );
     await flush(2);
     expect(bell()?.getAttribute('aria-label')).toBe('Notifications, 3 unread');
-    expect(document.querySelector('.ui-toast')?.textContent).toContain('Planned downtime');
+    // the toast view mirrors the store a moment later
+    await vi.waitFor(() =>
+      expect(document.querySelector('.ui-toast')?.textContent).toContain('Planned downtime'),
+    );
     // polite: the toast did not take focus
     expect(document.activeElement?.closest('.ui-toast')).toBeNull();
   });
