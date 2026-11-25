@@ -56,6 +56,7 @@ export function AgentOrb({
       style={{ '--orb-level': Math.max(0, Math.min(1, level)).toFixed(3) } as CSSProperties}
       aria-hidden="true"
     >
+      <span className="ui-orb-glow" />
       <span className="ui-orb-ripple" />
       <span className="ui-orb-ripple ui-orb-ripple-2" />
       <span className="ui-orb-rim" />
