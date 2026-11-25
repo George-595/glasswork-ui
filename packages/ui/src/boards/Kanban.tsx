@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useMinWidth } from '../components/layout/useMinWidth';
 import { Icon } from '../icons/Icon';
 import { cn } from '../lib/cn';
 import { playSound } from '../sound';
@@ -25,7 +26,11 @@ import { playSound } from '../sound';
 
    Columns have a `limit` (a WIP limit): the count turns amber at the limit and red over it,
    in words as well ("4 of 3, over the limit"). Cards carry a tag (one of the chart colours, with
-   its name), an assignee's initials, a due date and a small progress bar. */
+   its name), an assignee's initials, a due date and a small progress bar.
+
+   Phones (under 640px): no sideways board and no dragging. The columns become a row of stage
+   buttons with their counts (wrapping, never scrolling) over one stage's cards, full width. Tap a
+   card for a "Move to" row of the other stages; one tap moves it to the end of that stage. */
 export interface KanbanCard {
   id: string;
   title: string;
@@ -145,6 +150,22 @@ function CardBody({ card }: { card: KanbanCard }) {
 
 export function Kanban({ columns, onChange, label, columnFooter, className }: KanbanProps) {
   const [inner, setInner] = useState<KanbanColumn[]>(() => [...columns]);
+  // new columns from the app (a card added, a save) replace the board; compared by content, since
+  // an app may build a fresh array on every render
+  const signature = columns
+    .map(
+      (c) =>
+        `${c.id}:${c.title}:${c.limit ?? ''}[${c.cards.map((k) => `${k.id}=${k.title}`).join(',')}]`,
+    )
+    .join('|');
+  const [seen, setSeen] = useState(signature);
+  if (seen !== signature) {
+    setSeen(signature);
+    setInner([...columns]);
+  }
+  const wide = useMinWidth('sm');
+  const [stage, setStage] = useState(0);
+  const [picked, setPicked] = useState<string | null>(null);
   const cols = inner;
   const [said, setSaid] = useState('');
   const [held, setHeld] = useState<{ id: string; from: Where } | null>(null);
@@ -295,6 +316,103 @@ export function Kanban({ columns, onChange, label, columnFooter, className }: Ka
   };
 
   const dragged = drag ? cols.flatMap((c) => c.cards).find((c) => c.id === drag.id) : undefined;
+
+  if (!wide) {
+    const ci = Math.min(stage, cols.length - 1);
+    const col = cols[ci];
+    const moveTo = (id: string, to: number) => {
+      const next = move(cols, id, { col: to, index: cols[to]?.cards.length ?? 0 });
+      commit(next);
+      setPicked(null);
+      setSaid(`Moved ${titleOf(id)} to ${cols[to]?.title}.`);
+      playSound('success');
+    };
+    return (
+      <section
+        aria-label={label}
+        className={cn('ui-kanban flex w-full min-w-0 flex-col gap-3 font-sans', className)}
+      >
+        <p className="sr-only" aria-live="polite">
+          {said}
+        </p>
+        {/* biome-ignore lint/a11y/useSemanticElements: a row of buttons, not a form */}
+        <div role="group" aria-label="Stage" className="ui-kanban-stages flex flex-wrap gap-1.5">
+          {cols.map((c, i) => (
+            <button
+              key={c.id}
+              type="button"
+              aria-pressed={i === ci}
+              onClick={() => {
+                setStage(i);
+                setPicked(null);
+              }}
+              className={cn(
+                'inline-flex min-h-10 pointer-coarse:min-h-12 cursor-pointer items-center gap-1.5 rounded-pill border border-solid px-3 text-[13px] font-semibold outline-none focus-visible:[box-shadow:var(--ring)]',
+                i === ci
+                  ? 'border-brand bg-brand-soft text-fg'
+                  : 'border-border bg-surface text-fg-muted hover:bg-hover glass-chrome',
+              )}
+            >
+              {c.title}
+              <span className="rounded-pill bg-raised px-1.5 text-[11px] leading-[18px] tabular-nums text-fg-muted">
+                {c.limit !== undefined ? `${c.cards.length}/${c.limit}` : c.cards.length}
+              </span>
+            </button>
+          ))}
+        </div>
+        {col && (
+          <div className="ui-kanban-col flex flex-col gap-2 rounded-xl border border-solid border-border-subtle bg-sunken p-2 glass:bg-surface glass-chrome">
+            {col.cards.length === 0 && (
+              <p className="m-0 px-2 py-4 text-center text-[13px] text-fg-muted">
+                Nothing in {col.title}.
+              </p>
+            )}
+            <ul className="m-0 flex list-none flex-col gap-2 p-0">
+              {col.cards.map((card) => (
+                <li key={card.id} className="flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    aria-expanded={onChange ? picked === card.id : undefined}
+                    disabled={!onChange}
+                    onClick={() => setPicked((p) => (p === card.id ? null : card.id))}
+                    className={cn(
+                      'ui-kanban-card flex w-full cursor-pointer flex-col gap-2 rounded-lg border border-solid border-border bg-surface p-3 text-start [box-shadow:var(--elev-1)] outline-none focus-visible:[box-shadow:var(--ring)] disabled:cursor-default',
+                      picked === card.id && 'border-brand',
+                    )}
+                  >
+                    <CardBody card={card} />
+                  </button>
+                  {picked === card.id && (
+                    // biome-ignore lint/a11y/useSemanticElements: a row of buttons, not a form
+                    <div
+                      role="group"
+                      aria-label={`Move ${card.title} to`}
+                      className="flex flex-wrap items-center gap-1.5 px-1"
+                    >
+                      <span className="text-[12px] font-medium text-fg-muted">Move to</span>
+                      {cols.map((c, i) =>
+                        i === ci ? null : (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => moveTo(card.id, i)}
+                            className="inline-flex min-h-9 pointer-coarse:min-h-12 cursor-pointer items-center rounded-pill border border-solid border-border bg-surface px-3 text-[13px] font-medium text-fg outline-none hover:bg-hover focus-visible:[box-shadow:var(--ring)]"
+                          >
+                            {c.title}
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {columnFooter?.(col)}
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section

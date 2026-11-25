@@ -297,6 +297,7 @@ export { Section, type SectionProps } from './components/layout/Section';
 export { Show, type ShowProps } from './components/layout/Show';
 export { Spacer } from './components/layout/Spacer';
 export { type LayoutTag, Stack, type StackProps } from './components/layout/Stack';
+export { type MinWidth, useMinWidth } from './components/layout/useMinWidth';
 export { LoadingRegion, type LoadingRegionProps } from './components/loading-region';
 export { Menu, type MenuItem, type MenuProps } from './components/menu';
 export { Meter, type MeterProps, type MeterTone, meterTone } from './components/meter';

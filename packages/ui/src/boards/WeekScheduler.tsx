@@ -1,10 +1,15 @@
 import {
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
+  useEffect,
   useId,
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
+import { Button } from '../components/button';
+import { useMinWidth } from '../components/layout/useMinWidth';
+import { Icon } from '../icons/Icon';
 import { cn } from '../lib/cn';
 import { playSound } from '../sound';
 
@@ -18,6 +23,14 @@ import { playSound } from '../sound';
    Shift+Up/Down shorten or lengthen it. Each change is said ("Design review, Tuesday 10:15 to
    11:00"), and the instructions are the event's description. Making an event by keyboard is
    the app's own form (onCreate with no times), since a grid is no place to type a title.
+   Ctrl/Cmd+Z, or the Undo button that appears after a change, puts the last change back.
+
+   Tap: a tap or click on an event (or Enter on it) opens a small card with its full name, day,
+   time, where and `detail`, so a name cut short on a phone can always be read. Esc, the close
+   button or a tap elsewhere shuts it.
+
+   Read only: with no `onChange`, nothing can be dragged, resized or drawn, and a finger on an
+   event scrolls the page as normal. A board of things that run by themselves stays put.
 
    The look: events are soft tinted blocks in the chart colours with a stronger edge on the
    leading side; overlapping events sit side by side; today's date is a brand pill and a "now"
@@ -32,6 +45,8 @@ export interface ScheduleEvent {
   end: number;
   tone?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
   where?: string;
+  /** A sentence or two on what it is, shown when the event is tapped. */
+  detail?: string;
 }
 
 export interface WeekSchedulerProps {
@@ -47,7 +62,7 @@ export interface WeekSchedulerProps {
   hours?: readonly [number, number];
   snap?: number;
   label: string;
-  /** Called when a new event is drawn; return it (with a title) to add it. */
+  /** Called when a new event is drawn; return it (with a title) to add it. Needs `onChange`. */
   onCreate?: (draft: Omit<ScheduleEvent, 'id' | 'title'>) => ScheduleEvent | null;
   className?: string;
 }
@@ -110,10 +125,27 @@ export function WeekScheduler({
   onCreate,
   className,
 }: WeekSchedulerProps) {
+  const editable = onChange !== undefined;
+  const wide = useMinWidth('sm');
   const [list, setList] = useState<ScheduleEvent[]>(() => [...events]);
+  const [history, setHistory] = useState<ScheduleEvent[][]>([]);
+  // new events from the app (a filter, a save) replace the board; compared by content, since an
+  // app may build a fresh array on every render
+  const signature = events
+    .map((e) => `${e.id}@${e.day}:${e.start}-${e.end}:${e.title}:${e.tone ?? ''}`)
+    .join('|');
+  const [seen, setSeen] = useState(signature);
+  if (seen !== signature) {
+    setSeen(signature);
+    setList([...events]);
+    setHistory([]);
+  }
   const [drag, setDrag] = useState<Drag | null>(null);
   const [said, setSaid] = useState('');
+  const [openId, setOpenId] = useState<string | null>(null);
+  const dragged = useRef(false);
   const grid = useRef<HTMLDivElement>(null);
+  const card = useRef<HTMLDivElement>(null);
   const helpId = useId();
   const [h0, h1] = hours;
   const span = (h1 - h0) * 60;
@@ -122,11 +154,45 @@ export function WeekScheduler({
   const round = (m: number) => Math.round(m / snap) * snap;
 
   const commit = (next: ScheduleEvent[], e?: ScheduleEvent) => {
+    setHistory((h) => [...h.slice(-19), list]);
     setList(next);
     onChange?.(next);
     if (e) setSaid(`${e.title}, ${dayName(e.day)} ${clockOf(e.start)} to ${clockOf(e.end)}`);
   };
   const dayName = (d: number) => days[d]?.name ?? '';
+  const undo = () => {
+    const prev = history[history.length - 1];
+    if (!prev) return;
+    setHistory((h) => h.slice(0, -1));
+    setList(prev);
+    onChange?.(prev);
+    setSaid('Change undone');
+    playSound('tick');
+  };
+
+  // the open card closes on Esc or a press anywhere outside it
+  useEffect(() => {
+    if (openId === null) return;
+    const onDoc = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (card.current?.contains(t)) return;
+      if ((t as Element).closest?.(`[data-event-id="${CSS.escape(openId)}"]`)) return;
+      setOpenId(null);
+    };
+    const onEsc = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setOpenId(null);
+      grid.current
+        ?.querySelector<HTMLButtonElement>(`[data-event-id="${CSS.escape(openId)}"]`)
+        ?.focus();
+    };
+    document.addEventListener('pointerdown', onDoc);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('pointerdown', onDoc);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [openId]);
   const update = (id: string, f: (e: ScheduleEvent) => ScheduleEvent) => {
     const old = list.find((e) => e.id === id);
     const changed = old ? f(old) : undefined;
@@ -160,7 +226,7 @@ export function WeekScheduler({
     ev: ScheduleEvent,
     kind: 'move' | 'size',
   ) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || !editable) return;
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
     setDrag(
@@ -212,18 +278,31 @@ export function WeekScheduler({
       }
       return;
     }
-    if (live) {
+    const before = live ? list.find((x) => x.id === live.id) : undefined;
+    if (
+      live &&
+      before &&
+      (before.start !== live.start || before.end !== live.end || before.day !== live.day)
+    ) {
       commit(
         list.map((x) => (x.id === live.id ? live : x)),
         live,
       );
       playSound('tick');
+      dragged.current = true; // the click that ends a drag does not open the card
+      setOpenId(null);
     }
     setDrag(null);
     setLive(null);
   };
 
   const onKey = (e: KeyboardEvent<HTMLButtonElement>, ev: ScheduleEvent) => {
+    if (!editable) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      undo();
+      return;
+    }
     const len = ev.end - ev.start;
     let f: ((x: ScheduleEvent) => ScheduleEvent) | null = null;
     if (e.shiftKey && e.key === 'ArrowDown') f = (x) => ({ ...x, end: clamp(x.end + snap) });
@@ -264,12 +343,21 @@ export function WeekScheduler({
       )}
     >
       <p id={helpId} className="sr-only">
-        Arrow keys move the event by {snap} minutes or a day; Shift with Up or Down changes its
-        length.
+        {editable
+          ? `Enter shows what it is. Arrow keys move the event by ${snap} minutes or a day; Shift with Up or Down changes its length; Ctrl+Z undoes.`
+          : 'Enter shows what it is.'}
       </p>
       <p className="sr-only" aria-live="polite">
         {said}
       </p>
+      {editable && history.length > 0 && (
+        <div className="flex items-center justify-end gap-2 border-0 border-b border-solid border-border-subtle px-2 py-1.5">
+          <Button variant="ghost" size="sm" onClick={undo}>
+            <Icon name="undo" size={14} />
+            Undo
+          </Button>
+        </div>
+      )}
       <div className="overflow-x-auto">
         <div className="min-w-[40rem]">
           <div
@@ -325,7 +413,8 @@ export function WeekScheduler({
                     di === today && 'bg-brand-soft/40',
                   )}
                   onPointerDown={(e) => {
-                    if (e.button !== 0 || !onCreate || e.target !== e.currentTarget) return;
+                    if (e.button !== 0 || !onCreate || !editable || e.target !== e.currentTarget)
+                      return;
                     e.currentTarget.setPointerCapture(e.pointerId);
                     const m = minuteAt(e.clientY, di);
                     setDrag({ kind: 'new', day: di, from: m, to: m + snap });
@@ -349,10 +438,22 @@ export function WeekScheduler({
                         data-event-id={ev.id}
                         aria-describedby={helpId}
                         aria-label={`${ev.title}, ${d.name} ${clockOf(ev.start)} to ${clockOf(ev.end)}${ev.where ? `, ${ev.where}` : ''}`}
+                        aria-expanded={openId === ev.id}
                         onPointerDown={(e) => startMove(e, ev, 'move')}
                         onKeyDown={(e) => onKey(e, ev)}
+                        onClick={() => {
+                          if (dragged.current) {
+                            dragged.current = false;
+                            return;
+                          }
+                          setOpenId((o) => (o === ev.id ? null : ev.id));
+                        }}
                         className={cn(
-                          'ui-week-event group/ev absolute flex pointer-coarse:min-h-12 cursor-grab touch-none flex-col overflow-hidden rounded-md border-0 p-0 text-start outline-none focus-visible:z-20 focus-visible:[box-shadow:var(--ring)] active:cursor-grabbing',
+                          'ui-week-event group/ev absolute flex pointer-coarse:min-h-12 flex-col overflow-hidden rounded-md border-0 p-0 text-start outline-none focus-visible:z-20 focus-visible:[box-shadow:var(--ring)]',
+                          editable
+                            ? 'cursor-grab touch-none active:cursor-grabbing'
+                            : 'cursor-pointer',
+                          openId === ev.id && 'z-20 [box-shadow:var(--ring)]',
                           moving
                             ? 'z-30 [box-shadow:var(--elev-3)]'
                             : 'z-10 transition-[top,height] duration-(--dur-base) ease-(--ease-out) motion-reduce:transition-none',
@@ -383,16 +484,86 @@ export function WeekScheduler({
                             </span>
                           )}
                         </span>
-                        <span
-                          aria-hidden="true"
-                          onPointerDown={(e) => startMove(e, ev, 'size')}
-                          className="absolute inset-x-0 bottom-0 flex h-2 cursor-ns-resize items-center justify-center opacity-0 group-hover/ev:opacity-100"
-                        >
-                          <span className="h-0.5 w-6 rounded-pill bg-fg-muted" />
-                        </span>
+                        {editable && (
+                          <span
+                            aria-hidden="true"
+                            onPointerDown={(e) => startMove(e, ev, 'size')}
+                            className="absolute inset-x-0 bottom-0 flex h-2 cursor-ns-resize items-center justify-center opacity-0 group-hover/ev:opacity-100"
+                          >
+                            <span className="h-0.5 w-6 rounded-pill bg-fg-muted" />
+                          </span>
+                        )}
                       </button>
                     );
                   })}
+                  {(() => {
+                    const ev = openId ? todays.find((x) => x.id === openId) : undefined;
+                    if (!ev) return null;
+                    // below the event, or above it near the bottom of the day; it opens towards
+                    // the middle of the week so it stays on the board
+                    const below = ev.end - h0 * 60 < span - 150;
+                    const fromEnd = di >= days.length / 2;
+                    const body = (
+                      <div
+                        ref={card}
+                        role="dialog"
+                        aria-label={ev.title}
+                        className={cn(
+                          'ui-week-card z-40 flex flex-col gap-1 rounded-lg border border-solid border-border bg-raised p-3 text-start [box-shadow:var(--elev-3)] glass-chrome',
+                          // a phone's week scrolls sideways, so the card sits at the foot of the
+                          // screen instead, where it is always whole
+                          wide
+                            ? cn('absolute w-60', fromEnd ? 'end-0.5' : 'start-0.5')
+                            : 'fixed inset-x-4 bottom-4 z-[60]',
+                        )}
+                        style={
+                          !wide
+                            ? undefined
+                            : below
+                              ? { top: (ev.end - h0 * 60) * px + 4 }
+                              : { bottom: (h1 * 60 - ev.start) * px + 4 }
+                        }
+                      >
+                        <div className="flex items-start gap-2">
+                          <span
+                            aria-hidden="true"
+                            className={cn(
+                              'mt-1 size-2.5 shrink-0 rounded-full',
+                              TINT[ev.tone ?? 1],
+                            )}
+                          />
+                          <span className="min-w-0 flex-1 text-[14px] leading-snug font-semibold text-fg">
+                            {ev.title}
+                          </span>
+                          <button
+                            type="button"
+                            aria-label="Close"
+                            onClick={() => {
+                              setOpenId(null);
+                              grid.current
+                                ?.querySelector<HTMLButtonElement>(
+                                  `[data-event-id="${CSS.escape(ev.id)}"]`,
+                                )
+                                ?.focus();
+                            }}
+                            className="-me-1 -mt-1 inline-flex size-7 pointer-coarse:size-12 pointer-coarse:-me-2.5 pointer-coarse:-mt-2.5 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-fg-muted outline-none hover:bg-hover hover:text-fg focus-visible:[box-shadow:var(--ring)]"
+                          >
+                            <Icon name="x" size={14} />
+                          </button>
+                        </div>
+                        <span className="text-[12px] text-fg-muted tabular-nums">
+                          {d.name} {d.date}, {clockOf(ev.start)}–{clockOf(ev.end)}
+                        </span>
+                        {ev.where && <span className="text-[12px] text-fg-muted">{ev.where}</span>}
+                        {ev.detail && (
+                          <p className="m-0 pt-1 text-[13px] leading-snug text-fg">{ev.detail}</p>
+                        )}
+                      </div>
+                    );
+                    return wide || typeof document === 'undefined'
+                      ? body
+                      : createPortal(body, document.body);
+                  })()}
                   {drag?.kind === 'new' && drag.day === di && (
                     <span
                       aria-hidden="true"
