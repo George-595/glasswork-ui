@@ -45,6 +45,8 @@ export interface NetworkGraphProps extends ChartCommonProps {
 
 type Pos = Record<string, { x: number; y: number }>;
 const PAD = 28;
+/* Room under the lowest node for its label, so a name is never cut off at the foot. */
+const PAD_BOTTOM = PAD + 22;
 
 /** Fruchterman–Reingold in a w × h box. `pinned` nodes keep their place. Deterministic. */
 function relax(
@@ -106,7 +108,7 @@ function relax(
       dd.y += (h / 2 - p.y) * 0.02 * k;
       const len = Math.max(0.01, Math.hypot(dd.x, dd.y));
       p.x = Math.max(PAD, Math.min(w - PAD, p.x + (dd.x / len) * Math.min(len, t)));
-      p.y = Math.max(PAD, Math.min(h - PAD, p.y + (dd.y / len) * Math.min(len, t)));
+      p.y = Math.max(PAD, Math.min(h - PAD_BOTTOM, p.y + (dd.y / len) * Math.min(len, t)));
     }
   }
   return pos;
@@ -203,7 +205,7 @@ export function NetworkGraph({
     d.moved = true;
     const p = toLocal(e);
     const x = Math.max(PAD, Math.min(width - PAD, p.x));
-    const y = Math.max(PAD, Math.min(height - PAD, p.y));
+    const y = Math.max(PAD, Math.min(height - PAD_BOTTOM, p.y));
     setPos((prev) =>
       relax(
         nodes,

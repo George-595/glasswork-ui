@@ -46,7 +46,14 @@ export interface ScatterChartProps extends ChartCommonProps {
   yFormat?: (n: number) => string;
 }
 
-const M = { l: 52, r: 16, t: 14, b: 40 } as const;
+// t leaves the y-axis name its own row above the top tick, so the two never touch
+const M = { l: 52, r: 16, t: 28, b: 40 } as const;
+
+/** A little room past the data, so no dot sits on the frame; a range that starts at zero or above stays there. */
+function padded(lo: number, hi: number): [number, number] {
+  const pad = (hi - lo) * 0.05 || Math.abs(hi) * 0.05 || 1;
+  return [lo >= 0 ? Math.max(0, lo - pad) : lo - pad, hi + pad];
+}
 const MIN_BRUSH = 10;
 
 type Domain = readonly [number, number, number, number];
@@ -86,8 +93,8 @@ export function ScatterChart({
   );
   const full = useMemo<Domain>(() => {
     if (all.length === 0) return [0, 1, 0, 1];
-    const xs = niceTicks(Math.min(...all.map((p) => p.x)), Math.max(...all.map((p) => p.x)));
-    const ys = niceTicks(Math.min(...all.map((p) => p.y)), Math.max(...all.map((p) => p.y)));
+    const xs = niceTicks(...padded(Math.min(...all.map((p) => p.x)), Math.max(...all.map((p) => p.x))));
+    const ys = niceTicks(...padded(Math.min(...all.map((p) => p.y)), Math.max(...all.map((p) => p.y))));
     return [xs[0] ?? 0, xs[xs.length - 1] ?? 1, ys[0] ?? 0, ys[ys.length - 1] ?? 1];
   }, [all]);
   const target = zooms[zooms.length - 1] ?? full;
@@ -260,7 +267,7 @@ export function ScatterChart({
           >
             <defs>
               <clipPath id={clip}>
-                <rect x={M.l} y={M.t - 6} width={pw + 6} height={ph + 12} />
+                <rect x={M.l - 6} y={M.t - 6} width={pw + 12} height={ph + 12} />
               </clipPath>
             </defs>
             <g {...HIDDEN} className="text-[11px] tabular-nums">
@@ -289,7 +296,7 @@ export function ScatterChart({
               >
                 {xLabel} →
               </text>
-              <text x={4} y={M.t - 2} className="fill-fg-muted text-xs font-medium">
+              <text x={4} y={M.t - 14} className="fill-fg-muted text-xs font-medium">
                 ↑ {yLabel}
               </text>
             </g>

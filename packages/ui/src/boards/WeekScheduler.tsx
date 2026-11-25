@@ -376,9 +376,12 @@ export function WeekScheduler({
                           <span className="truncate text-[12px] leading-tight font-semibold text-fg">
                             {ev.title}
                           </span>
-                          <span className="truncate text-[11px] leading-tight text-fg-muted tabular-nums">
-                            {clockOf(ev.start)}–{clockOf(ev.end)}
-                          </span>
+                          {/* a block under 45 minutes has room for its name only: the time is in its label */}
+                          {ev.end - ev.start >= 45 && (
+                            <span className="truncate text-[11px] leading-tight text-fg-muted tabular-nums">
+                              {clockOf(ev.start)}–{clockOf(ev.end)}
+                            </span>
+                          )}
                         </span>
                         <span
                           aria-hidden="true"
