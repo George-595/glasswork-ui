@@ -16,7 +16,9 @@ import { SeaGlassStage } from '../seaglass/SeaGlassStage';
    from straight above, so a tile and its shadow are the same on the left as on the right, and
    the enterprise skin, reduced transparency and a device that lags draw flat tinted cards (the
    kit degrades by itself). The stage draws no paper: the tiles sit on the page, so their
-   left and right gutters are exactly the page's.
+   left and right gutters are exactly the page's. The glass is drawn tilted, so a pebble's edge
+   and its shadow reach below its box: the stage keeps the same room under the last tile as the
+   gap between two (`pb-3`), or the canvas, which ends with the stage, clips the last one flat.
 
    ActionTile is one tile, centred on its own axis: a round tinted icon, a title, one line under
    it, then `children` (the actions) at the full width of the tile's content box. At least 220px
@@ -28,7 +30,7 @@ export interface ActionTilesProps extends HTMLAttributes<HTMLDivElement> {
 export function ActionTiles({ children, className, ...props }: ActionTilesProps) {
   return (
     <FillHeight {...props} className={cn('ui-action-tiles', className)}>
-      <SeaGlassStage paper={false} symmetric className="flex flex-1 flex-col gap-3">
+      <SeaGlassStage paper={false} symmetric className="flex flex-1 flex-col gap-3 pb-3">
         {children}
       </SeaGlassStage>
     </FillHeight>

@@ -3,7 +3,7 @@ import { buttonVariants } from '../components/button';
 import { Icon } from '../icons/Icon';
 import { cn } from '../lib/cn';
 
-/* PhotoCapture — the two ways to give the app a photo.
+/* PhotoCapture — the two ways to give the app a photo (UX spec K4, 4.0 "Capture").
 
    - **Take photo**: a real <label> over a hidden <input type="file" accept="image/*"
      capture="environment">, so the phone opens its back camera from the person's own tap (iOS
@@ -16,9 +16,17 @@ import { cn } from '../lib/cn';
      the disabled role pair (never opacity, ENGINEERING §14 rule 24), and a polite status line
      that is always mounted says "Preparing photo…" so a screen reader hears it.
    - A file that is not an image, or bigger than `maxBytes`, is refused with `onReject` and
-     never reaches `onFile`. The same file can be picked twice in a row. */
+     never reaches `onFile`. The same file can be picked twice in a row.
+   - `onFiles` makes "Choose from gallery" a multi-select (batch scanning, UX F17): the gallery
+     input gets `multiple` and every picture that passes the checks above arrives in ONE call, in
+     the order chosen, while each refused one still reports through `onReject`. It stays a real
+     <label> over a real input; nothing is clicked by a script. The camera input never takes more
+     than one: a phone's camera gives one photo per tap, so a batch by camera is the person
+     tapping "Take photo" again. */
 export interface PhotoCaptureProps {
   onFile: (file: File) => void;
+  /** When given, the gallery input is a multi-select and sends all the chosen pictures here. */
+  onFiles?: (files: File[]) => void;
   onReject?: (reason: 'not_an_image' | 'too_large', file: File) => void;
   busy?: boolean;
   /** Biggest file accepted, in bytes. Default 25 MB (a phone's full-size photo). */
@@ -37,6 +45,7 @@ export interface PhotoCaptureProps {
 
 export function PhotoCapture({
   onFile,
+  onFiles,
   onReject,
   busy = false,
   maxBytes = 25 * 1024 * 1024,
@@ -49,21 +58,34 @@ export function PhotoCapture({
 }: PhotoCaptureProps) {
   const id = useId();
 
+  /** True when the file may be used; otherwise says why through `onReject`. */
+  const acceptable = (file: File): boolean => {
+    if (file.type !== '' && !file.type.startsWith('image/')) {
+      onReject?.('not_an_image', file);
+      return false;
+    }
+    if (file.size > maxBytes) {
+      onReject?.('too_large', file);
+      return false;
+    }
+    return true;
+  };
+
   const pick = (e: ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget;
     const file = input.files?.[0];
     // clear it, so choosing the same file again still fires a change
     input.value = '';
-    if (!file) return;
-    if (file.type !== '' && !file.type.startsWith('image/')) {
-      onReject?.('not_an_image', file);
-      return;
-    }
-    if (file.size > maxBytes) {
-      onReject?.('too_large', file);
-      return;
-    }
-    onFile(file);
+    if (file && acceptable(file)) onFile(file);
+  };
+
+  const pickGallery = (e: ChangeEvent<HTMLInputElement>) => {
+    if (!onFiles) return pick(e);
+    const input = e.currentTarget;
+    const chosen = Array.from(input.files ?? []);
+    input.value = '';
+    const good = chosen.filter(acceptable);
+    if (good.length > 0) onFiles(good);
   };
 
   const quiet = galleryStyle === 'quiet';
@@ -113,9 +135,10 @@ export function PhotoCapture({
           id={`${id}-gallery`}
           type="file"
           accept="image/*"
+          multiple={onFiles !== undefined}
           className="sr-only"
           disabled={busy}
-          onChange={pick}
+          onChange={pickGallery}
         />
       </label>
     </div>

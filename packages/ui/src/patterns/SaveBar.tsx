@@ -27,6 +27,11 @@ export interface SaveBarProps extends Omit<HTMLAttributes<HTMLDivElement>, 'chil
   saving?: boolean;
   saveLabel?: string;
   discardLabel?: string;
+  /** The line on the bar and what a screen reader hears, instead of "3 unsaved changes" (a bar
+      for something other than unsaved edits: "2 charts to print"). */
+  message?: string;
+  /** The region's name. Default "Unsaved changes". */
+  regionLabel?: string;
 }
 
 export function SaveBar({
@@ -37,13 +42,15 @@ export function SaveBar({
   saving = false,
   saveLabel = 'Save',
   discardLabel = 'Discard',
+  message: messageProp,
+  regionLabel = 'Unsaved changes',
   className,
   ...props
 }: SaveBarProps) {
   const bar = useRef<HTMLDivElement>(null);
   useBottomInset(bar, count > 0);
   const noun = count === 1 ? unit : `${unit}s`;
-  const message = count > 0 ? `${count} unsaved ${noun}` : '';
+  const message = count > 0 ? (messageProp ?? `${count} unsaved ${noun}`) : '';
   return (
     <>
       <p role="status" className="ui-sr-only">
@@ -56,7 +63,7 @@ export function SaveBar({
           variant="raised"
           padding="sm"
           role="region"
-          aria-label="Unsaved changes"
+          aria-label={regionLabel}
           className={cn(
             'ui-save-bar sticky bottom-[calc(env(safe-area-inset-bottom)+16px)] z-30 max-md:bottom-[calc(var(--bottom-nav-h,0px)+env(safe-area-inset-bottom)+8px)]',
             className,

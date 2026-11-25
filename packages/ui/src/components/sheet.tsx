@@ -40,6 +40,9 @@ export interface SheetProps {
   /** Keep the description for screen readers only. */
   hideDescription?: boolean;
   side?: SheetSide;
+  /** A bottom sheet at its full height (85dvh) whose body is a flex column its content fills, for
+      content that sizes to the sheet (a chat with its composer kept on screen). */
+  fill?: boolean;
   children?: ReactNode;
   /** Action row under the body. */
   footer?: ReactNode;
@@ -67,6 +70,7 @@ export function Sheet({
   description,
   hideDescription,
   side = 'right',
+  fill = false,
   children,
   footer,
   footerLayout = 'end',
@@ -123,6 +127,7 @@ export function Sheet({
           'scroll-pb-[calc(var(--ui-sheet-footer-h,0px)+8px)]',
           'motion-safe:data-ending-style:animate-(--ui-sheet-out) motion-safe:data-open:animate-(--ui-sheet-in)',
           SIDE[side],
+          fill && side === 'bottom' && 'h-[85dvh]',
           className,
         )}
         style={{
@@ -143,7 +148,14 @@ export function Sheet({
             {description}
           </DialogDescription>
         </div>
-        <div className="ui-sheet-body min-h-0 flex-1">{children}</div>
+        <div
+          className={cn(
+            'ui-sheet-body min-h-0 flex-1',
+            fill && 'flex flex-col [&>*]:min-h-0 [&>*]:flex-1',
+          )}
+        >
+          {children}
+        </div>
         {footer && (
           <div
             className={cn(

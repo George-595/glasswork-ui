@@ -655,6 +655,20 @@ describe('SaveBar', () => {
     expect(text($('[role="status"]'))).toBe('1 unsaved setting');
   });
 
+  it('takes its own line and region name for a bar that is not about unsaved edits', () => {
+    render(
+      <SaveBar
+        count={2}
+        message="2 charts to print"
+        regionLabel="Charts to print"
+        onSave={() => {}}
+        onDiscard={() => {}}
+      />,
+    );
+    expect(text($('[role="status"]'))).toBe('2 charts to print');
+    expect($('.ui-save-bar').getAttribute('aria-label')).toBe('Charts to print');
+  });
+
   it('puts Discard before the primary Save and calls them', () => {
     const onSave = vi.fn<() => void>();
     const onDiscard = vi.fn<() => void>();
