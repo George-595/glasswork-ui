@@ -274,3 +274,144 @@ html:has(.ui-topbar) {
     display: none;
   }
 }
+
+/* ---- AvatarGroup: each avatar is cut where the next one overlaps it -------
+   A mask, not a painted ring: a ring in the surface colour looks muddy on a translucent
+   glass card. The next avatar starts 8px before this one ends (-ml-2), so the hole is a
+   circle of the avatar's radius plus a 2px gap, centred one and a half sizes from the left. */
+.ui-avatar-group {
+  --av: 2rem;
+}
+.ui-avatar-group[data-size="xs"] {
+  --av: 1.5rem;
+}
+.ui-avatar-group[data-size="md"] {
+  --av: 2.5rem;
+}
+.ui-avatar-group[data-size="lg"] {
+  --av: 3.5rem;
+}
+.ui-avatar-group > .ui-avatar-slot:not(:last-child) {
+  mask-image: radial-gradient(
+    circle at calc(var(--av) * 1.5 - 8px) 50%,
+    transparent calc(var(--av) / 2 + 2px),
+    currentColor calc(var(--av) / 2 + 2.5px)
+  );
+}
+
+/* ---- Skeleton: one sweep for the whole screen ------------------------------
+   The band is laid out against the viewport (background-attachment: fixed), so every
+   placeholder lights up as the same band passes over it. */
+.ui-skeleton::after {
+  background-image: linear-gradient(90deg, transparent 0, var(--shine) 50%, transparent 100%);
+  background-size: 45vw 100%;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position: -45vw 0;
+  animation: ui-skeleton-sweep 1.9s var(--ease-in-out) infinite;
+}
+@keyframes ui-skeleton-sweep {
+  to {
+    background-position: 145vw 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-skeleton::after {
+    animation: none;
+  }
+}
+
+/* ---- Toasts: a stacked deck that fans out ----------------------------------
+   The UI SDK measures the stack and writes --toast-index (0 = newest), --toast-offset (the
+   heights in front of this one), --toast-front-height and --toast-stack-height, and sets
+   data-expanded while the pointer or focus is on the region. Collapsed, the older toasts
+   peek out 10px apiece behind the newest, a little smaller; expanded, they stand in a column
+   with an 8px gap. */
+.ui-toaster > ol {
+  position: relative;
+  height: var(--toast-front-height, auto);
+  transition: height var(--dur-base) var(--ease-out);
+}
+.ui-toaster[data-expanded] > ol {
+  height: calc(var(--toast-stack-height, 0px) + (var(--toast-count, 1) - 1) * 8px);
+}
+.ui-toaster .ui-toast {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: calc(10 - var(--toast-index, 0));
+  transform: translateY(calc(var(--toast-index, 0) * -10px))
+    scale(calc(1 - var(--toast-index, 0) * 0.05));
+  transform-origin: bottom center;
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    opacity var(--dur-base) var(--ease-out),
+    height var(--dur-base) var(--ease-out);
+}
+.ui-toaster .ui-toast:not([data-front]):not([data-expanded]) {
+  height: var(--toast-front-height);
+  overflow: hidden;
+}
+.ui-toaster .ui-toast:not([data-front]):not([data-expanded]) > * {
+  opacity: 0;
+}
+.ui-toaster .ui-toast[data-expanded] {
+  transform: translateY(calc(-1 * (var(--toast-offset, 0px) + var(--toast-index, 0) * 8px)));
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-toaster > ol,
+  .ui-toaster .ui-toast {
+    transition: none;
+  }
+}
+
+@keyframes ui-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* ---- Composer: a soft glow travels round the field while a reply is sending ---- */
+.ui-composer[data-streaming] .ui-composer-box {
+  box-shadow:
+    0 0 0 1px var(--primary),
+    0 0 18px -4px var(--primary);
+  animation: ui-composer-glow 1.6s var(--ease-in-out) infinite alternate;
+}
+@keyframes ui-composer-glow {
+  from {
+    box-shadow:
+      0 0 0 1px var(--border-strong),
+      0 0 6px -4px var(--primary);
+  }
+}
+.ui-composer-listening {
+  animation: ui-composer-listen 1.2s var(--ease-in-out) infinite;
+}
+@keyframes ui-composer-listen {
+  50% {
+    box-shadow: 0 0 0 6px var(--brand-soft);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-composer[data-streaming] .ui-composer-box,
+  .ui-composer-listening {
+    animation: none;
+  }
+}
+
+/* ---- The streaming caret of a reply ---- */
+.ui-md-caret {
+  animation: ui-caret-blink 1s steps(2, jump-none) infinite;
+}
+@keyframes ui-caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-md-caret {
+    animation: none;
+  }
+}

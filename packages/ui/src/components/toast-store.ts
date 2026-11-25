@@ -4,7 +4,7 @@ import { playSound, type SoundName } from '../sound';
 /* The toast store: the queue behind toast() and the Toaster. No UI SDK and no JSX, so the whole of the kit's
    toast(...) calls cost a page a few hundred bytes. The UI SDK view (toast.tsx) is fetched by the Toaster facade
    (toaster.tsx) after hydration; a toast pushed before it arrives waits here. See toast.tsx for the behaviour. */
-export type ToastVariant = 'default' | 'success' | 'error' | 'info';
+export type ToastVariant = 'default' | 'success' | 'error' | 'info' | 'loading';
 
 export interface ToastOptions {
   variant?: ToastVariant;
@@ -65,7 +65,9 @@ let selfTimed = false;
 
 function armExpiry(t: ToastItem) {
   if (!selfTimed || !t.open || timers.has(t.id)) return;
-  const total = t.duration ?? (t.variant === 'error' ? Number.POSITIVE_INFINITY : DEFAULT_MS);
+  const total =
+    t.duration ??
+    (t.variant === 'error' || t.variant === 'loading' ? Number.POSITIVE_INFINITY : DEFAULT_MS);
   if (!Number.isFinite(total)) return;
   timers.set(
     t.id,
@@ -115,15 +117,17 @@ export function dismiss(id?: string) {
   }, EXIT_MS);
 }
 
-const TOAST_SOUND: Record<ToastVariant, SoundName> = {
+const TOAST_SOUND: Record<ToastVariant, SoundName | null> = {
   default: 'notify',
   success: 'success',
   error: 'error',
   info: 'notify',
+  loading: null,
 };
 
 function push(title: ReactNode, options: ToastOptions = {}, undo?: UndoParts): string {
-  playSound(TOAST_SOUND[options.variant ?? 'default']);
+  const sound = TOAST_SOUND[options.variant ?? 'default'];
+  if (sound) playSound(sound);
   counter += 1;
   const id = `toast-${counter}`;
   const item: ToastItem = { ...options, id, title, open: true, undo, at: Date.now() };
@@ -156,6 +160,50 @@ function pushUndo(
   );
 }
 
+/** Change an open toast in place (a loading toast that has finished). It re-times from now. */
+export function update(
+  id: string,
+  patch: Partial<Pick<ToastItem, 'title' | 'variant' | 'description' | 'duration' | 'action'>>,
+) {
+  const t = items.find((x) => x.id === id);
+  if (!t?.open) return;
+  clearExpiry(id);
+  const next: ToastItem = { ...t, ...patch, at: Date.now() };
+  emit(items.map((x) => (x.id === id ? next : x)));
+  const sound = TOAST_SOUND[next.variant ?? 'default'];
+  if (sound && patch.variant) playSound(sound);
+  armExpiry(next);
+}
+
+export interface PromiseToastMessages<T> {
+  loading: ReactNode;
+  success: ReactNode | ((value: T) => ReactNode);
+  error: ReactNode | ((reason: unknown) => ReactNode);
+  description?: ReactNode;
+}
+
+/** One toast for a piece of work: "Saving…" with a spinner while the promise runs, then the
+    same toast turns into the success or the error. Returns the promise, so it can be awaited. */
+function pushPromise<T>(work: Promise<T>, messages: PromiseToastMessages<T>): Promise<T> {
+  const id = push(messages.loading, { variant: 'loading', description: messages.description });
+  work.then(
+    (value) =>
+      update(id, {
+        variant: 'success',
+        description: undefined,
+        title: typeof messages.success === 'function' ? messages.success(value) : messages.success,
+        duration: DEFAULT_MS,
+      }),
+    (reason) =>
+      update(id, {
+        variant: 'error',
+        description: undefined,
+        title: typeof messages.error === 'function' ? messages.error(reason) : messages.error,
+      }),
+  );
+  return work;
+}
+
 type Shorthand = (title: ReactNode, options?: Omit<ToastOptions, 'variant'>) => string;
 
 export const toast = Object.assign(
@@ -165,6 +213,8 @@ export const toast = Object.assign(
     error: ((title, options) => push(title, { ...options, variant: 'error' })) as Shorthand,
     info: ((title, options) => push(title, { ...options, variant: 'info' })) as Shorthand,
     undo: pushUndo,
+    promise: pushPromise,
+    update,
     dismiss,
   },
 );

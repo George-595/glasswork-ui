@@ -54,6 +54,12 @@ export interface Column<T> {
   footer?: (rows: readonly T[]) => ReactNode;
   /** The CSV cell. Default: sortValue, then the `key` property. */
   csv?: (row: T) => string | number;
+  /** Starting width in px (the person can drag it with `resizable`). Default: the content's. */
+  width?: number;
+  /** Narrowest a resize may make it. Default 64. */
+  minWidth?: number;
+  /** Starts pinned: it moves to the start and stays in view while the table scrolls sideways. */
+  pinned?: boolean;
 }
 
 export interface FilterQuery {

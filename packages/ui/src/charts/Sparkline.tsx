@@ -40,6 +40,8 @@ export interface SparklineProps {
       higher than it began and red when lower; the label then says "up" or "down" too,
       so the direction never rests on colour. */
   tone?: 'accent' | 'auto';
+  /** A goal: drawn as a dashed level line across the trend, and named ("target 500"). */
+  target?: number;
 }
 
 const pathOf = (pts: readonly (readonly [number, number])[], close: boolean) =>
@@ -104,6 +106,7 @@ export function Sparkline({
   area = true,
   dot = true,
   tone = 'accent',
+  target,
 }: SparklineProps) {
   const fillId = `ui-spark-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const delta =
@@ -112,10 +115,10 @@ export function Sparkline({
     tone === 'auto' && delta !== 0 ? (delta > 0 ? PAINT.up : PAINT.down) : seriesColor(0);
 
   const nodes = useMemo(() => {
-    if (!values.length) return [];
+    if (!values.length) return { scene: [], goalY: null };
     const rows = values.map((v, i) => ({ i, v }));
-    const lo = Math.min(...values);
-    const hi = Math.max(...values);
+    const lo = Math.min(...values, ...(target === undefined ? [] : [target]));
+    const hi = Math.max(...values, ...(target === undefined ? [] : [target]));
     const pad = Math.max((hi - lo) * 0.12, Math.abs(hi) * 0.01, 0.01);
     const lastRow = rows[rows.length - 1];
     const definition = defineChart({
@@ -154,13 +157,19 @@ export function Sparkline({
       focus: false,
       focusRing: false,
     });
-    return createChartScene(definition, { width, height }).nodes;
-  }, [values, width, height, fillId, color, area, dot]);
+    const scene = createChartScene(definition, { width, height }).nodes;
+    // the target's y, on the same scale the scene used (3px margins)
+    const goalY =
+      target === undefined
+        ? null
+        : 3 + (height - 6) * (1 - (target - (lo - pad)) / (hi + pad - (lo - pad)));
+    return { scene, goalY };
+  }, [values, width, height, fillId, color, area, dot, target]);
 
   const name = values.length
     ? `${label}: from ${format(values[0] as number)} to ${format(values[values.length - 1] as number)}, low ${format(Math.min(...values))}, high ${format(Math.max(...values))}${
         tone === 'auto' && delta !== 0 ? (delta > 0 ? ', up' : ', down') : ''
-      }`
+      }${target === undefined ? '' : `, target ${format(target)}`}`
     : `${label}: no data`;
 
   return (
@@ -181,7 +190,19 @@ export function Sparkline({
           <stop offset="1" stopColor={color} stopOpacity={0} />
         </linearGradient>
       </defs>
-      {nodes.map(render)}
+      {nodes.goalY !== null && (
+        <line
+          className="ui-sparkline-target"
+          x1={0}
+          x2={width}
+          y1={nodes.goalY}
+          y2={nodes.goalY}
+          stroke={PAINT.label}
+          strokeWidth={1}
+          strokeDasharray="3 3"
+        />
+      )}
+      {nodes.scene.map(render)}
     </svg>
   );
 }

@@ -42,6 +42,10 @@ export interface DataTableState {
   density: Density;
   /** Keys of expanded rows. */
   expanded: ReadonlySet<string>;
+  /** Column widths in px that the person set (or the columns' `width`). */
+  widths: Readonly<Record<string, number>>;
+  /** Keys of pinned columns, in pin order. */
+  pinned: readonly string[];
 }
 
 export const DEFAULT_PAGE_SIZES: readonly number[] = [10, 25, 50, 100];
@@ -137,6 +141,10 @@ export interface DataTableApi<T> {
   setDensity: (density: Density) => void;
   isExpanded: (key: string) => boolean;
   toggleExpanded: (key: string, on?: boolean) => void;
+  /** Sets a column's width in px (clamped to its `minWidth` and 960). */
+  setColumnWidth: (key: string, width: number) => void;
+  /** Pins a column to the start (or unpins it); `on` forces the state. */
+  togglePinned: (key: string, on?: boolean) => void;
 }
 
 const SEP = '\u0000';
@@ -152,6 +160,10 @@ export function defaultState<T>(columns: readonly Column<T>[]): DataTableState {
     hidden: columns.filter((c) => c.defaultHidden).map((c) => c.key),
     density: 'normal',
     expanded: new Set(),
+    widths: Object.fromEntries(
+      columns.flatMap((c) => (c.width !== undefined ? [[c.key, c.width] as const] : [])),
+    ),
+    pinned: columns.filter((c) => c.pinned).map((c) => c.key),
   };
 }
 
@@ -428,9 +440,29 @@ export function useDataTable<T>(options: UseDataTableOptions<T>): DataTableApi<T
 
   /* ---- columns, density, expansion -------------------------------------- */
 
-  const visibleColumns = useMemo(
-    () => columns.filter((c) => !state.hidden.includes(c.key)),
-    [columns, state.hidden],
+  // pinned columns come first, in pin order; the rest keep their order
+  const visibleColumns = useMemo(() => {
+    const shown = columns.filter((c) => !state.hidden.includes(c.key));
+    const pins = state.pinned.flatMap((k) => shown.filter((c) => c.key === k));
+    return [...pins, ...shown.filter((c) => !state.pinned.includes(c.key))];
+  }, [columns, state.hidden, state.pinned]);
+  const setColumnWidth = useCallback(
+    (key: string, width: number) => {
+      const col = columns.find((c) => c.key === key);
+      const w = Math.round(Math.max(col?.minWidth ?? 64, Math.min(width, 960)));
+      setState({ widths: { ...latest.current.state.widths, [key]: w } });
+    },
+    [columns, setState],
+  );
+  const togglePinned = useCallback(
+    (key: string, on?: boolean) => {
+      const pinned = latest.current.state.pinned;
+      const has = pinned.includes(key);
+      if (on ?? !has) {
+        if (!has) setState({ pinned: [...pinned, key] });
+      } else setState({ pinned: pinned.filter((k) => k !== key) });
+    },
+    [setState],
   );
   const setColumnVisible = useCallback(
     (key: string, visible: boolean) => {
@@ -494,6 +526,8 @@ export function useDataTable<T>(options: UseDataTableOptions<T>): DataTableApi<T
     setDensity,
     isExpanded,
     toggleExpanded,
+    setColumnWidth,
+    togglePinned,
   };
 }
 

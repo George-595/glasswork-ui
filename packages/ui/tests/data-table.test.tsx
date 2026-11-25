@@ -397,7 +397,7 @@ describe('DataTable columns and density', () => {
   it('changes row density from the select', () => {
     render(rich({ densityToggle: true }));
     expect($('section').getAttribute('data-density')).toBe('normal');
-    expect($('tbody td').className).toContain('py-2.5');
+    expect($('tbody td').className).toContain('py-3');
     const select = $<HTMLSelectElement>('.ui-density select');
     expect(document.querySelector(`label[for="${select.id}"]`)?.textContent).toBe('Density');
     act(() => {

@@ -10,8 +10,10 @@ import {
   DensityToggle,
   FacetFilter,
   FilterChips,
+  SavedViews,
   TablePagination,
   TableSearch,
+  type TableView,
 } from './parts';
 import { type Column, type Density, downloadCsv, type SortDir } from './table-core';
 import { type DataTableState, useDataTable } from './useDataTable';
@@ -84,6 +86,16 @@ export interface DataTableProps<T> {
   exportCsv?: string;
   /** More buttons on the right of the toolbar. */
   toolbarActions?: ReactNode;
+  /** Drag (or arrow-key) handles on the headers to set column widths. */
+  resizable?: boolean;
+  /** A Pin button on each header: pinned columns stay in view while the table scrolls sideways. */
+  pinnable?: boolean;
+  /** Draw only the rows in view (set `pageSize` 0): the frame is `height` px tall. */
+  virtual?: { height: number; rowHeight?: number };
+  /** A row of saved views above the table. `true` keeps them for this visit; a string keeps
+      them in this browser under that key; or pass the views and `onViewsChange`. */
+  savedViews?: boolean | string | readonly TableView[];
+  onViewsChange?: (views: TableView[]) => void;
 
   /** Controlled state, any subset; see useDataTable. */
   state?: Partial<DataTableState>;
@@ -124,6 +136,11 @@ export function DataTable<T>({
   bulkActions,
   exportCsv,
   toolbarActions,
+  resizable,
+  pinnable,
+  virtual,
+  savedViews,
+  onViewsChange,
   state,
   onStateChange,
   initialState,
@@ -195,6 +212,14 @@ export function DataTable<T>({
           ))}
         </DataTableToolbar>
       )}
+      {savedViews !== undefined && savedViews !== false && (
+        <SavedViews
+          table={table}
+          views={Array.isArray(savedViews) ? savedViews : undefined}
+          onViewsChange={onViewsChange}
+          storageKey={typeof savedViews === 'string' ? savedViews : undefined}
+        />
+      )}
       {filtering && <FilterChips filters={table.activeFilters} onClearAll={table.clearFilters} />}
       {selectable && bulkActions !== undefined && (
         <BulkActionBar count={table.selection.count} onClear={table.selection.clear}>
@@ -214,6 +239,9 @@ export function DataTable<T>({
         empty={emptyNode}
         footer={footer}
         density={fixedDensity}
+        resizable={resizable}
+        pinnable={pinnable}
+        virtual={virtual}
       />
       {(paged || selectable || pageSizes !== undefined) && (
         <TablePagination

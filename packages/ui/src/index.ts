@@ -49,7 +49,14 @@ export { type Rect, squarify } from './charts/squarify';
 export { fitLabel, Treemap, type TreemapProps } from './charts/Treemap';
 export { UsageMeter, type UsageMeterProps, type UsageSegment } from './charts/UsageMeter';
 /* ---- Kit v2: states, inputs, overlays, data display (kit-v2.test.tsx) ---- */
-export { Avatar, type AvatarProps, type AvatarSize, initialsOf, toneOf } from './components/avatar';
+export {
+  Avatar,
+  type AvatarProps,
+  type AvatarSize,
+  type AvatarStatus,
+  initialsOf,
+  toneOf,
+} from './components/avatar';
 export {
   AvatarGroup,
   type AvatarGroupPerson,
@@ -80,6 +87,12 @@ export {
   type LegacyButtonVariant,
   resolveButtonLevel,
 } from './components/button';
+export {
+  ButtonGroup,
+  type ButtonGroupProps,
+  SplitButton,
+  type SplitButtonProps,
+} from './components/button-group';
 export {
   Card,
   CardContent,
@@ -140,18 +153,23 @@ export {
   type FilterQuery,
   facetCounts,
   filterRows,
+  SavedViews,
+  type SavedViewsProps,
   type SelectionApi,
   type SortDir,
   type SortKey,
+  snapshotView,
   sortRows,
   TablePagination,
   type TablePaginationProps,
   TableSearch,
   type TableSearchOptions,
   type TableSearchProps,
+  type TableView,
   toCsv,
   type UseDataTableOptions,
   useDataTable,
+  VIEW_KEYS,
 } from './components/data-table';
 export { DeferredMenu } from './components/deferred-menu';
 export { DeferredTooltip } from './components/deferred-tooltip';
@@ -162,7 +180,13 @@ export {
   type DescriptionListProps,
 } from './components/description-list';
 export { Dialog, type DialogProps } from './components/dialog';
-export { EmptyState, type EmptyStateProps, type EmptyStateSize } from './components/empty-state';
+export {
+  EmptyState,
+  type EmptyStateArt,
+  type EmptyStateProps,
+  type EmptyStateSize,
+  SeaGlassArt,
+} from './components/empty-state';
 export { ErrorBoundary, type ErrorBoundaryProps } from './components/error-boundary';
 export { ErrorState, type ErrorStateProps } from './components/error-state';
 export { IconCircle, type IconCircleProps, type IconCircleSize } from './components/icon-circle';
@@ -214,6 +238,7 @@ export {
   type RadioGroupProps,
   type RadioOption,
 } from './components/inputs/radio-group';
+export { Select, type SelectProps } from './components/inputs/select';
 export { type ComboOption, filterOptions } from './components/inputs/use-listbox';
 export { Kbd, type KbdProps } from './components/kbd';
 export {
@@ -251,8 +276,24 @@ export { Notice, type NoticeProps, type NoticeTone } from './components/notice';
 export { PanelHeader, type PanelHeaderProps } from './components/panel-header';
 export { PasswordInput, type PasswordInputProps } from './components/password-input';
 export { Popover, type PopoverProps } from './components/popover';
-export { Progress, type ProgressProps, type ProgressTone } from './components/progress';
+export {
+  Progress,
+  type ProgressProps,
+  ProgressRing,
+  type ProgressRingProps,
+  ProgressSteps,
+  type ProgressStepsProps,
+  type ProgressTone,
+} from './components/progress';
 export { PromptDialog, type PromptDialogProps } from './components/prompt-dialog';
+export {
+  type DockItem,
+  Pebble,
+  SeaGlassDock,
+  type SeaGlassDockProps,
+  SeaGlassRating,
+  type SeaGlassRatingProps,
+} from './components/seaglass-parts';
 export {
   SegmentedControl,
   type SegmentedControlProps,
@@ -265,13 +306,20 @@ export {
   Skeleton,
   type SkeletonProps,
   type SkeletonRadius,
+  SkeletonSwap,
+  type SkeletonSwapProps,
   SkeletonTable,
   type SkeletonTableProps,
   SkeletonText,
   type SkeletonTextProps,
   skeletonVariants,
 } from './components/skeleton';
-export { Slider, type SliderProps } from './components/slider';
+export {
+  RangeSlider,
+  type RangeSliderProps,
+  Slider,
+  type SliderProps,
+} from './components/slider';
 export { type Direction, StatTile, type StatTileProps } from './components/stat-tile';
 export { Switch, type SwitchProps } from './components/switch';
 export { type TabItem, Tabs, type TabsProps } from './components/tabs';

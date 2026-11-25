@@ -1,5 +1,5 @@
 // biome-ignore-all lint/a11y/noStaticElementInteractions: focusout bubbles to the presentational wrapper, which closes the list when focus leaves the field
-import { forwardRef, type InputHTMLAttributes, useRef } from 'react';
+import { forwardRef, type InputHTMLAttributes, type KeyboardEvent, useRef } from 'react';
 import { Icon } from '../../icons/Icon';
 import { cn } from '../../lib/cn';
 import { Input } from '../input';
@@ -29,6 +29,8 @@ export interface ComboboxProps
   emptyMessage?: string;
   /** Show a Clear button while something is chosen. */
   clearable?: boolean;
+  /** Open the list on a click, Space or Enter as well (a select that can also be searched). */
+  openOnClick?: boolean;
 }
 
 export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Combobox(
@@ -39,6 +41,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
     listLabel = 'Options',
     emptyMessage = 'No matches',
     clearable,
+    openOnClick,
     disabled,
     className,
     ...rest
@@ -62,7 +65,33 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
   return (
     // focusout bubbles to this wrapper, which closes the list when focus leaves the field
     <div role="presentation" className="ui-combobox relative w-full" onBlur={lb.onBlurWithin}>
-      <Input {...rest} {...lb.inputProps} ref={setRef} className={cn(end, className)} />
+      <Input
+        {...rest}
+        {...lb.inputProps}
+        {...(openOnClick
+          ? {
+              onClick: () => lb.setOpen(true),
+              onKeyDown: (e: KeyboardEvent<HTMLInputElement>) => {
+                if (!lb.open && (e.key === 'Enter' || (e.key === ' ' && rest.readOnly))) {
+                  e.preventDefault();
+                  lb.setOpen(true);
+                  return;
+                }
+                lb.inputProps.onKeyDown(e);
+              },
+            }
+          : {})}
+        ref={setRef}
+        className={cn('w-full', selected?.leading && 'ps-9', end, className)}
+      />
+      {selected?.leading && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute start-2 top-1/2 grid -translate-y-1/2 place-items-center"
+        >
+          {selected.leading}
+        </span>
+      )}
       {clearable && selected && !disabled && (
         <button
           type="button"

@@ -52,3 +52,31 @@ export function SpinnerGlyph(props: GlyphProps) {
     </Glyph>
   );
 }
+
+export function PaperclipGlyph(props: GlyphProps) {
+  return (
+    <Glyph {...props}>
+      <path d="m21.4 11.1-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8" />
+    </Glyph>
+  );
+}
+
+export function MicGlyph(props: GlyphProps) {
+  return (
+    <Glyph {...props}>
+      <rect x="9" y="2" width="6" height="12" rx="3" />
+      <path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4" />
+    </Glyph>
+  );
+}
+
+export function BranchGlyph(props: GlyphProps) {
+  return (
+    <Glyph {...props}>
+      <circle cx="6" cy="5" r="2" />
+      <circle cx="6" cy="19" r="2" />
+      <circle cx="18" cy="8" r="2" />
+      <path d="M6 7v10M18 10a6 6 0 0 1-6 6H8" />
+    </Glyph>
+  );
+}

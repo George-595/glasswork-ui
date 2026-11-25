@@ -103,8 +103,9 @@ describe('ChatThread and ChatMessage', () => {
 
   it('keeps line breaks in a plain-text message', () => {
     render(<ChatMessage>{'one\ntwo'}</ChatMessage>);
-    const span = $('article span.whitespace-pre-wrap');
-    expect(span.textContent).toBe('one\ntwo');
+    const p = $('article .ui-markdown p');
+    expect(p.textContent).toBe('one\ntwo');
+    expect(p.className).toContain('whitespace-pre-line');
   });
 
   it('marks the thread busy while a reply streams', () => {

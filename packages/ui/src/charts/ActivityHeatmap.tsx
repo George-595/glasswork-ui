@@ -1,4 +1,5 @@
-import { type KeyboardEvent, useMemo, useRef, useState } from 'react';
+import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { SegmentedControl } from '../components/segmented-control';
 import { cn } from '../lib/cn';
 import { type ChartCommonProps, ChartFigure } from './ChartFrame';
 import { useMeasuredWidth } from './useMeasuredWidth';
@@ -19,7 +20,14 @@ import { useMeasuredWidth } from './useMeasuredWidth';
      outlined square. The data table (ChartCard's switch) holds every day with its count;
    - a cell is at least 24px square (the target-size minimum) and grows to fill the width, up to
      40px; the swatch is drawn smaller inside it;
-   - all dates are read and written in UTC, so a day is the same day in every time zone. */
+   - all dates are read and written in UTC, so a day is the same day in every time zone;
+   - on a touch screen the cells are at least 32px (a thumb, and legible) and the grid opens
+     scrolled to the latest weeks, so a phone shows the recent past large instead of a year tiny.
+
+   `view="city"` (or the Flat / City switch, `viewSwitch`) draws the same days as a little
+   isometric city of glass towers, one per day, as tall as its count and in the same ramp. It is
+   a picture (role="img" with the same summary) beside the grid, which stays the keyboard and
+   screen reader's way in; the data table holds every day. */
 export interface ActivityDay {
   /** Calendar day, YYYY-MM-DD. */
   date: string;
@@ -37,10 +45,16 @@ export interface ActivityHeatmapProps extends ChartCommonProps {
   weekStartsOn?: 0 | 1;
   /** Called with the date when a day is chosen (Enter, Space or a click). Makes the cells buttons-in-spirit. */
   onSelectDate?: (date: string) => void;
+  /** 'flat' (default) is the grid; 'city' the isometric glass towers. */
+  view?: 'flat' | 'city';
+  /** Show a Flat / City switch above the drawing. */
+  viewSwitch?: boolean;
 }
 
 const DAY = 86_400_000;
 const CELL = 24;
+/* On a touch screen: big enough to read and to tap. */
+const TOUCH_CELL = 32;
 /* Cells grow to fill the card's width, up to this; below 24px the grid scrolls instead. */
 const MAX_CELL = 40;
 const LABEL_W = 34;
@@ -97,7 +111,16 @@ export function ActivityHeatmap({
   thresholds,
   weekStartsOn = 1,
   onSelectDate,
+  view: viewProp = 'flat',
+  viewSwitch,
 }: ActivityHeatmapProps) {
+  const [viewInner, setViewInner] = useState(viewProp);
+  const view = viewSwitch ? viewInner : viewProp;
+  const [coarse, setCoarse] = useState(false);
+  useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- the pointer type is only known once mounted, so hydration matches
+    setCoarse(window.matchMedia?.('(pointer: coarse)').matches ?? false);
+  }, []);
   const grid = useRef<HTMLDivElement>(null);
   const { width: boxWidth, ref: boxRef } = useMeasuredWidth(0);
   const [active, setActive] = useState<string | null>(null);
@@ -160,6 +183,21 @@ export function ActivityHeatmap({
     return seen;
   }, [model]);
 
+  // open scrolled to the latest weeks when the year does not fit (a phone)
+  const scrollBox = useRef<HTMLDivElement | null>(null);
+  const setBox = useCallback(
+    (el: HTMLDivElement | null) => {
+      boxRef(el);
+      scrollBox.current = el;
+    },
+    [boxRef],
+  );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll once the grid is laid out at this width
+  useEffect(() => {
+    const el = scrollBox.current;
+    if (el && el.scrollWidth > el.clientWidth) el.scrollLeft = el.scrollWidth;
+  }, [model, coarse, boxWidth]);
+
   if (!model) {
     return (
       <ChartFigure
@@ -174,6 +212,7 @@ export function ActivityHeatmap({
   }
 
   const byDate = new Map(model.cells.map((c) => [c.date, c]));
+
   const tabStop = active && byDate.has(active) ? active : (model.cells[0]?.date ?? '');
   const shown = byDate.get(hover ?? tabStop);
 
@@ -221,10 +260,11 @@ export function ActivityHeatmap({
     focusDate(to);
   };
 
+  const least = coarse ? TOUCH_CELL : CELL;
   const cell =
     boxWidth > 0 && model.weeks > 0
-      ? Math.min(MAX_CELL, Math.max(CELL, Math.floor((boxWidth - LABEL_W) / model.weeks)))
-      : CELL;
+      ? Math.min(MAX_CELL, Math.max(least, Math.floor((boxWidth - LABEL_W) / model.weeks)))
+      : least;
   const swatch = Math.round(cell * 0.75);
 
   const labelRows: Record<number, string> = {};
@@ -260,7 +300,27 @@ export function ActivityHeatmap({
       }
     >
       <div className="ui-heatmap flex min-w-0 flex-col gap-2">
-        <div ref={boxRef} className="ui-heatmap-scroll max-w-full overflow-x-auto pb-1">
+        {viewSwitch && (
+          <SegmentedControl
+            label="Heatmap view"
+            size="sm"
+            className="self-start"
+            value={view}
+            onValueChange={(v) => setViewInner(v === 'city' ? 'city' : 'flat')}
+            options={[
+              { value: 'flat', label: 'Flat' },
+              { value: 'city', label: 'City' },
+            ]}
+          />
+        )}
+        {view === 'city' && (
+          <HeatCity cells={model.cells} max={model.max} label={`${title}. ${summary}`} />
+        )}
+        <div
+          ref={setBox}
+          hidden={view === 'city'}
+          className="ui-heatmap-scroll max-w-full overflow-x-auto pb-1"
+        >
           <div
             className="relative"
             style={{ width: LABEL_W + model.weeks * cell, minWidth: 'min-content' }}
@@ -359,5 +419,64 @@ export function ActivityHeatmap({
         </p>
       </div>
     </ChartFigure>
+  );
+}
+
+/* The city: one isometric tower per day. Tile 16 x 8, towers up to 46 tall, painted back to
+   front (by column + row) so nearer towers cover farther ones. The top takes the level's role;
+   the two sides are the same fill under a light and a darker veil of the ink, and the glass
+   catches a highlight along its top front edge. */
+const TW = 16;
+const TH = 8;
+const TALL = 46;
+const TOP: Record<0 | 1 | 2 | 3 | 4, string> = {
+  0: 'fill-heat-0',
+  1: 'fill-heat-1',
+  2: 'fill-heat-2',
+  3: 'fill-heat-3',
+  4: 'fill-heat-4',
+};
+
+function HeatCity({ cells, max, label }: { cells: readonly Cell[]; max: number; label: string }) {
+  const cols = (cells[cells.length - 1]?.col ?? 0) + 1;
+  const width = (cols + 7) * (TW / 2) + 4;
+  const height = (cols + 7) * (TH / 2) + TALL + 8;
+  const ox = 7 * (TW / 2) + 2;
+  const oy = TALL + 4;
+  const ordered = cells.toSorted((a, b) => a.col + a.row - (b.col + b.row) || a.col - b.col);
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="ui-heatmap-city mx-auto block h-auto max-h-96 w-full max-w-full"
+      role="img"
+      aria-label={label}
+    >
+      {ordered.map((c) => {
+        const x = ox + (c.col - c.row) * (TW / 2);
+        const y = oy + (c.col + c.row) * (TH / 2);
+        const h = c.count > 0 ? 2 + (c.count / (max || 1)) * TALL : 1;
+        const top = `M${x} ${y - h}l${TW / 2} ${TH / 2}l${-TW / 2} ${TH / 2}l${-TW / 2} ${-TH / 2}Z`;
+        const left = `M${x - TW / 2} ${y - h + TH / 2}l${TW / 2} ${TH / 2}v${h}l${-TW / 2} ${-TH / 2}Z`;
+        const right = `M${x + TW / 2} ${y - h + TH / 2}l${-TW / 2} ${TH / 2}v${h}l${TW / 2} ${-TH / 2}Z`;
+        return (
+          <g key={c.date} className="forced-colors:[forced-color-adjust:none]">
+            <path d={left} className={TOP[c.level]} />
+            <path d={left} className="fill-fg" fillOpacity={0.12} />
+            <path d={right} className={TOP[c.level]} />
+            <path d={right} className="fill-fg" fillOpacity={0.26} />
+            <path d={top} className={cn(TOP[c.level], 'stroke-border')} strokeWidth={0.4} />
+            {c.level > 0 && (
+              <path
+                d={`M${x - TW / 2 + 1} ${y - h + TH / 2}l${TW / 2 - 1} ${TH / 2 - 0.5}`}
+                className="stroke-seaglass-paper"
+                strokeOpacity={0.7}
+                strokeWidth={0.8}
+                fill="none"
+              />
+            )}
+          </g>
+        );
+      })}
+    </svg>
   );
 }

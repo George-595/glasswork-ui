@@ -8,6 +8,7 @@ import { flush, type Rendered, render } from '~/test/render';
 import KitPage from './KitPage';
 
 const SECTION_IDS = [
+  'improved',
   'buttons',
   'inputs',
   'pickers',

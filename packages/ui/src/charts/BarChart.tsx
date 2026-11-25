@@ -74,6 +74,13 @@ export interface BarChartProps extends ChartCommonProps {
   yFormat?: (n: number) => string;
   /** Write each bar's value on it (when it fits); a stack gets its total. Default true. */
   valueLabels?: boolean;
+  /** Which palette colour a single series starts at (0 = chart-1), so two charts side by side
+      need not both be the first colour. Default 0. */
+  tone?: number;
+  /** One series only: 'category' gives every bar its own palette colour (a category list),
+      'series' (default) paints them all in the series colour. The axis labels still name
+      every bar, so colour is never the only key. */
+  colorBy?: 'series' | 'category';
 }
 
 const CHAR = 6.6; // px per character of 11px text, for layout estimates
@@ -124,6 +131,8 @@ function BarChartPlot({
   valueFormat,
   yFormat,
   valueLabels = true,
+  tone = 0,
+  colorBy = 'series',
 }: BarChartProps & { list: readonly BarSeries[] }) {
   const fmt = valueFormat ?? yFormat ?? defaultFormat;
   const prefix = useSafeId('ui-bar');
@@ -220,7 +229,10 @@ function BarChartPlot({
           : []),
       ) * CHAR;
 
-    const fill = (r: Row) => (multi ? patternFill(prefix, r.i) : seriesColor(0));
+    const fill = (r: Row) =>
+      multi
+        ? patternFill(prefix, r.i)
+        : seriesColor(tone + (colorBy === 'category' ? Math.max(0, labels.indexOf(r.label)) : 0));
     const shared = {
       id: 'bars',
       key: 'key' as const,
@@ -337,7 +349,20 @@ function BarChartPlot({
         ...common,
       };
     });
-  }, [list, isShown, labels, fmt, multi, stacked, horizontal, valueLabels, prefix, height]);
+  }, [
+    list,
+    isShown,
+    labels,
+    fmt,
+    multi,
+    stacked,
+    horizontal,
+    valueLabels,
+    prefix,
+    height,
+    tone,
+    colorBy,
+  ]);
 
   const describe = useCallback(
     (points: readonly ChartPoint[]) => {
@@ -357,13 +382,15 @@ function BarChartPlot({
               key: s.name,
               label: s.name,
               value: fmt(v),
-              color: seriesColor(multi ? i : 0),
+              color: multi
+                ? seriesColor(i)
+                : seriesColor(tone + (colorBy === 'category' ? labels.indexOf(label) : 0)),
             },
           ];
         }),
       };
     },
-    [list, lookup, labels, fmt, horizontal, multi, isShown],
+    [list, lookup, labels, fmt, horizontal, multi, isShown, tone, colorBy],
   );
   const { plot, readout, show } = useReadout(describe);
 

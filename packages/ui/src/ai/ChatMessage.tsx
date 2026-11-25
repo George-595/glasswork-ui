@@ -4,7 +4,8 @@ import { Button } from '../components/button';
 import { Icon } from '../icons/Icon';
 import { cn } from '../lib/cn';
 import { useHydrated } from '../lib/use-hydrated';
-import { CopyGlyph } from './icons';
+import { BranchGlyph, CopyGlyph } from './icons';
+import { Markdown } from './Markdown';
 
 /* Adapted from Arc Library's chat-thread and BoardUI's agent-chat-message (both MIT); see
    THIRD_PARTY_NOTICES.md.
@@ -32,8 +33,15 @@ export interface ChatMessageProps extends Omit<HTMLAttributes<HTMLElement>, 'chi
   copyable?: boolean;
   /** Called after a successful copy. */
   onCopied?: (text: string) => void;
-  /** The reply is still arriving. */
+  /** The reply is still arriving: a caret blinks after the last word. */
   streaming?: boolean;
+  /** Draw a string child as Markdown (headings, lists, code blocks, tables). Default true for
+      the assistant, false for the person. */
+  markdown?: boolean;
+  /** Shows "Retry" in the actions (assistant replies). */
+  onRetry?: () => void;
+  /** Shows "Branch from here" in the actions. */
+  onBranch?: () => void;
 }
 
 /* The time is in the reader's own zone. A server cannot know it, so a server render (and the
@@ -58,6 +66,9 @@ export function ChatMessage({
   copyable,
   onCopied,
   streaming = false,
+  markdown,
+  onRetry,
+  onBranch,
   className,
   ...props
 }: ChatMessageProps) {
@@ -70,7 +81,9 @@ export function ChatMessage({
   const author = name ?? (from === 'user' ? 'You' : 'Assistant');
   const when = timestamp === undefined ? undefined : toDate(timestamp);
   const text = copyText ?? (typeof children === 'string' ? children : undefined);
-  const showCopy = (copyable ?? true) && text !== undefined && text !== '' && from !== 'system';
+  const showCopy =
+    (copyable ?? true) && text !== undefined && text !== '' && from !== 'system' && !streaming;
+  const asMarkdown = markdown ?? from === 'assistant';
 
   if (from === 'system') {
     return (
@@ -134,22 +147,58 @@ export function ChatMessage({
           )}
         >
           {typeof children === 'string' ? (
-            <span className="whitespace-pre-wrap [overflow-wrap:anywhere]">{children}</span>
+            asMarkdown ? (
+              <Markdown streaming={streaming}>{children}</Markdown>
+            ) : (
+              <span className="whitespace-pre-wrap [overflow-wrap:anywhere]">
+                {children}
+                {streaming && (
+                  <span
+                    aria-hidden="true"
+                    className="ui-md-caret ms-0.5 inline-block h-[1.05em] w-[0.5em] translate-y-[0.15em] rounded-[1px] bg-brand"
+                  />
+                )}
+              </span>
+            )
           ) : (
             children
           )}
         </div>
-        {showCopy && (
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label={mine ? 'Copy your message' : 'Copy reply'}
-              onClick={copy}
-              className="px-1.5"
-            >
-              {copied === 'copied' ? <Icon name="check" size={14} /> : <CopyGlyph size={14} />}
-            </Button>
+        {(showCopy || ((onRetry || onBranch) && !streaming)) && (
+          <div className="ui-chat-actions flex items-center gap-0.5 transition-opacity duration-(--dur-fast) motion-reduce:transition-none pointer-fine:opacity-0 pointer-fine:group-hover/msg:opacity-100 pointer-fine:group-focus-within/msg:opacity-100 pointer-fine:group-last/msg:opacity-100">
+            {onRetry && (
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Retry reply"
+                onClick={onRetry}
+                className="px-1.5"
+              >
+                <Icon name="rotate-ccw" size={14} />
+              </Button>
+            )}
+            {onBranch && (
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Branch from here"
+                onClick={onBranch}
+                className="px-1.5"
+              >
+                <BranchGlyph size={14} />
+              </Button>
+            )}
+            {showCopy && (
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={mine ? 'Copy your message' : 'Copy reply'}
+                onClick={copy}
+                className="px-1.5"
+              >
+                {copied === 'copied' ? <Icon name="check" size={14} /> : <CopyGlyph size={14} />}
+              </Button>
+            )}
             <span role="status" className="sr-only">
               {copied === 'copied' ? 'Copied' : copied === 'failed' ? 'Could not copy' : ''}
             </span>

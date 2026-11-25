@@ -24,7 +24,8 @@ import { playSound, type SoundName } from '../sound';
                    border-disabled-border (no opacity); link keeps only the text role;
    - focus         focus-visible draws --ring over any elevation;
    - loading       aria-busy, a spinner over the label (the label keeps the width),
-                   aria-disabled, and clicks are ignored.
+                   aria-disabled, and clicks are ignored. With `progress` (0..1) the label
+                   stays, a percentage follows it and a fill grows behind it instead.
    Glass needs no branch: the roles differ per skin, and the sheen effect (transparent
    in enterprise) is added to the filled levels.
 
@@ -76,6 +77,9 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize;
   /** Busy: shows a spinner, keeps the width, and ignores clicks. */
   loading?: boolean;
+  /** With `loading`: how far the work has got, 0 to 1. The label stays and a fill grows
+      behind it instead of the spinner, and the button reads "label, 40%". */
+  progress?: number;
   /** An interface sound to play when the button is pressed. None by default. */
   sound?: SoundName;
 }
@@ -236,6 +240,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     size = 'md',
     type = 'button',
     loading = false,
+    progress,
     sound,
     onClick,
     children,
@@ -243,6 +248,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   },
   ref,
 ) {
+  const filling = loading && typeof progress === 'number' && Number.isFinite(progress);
+  const pct = filling ? Math.round(Math.min(1, Math.max(0, progress)) * 100) : 0;
   const level = resolveButtonLevel(variant);
   const ariaDisabled =
     loading || props['aria-disabled'] === true || props['aria-disabled'] === 'true';
@@ -267,7 +274,20 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-disabled={ariaDisabled || undefined}
       onClick={guard}
     >
-      {loading ? (
+      {filling ? (
+        <>
+          <span
+            aria-hidden="true"
+            data-progress={pct}
+            className="ui-button-fill pointer-events-none absolute inset-y-0 start-0 rounded-[inherit] bg-current opacity-20 transition-[width] duration-(--dur-base) ease-(--ease-out) motion-reduce:transition-none"
+            style={{ width: `${pct}%` }}
+          />
+          <span className="relative inline-flex items-center justify-center gap-1.5">
+            {children}
+            <span className="tabular-nums opacity-80">{pct}%</span>
+          </span>
+        </>
+      ) : loading ? (
         <>
           <span className="inline-flex items-center justify-center gap-1.5 opacity-0">
             {children}

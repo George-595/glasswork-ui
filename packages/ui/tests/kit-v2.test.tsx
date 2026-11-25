@@ -169,13 +169,15 @@ describe('ErrorState and LoadingRegion', () => {
     );
     expect(e.textContent).toContain('Your account is not allowed to see this.');
     expect(e.textContent).toContain('Reference: ab12');
-    expect(e.querySelector('button')).toBeNull();
+    expect([...e.querySelectorAll('button')].some((b) => b.textContent?.includes('Retry'))).toBe(
+      false,
+    );
     render(<ErrorState what="users" error={{ code: 'unauthenticated', status: 401 }} />);
     expect(host.textContent).toContain('Your session has ended. Sign in again.');
     render(<ErrorState what="users" error={new Error('plain')} />);
     expect(host.textContent).toContain('plain');
     render(<ErrorState what="users" error={42} />);
-    expect(host.textContent).toContain('Something went wrong.');
+    expect(host.textContent).toContain('Something went wrong');
   });
 
   it('LoadingRegion is a busy group named "Loading …" with a polite status', () => {

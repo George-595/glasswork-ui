@@ -2,7 +2,7 @@ import { type ChartPoint, defineChart } from '@tanstack/charts';
 import { pie, polar, radialArc, radialText } from '@tanstack/charts/polar';
 import { Chart } from '@tanstack/charts/react';
 import { scaleLinear } from '@tanstack/charts/scales/linear';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { cn } from '../lib/cn';
 import {
   CHART_PLOT,
@@ -24,11 +24,15 @@ import { defaultFormat } from './scale';
    legend repeats the number with the label, value and share, so a slice is
    matched to its label without relying on colour. Gaps between slices keep
    neighbours apart. Keep it to five or so parts: the palette has five
-   colours. */
+   colours. Slices have rounded ends; the one under the pointer (or the
+   keyboard focus) lifts out of the ring, and the hole shows the total in
+   large type with `centerLabel` under it. */
 export interface DonutChartProps extends ChartCommonProps {
   data: readonly { label: string; value: number }[];
-  /** Text in the hole, e.g. the total. */
+  /** A small word under the big figure in the hole ("Spend", "Total"). */
   centerLabel?: string;
+  /** The big figure in the hole. Default: the total, through `valueFormat`. `null` leaves it out. */
+  centerValue?: string | null;
   valueFormat?: (n: number) => string;
 }
 
@@ -58,9 +62,11 @@ function DonutChartPlot({
   className,
   data,
   centerLabel,
+  centerValue,
   valueFormat = defaultFormat,
 }: DonutChartProps) {
   const size = height;
+  const [hot, setHot] = useState(-1);
   const total = data.reduce((s, d) => s + Math.max(0, d.value), 0);
   const slices = useMemo(
     () =>
@@ -82,7 +88,14 @@ function DonutChartPlot({
           )
         : [];
     const numbered = arcs.filter((a) => a.share >= 0.04);
-    const center = centerLabel ? [{ id: 'center', text: centerLabel }] : [];
+    const big = centerValue === undefined ? valueFormat(total) : centerValue;
+    const center = [
+      ...(big ? [{ id: 'value', text: big, angle: 0, offset: centerLabel ? 7 : 0 }] : []),
+      ...(centerLabel
+        ? [{ id: 'label', text: centerLabel, angle: Math.PI, offset: big ? 13 : 0 }]
+        : []),
+    ];
+    const lifted = arcs.filter((a) => a.i === hot);
     return defineChart({
       marks: [
         polar({
@@ -96,11 +109,22 @@ function DonutChartPlot({
               id: 'slices',
               key: 'label',
               innerRadius: ({ radius }) => radius * 0.62,
-              cornerRadius: 3,
+              cornerRadius: 6,
               fill: (a) => seriesColor(a.i),
               stroke: PAINT.gap,
               strokeWidth: 2,
               states: [{ when: { focus: 'unmatched' }, style: { fillOpacity: 0.45 } }],
+            }),
+            // the focused slice, drawn again a little proud of the ring
+            radialArc(lifted, {
+              id: 'lift',
+              key: 'label',
+              innerRadius: ({ radius }) => radius * 0.64,
+              outerRadius: ({ radius }) => radius * 1.07,
+              cornerRadius: 7,
+              fill: (a) => seriesColor(a.i),
+              stroke: PAINT.gap,
+              strokeWidth: 2,
             }),
             radialText(numbered, {
               id: 'numbers',
@@ -114,17 +138,36 @@ function DonutChartPlot({
               fontSize: 11,
               fontWeight: 500,
             }),
-            radialText(center, {
-              id: 'center',
-              key: 'id',
-              angle: 0,
-              radius: 0,
-              text: 'text',
-              baseline: 'middle',
-              fill: PAINT.strong,
-              fontSize: 14,
-              fontWeight: 600,
-            }),
+            radialText(
+              center.filter((c) => c.id === 'value'),
+              {
+                id: 'center',
+                key: 'id',
+                angle: 'angle',
+                radius: 0,
+                radiusOffset: (c) => c.offset,
+                text: 'text',
+                baseline: 'middle',
+                fill: PAINT.strong,
+                fontSize: Math.round(Math.max(16, size * 0.11)),
+                fontWeight: 650,
+              },
+            ),
+            radialText(
+              center.filter((c) => c.id === 'label'),
+              {
+                id: 'center-label',
+                key: 'id',
+                angle: 'angle',
+                radius: 0,
+                radiusOffset: (c) => c.offset,
+                text: 'text',
+                baseline: 'middle',
+                fill: PAINT.label,
+                fontSize: 12,
+                fontWeight: 500,
+              },
+            ),
           ],
         }),
       ],
@@ -134,7 +177,7 @@ function DonutChartPlot({
       focusRing: false,
       svgAnimation: SVG_ANIMATION,
     });
-  }, [slices, total, centerLabel]);
+  }, [slices, total, centerLabel, centerValue, valueFormat, hot, size]);
 
   const describe = useCallback(
     (points: readonly ChartPoint[]) => {
@@ -145,6 +188,7 @@ function DonutChartPlot({
           ? datum.i
           : -1;
       const s = slices[i];
+      setHot(s ? s.i : -1);
       if (!p || !s) return null;
       return {
         x: p.x,
