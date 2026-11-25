@@ -277,3 +277,25 @@ describe('axe: the whole frame, every skin x mode', () => {
     }
   }
 });
+
+describe('Back to top in an app that scrolls a column', () => {
+  it('finds the column round <main> from its scroll events and scrolls it', async () => {
+    render(
+      <AppShell brand="X" topbar={<Topbar title="X" />} backToTop={300}>
+        <h1>X</h1>
+      </AppShell>,
+    );
+    const column = $('.ui-shell-column');
+    const colScroll = vi.fn<(o: ScrollToOptions) => void>();
+    column.scrollTo = colScroll as unknown as typeof column.scrollTo;
+    await act(async () => {
+      column.scrollTop = 900;
+      column.dispatchEvent(new Event('scroll'));
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+    });
+    const btn = $<HTMLButtonElement>('.ui-back-to-top');
+    expect((btn.parentElement as HTMLElement).hidden).toBe(false);
+    act(() => btn.click());
+    expect(colScroll).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+  });
+});
