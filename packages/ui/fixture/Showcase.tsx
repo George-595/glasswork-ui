@@ -99,6 +99,7 @@ import { BadgeMatrix, ButtonMatrix, InputStates, ToggleStates } from './Controls
 import { AccountShowcase } from './ShowcaseAccount';
 import { AiSection } from './ShowcaseAi';
 import { InputsShowcase } from './ShowcaseInputs';
+import { StudioShowcase } from './ShowcaseStudio';
 import { VizShowcase } from './VizShowcase';
 
 const SECTIONS: SectionDef[] = [
@@ -747,6 +748,7 @@ export function Showcase() {
           </section>
           <PatternsSection />
           <AiSection />
+          <StudioShowcase />
         </div>
       </AppShell>
 

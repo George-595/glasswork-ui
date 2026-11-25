@@ -141,7 +141,7 @@ export function SegmentedControl({
           disabled={o.disabled}
           aria-label={o['aria-label']}
           className={cn(
-            'ui-segmented-item relative z-[1] inline-flex min-w-6 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-solid border-transparent bg-transparent font-sans font-medium text-fg-muted',
+            'ui-segmented-item relative z-[1] inline-flex min-w-6 pointer-coarse:min-w-12 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-solid border-transparent bg-transparent font-sans font-medium text-fg-muted',
             'transition-colors duration-(--dur-fast) ease-(--ease-out) hover:bg-hover hover:text-fg motion-reduce:transition-none',
             'focus-visible:outline-none focus-visible:[box-shadow:var(--ring)] disabled:pointer-events-none disabled:text-disabled-fg data-disabled:pointer-events-none data-disabled:text-disabled-fg',
             'data-checked:font-semibold data-checked:text-fg',

@@ -1,0 +1,793 @@
+/* ============================================================================
+   @apps/ui — the studio components' motion: what a class string cannot say (keyframes,
+   the SDK parts' measured-height transitions, state selectors on data attributes).
+   Tokens only: no colour literals. Everything here stands still under reduced motion.
+============================================================================ */
+
+/* ---- Accordion and Tree: grow from the measured height, then fade the content in ---- */
+.ui-accordion-panel {
+  height: var(--accordion-panel-height);
+  transition: height var(--dur-base) var(--ease-out);
+}
+.ui-accordion-panel:is([data-starting-style], [data-ending-style]) {
+  height: 0;
+}
+.ui-accordion-panel > .ui-accordion-body {
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    translate var(--dur-base) var(--ease-out);
+}
+.ui-accordion-panel:is([data-starting-style], [data-ending-style]) > .ui-accordion-body {
+  opacity: 0;
+  translate: 0 -4px;
+}
+.ui-tree-group {
+  height: var(--tree-group-height);
+  overflow: hidden;
+  transition: height var(--dur-base) var(--ease-out);
+}
+.ui-tree-group:is([data-starting-style], [data-ending-style]) {
+  height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-accordion-panel,
+  .ui-accordion-panel > .ui-accordion-body,
+  .ui-tree-group {
+    transition: none;
+  }
+}
+
+/* ---- A tool turning on: a small overshoot ---- */
+@keyframes ui-pop {
+  0% {
+    scale: 0.7;
+  }
+  60% {
+    scale: 1.15;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+/* ---- AgentCopilot: a light that runs round the panel while the agent works, its mark
+   breathing, the spinner, and the ring that pulses round the control it changes ---- */
+.ui-copilot-aura {
+  padding: 1px;
+  background: conic-gradient(
+    from var(--ui-aura-angle, 0deg),
+    transparent 0turn,
+    var(--brand) 0.12turn,
+    var(--shader-b) 0.22turn,
+    transparent 0.34turn
+  );
+  /* a mask reads alpha only: currentColor is just "opaque" */
+  -webkit-mask:
+    linear-gradient(currentColor 0 0) content-box,
+    linear-gradient(currentColor 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(currentColor 0 0) content-box,
+    linear-gradient(currentColor 0 0);
+  mask-composite: exclude;
+  animation: ui-aura-spin 2.4s linear infinite;
+}
+@property --ui-aura-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes ui-aura-spin {
+  to {
+    --ui-aura-angle: 360deg;
+  }
+}
+.ui-copilot-mark[data-on] {
+  animation: ui-breathe 1.6s var(--ease-out) infinite;
+}
+@keyframes ui-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--brand-soft);
+  }
+  50% {
+    box-shadow: 0 0 0 8px var(--brand-soft);
+  }
+}
+.ui-copilot-spin {
+  animation: ui-spin 0.8s linear infinite;
+}
+@keyframes ui-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+.ui-copilot-line {
+  animation: ui-rise var(--dur-slow) var(--ease-out) both;
+}
+@keyframes ui-rise {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+.ui-agent-ring {
+  box-shadow:
+    0 0 0 2px var(--brand),
+    0 0 24px 2px var(--brand-soft);
+  animation: ui-ring 1.2s var(--ease-out) both;
+}
+@keyframes ui-ring {
+  0% {
+    opacity: 0;
+    scale: 1.15;
+  }
+  25% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0.85;
+    scale: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-copilot-aura,
+  .ui-copilot-mark[data-on],
+  .ui-copilot-line,
+  .ui-agent-ring {
+    animation: none;
+  }
+  .ui-copilot-spin {
+    animation-duration: 2.4s;
+  }
+}
+
+/* ---- SnapDrawer: corners square off as the sheet reaches full height; the backdrop dims with
+   the drawer's own progress (the SDK sets its opacity; the scrim only gives it a colour) ---- */
+.ui-snap-drawer {
+  border-start-start-radius: calc(var(--r-xl) * (1 - var(--drawer-expand, 0)) + var(--r-sm));
+  border-start-end-radius: calc(var(--r-xl) * (1 - var(--drawer-expand, 0)) + var(--r-sm));
+}
+.ui-snap-drawer::after {
+  /* covers the gap under the sheet while it overshoots upward */
+  content: "";
+  position: absolute;
+  inset-inline: -1px;
+  top: 100%;
+  height: 40vh;
+  background: inherit;
+  border-inline: 1px solid var(--border);
+}
+
+/* ---- TimeField's clock hands sweep; TimeRange's span slides ---- */
+.ui-clock-hand {
+  transform-box: view-box;
+  transform-origin: 20px 20px;
+  transition: rotate var(--dur-slow) var(--ease-out);
+}
+.ui-time-range-bar {
+  transition:
+    inset-inline-start var(--dur-slow) var(--ease-out),
+    width var(--dur-slow) var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-clock-hand,
+  .ui-time-range-bar {
+    transition: none;
+  }
+}
+
+/* ---- HistogramRange's bars grow in from the track, one after another ---- */
+.ui-histogram-bar {
+  animation: ui-grow-up var(--dur-slow) var(--ease-out) both;
+}
+@keyframes ui-grow-up {
+  from {
+    scale: 1 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-histogram-bar {
+    animation: none;
+  }
+}
+
+/* ---- ColourPicker's opacity track sits on a checkerboard of two roles ---- */
+.ui-alpha-track {
+  background:
+    repeating-conic-gradient(var(--sunken) 0 25%, var(--surface-solid) 0 50%) 0 0 / 10px 10px;
+}
+
+/* ---- PhotoCropper: the outside of the crop dimmed, a crisp edge, thirds while dragging ---- */
+.ui-crop-selection {
+  box-shadow:
+    0 0 0 9999px var(--scrim),
+    inset 0 0 0 2px var(--on-primary);
+  cursor: move;
+}
+.ui-crop-selection:focus-visible {
+  box-shadow:
+    0 0 0 9999px var(--scrim),
+    inset 0 0 0 2px var(--on-primary),
+    0 0 0 3px var(--focus);
+}
+.ui-crop-grid {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity var(--dur-fast);
+  background:
+    linear-gradient(
+      to right,
+      transparent calc(33.33% - 0.5px),
+      var(--on-primary) 0 calc(33.33% + 0.5px),
+      transparent 0 calc(66.66% - 0.5px),
+      var(--on-primary) 0 calc(66.66% + 0.5px),
+      transparent 0
+    ),
+    linear-gradient(
+      to bottom,
+      transparent calc(33.33% - 0.5px),
+      var(--on-primary) 0 calc(33.33% + 0.5px),
+      transparent 0 calc(66.66% - 0.5px),
+      var(--on-primary) 0 calc(66.66% + 0.5px),
+      transparent 0
+    );
+}
+[data-slot="image-cropper-selection"][data-dragging] .ui-crop-grid,
+[data-slot="image-cropper"][data-dragging] .ui-crop-grid {
+  opacity: 0.6;
+}
+.ui-crop-result-img {
+  animation: ui-rise var(--dur-slow) var(--ease-out) both;
+}
+
+/* ---- Kanban: the held card lifts and tilts; the gap opens ---- */
+.ui-kanban-ghost {
+  rotate: 2.5deg;
+  scale: 1.03;
+  animation: ui-lift var(--dur-base) var(--ease-out) both;
+}
+@keyframes ui-lift {
+  from {
+    rotate: 0deg;
+    scale: 1;
+  }
+}
+.ui-kanban-ph {
+  animation: ui-open-gap var(--dur-base) var(--ease-out) both;
+}
+@keyframes ui-open-gap {
+  from {
+    opacity: 0;
+    scale: 1 0.6;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-kanban-ghost {
+    rotate: 0deg;
+    scale: 1;
+    animation: none;
+  }
+  .ui-kanban-ph {
+    animation: none;
+  }
+}
+
+/* ---- WorkflowCanvas: the dot grid, the tools, wires that flow while lit, beads, ticks ---- */
+.ui-workflow-plane {
+  background-image: radial-gradient(circle, var(--border-strong) 1px, transparent 1.2px);
+}
+.ui-wf-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+.ui-wf-tool:hover {
+  background: var(--hover);
+  color: var(--fg);
+}
+.ui-wf-tool:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+@media (pointer: coarse) {
+  .ui-wf-tool {
+    width: 3rem;
+    height: 3rem;
+  }
+}
+.ui-wire-flow {
+  animation: ui-flow 0.9s linear infinite;
+  transition: opacity var(--dur-slow);
+}
+@keyframes ui-flow {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+.ui-wire-bead {
+  filter: drop-shadow(0 0 6px var(--brand));
+}
+.ui-pop-in {
+  animation: ui-pop var(--dur-slow) var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-wire-flow,
+  .ui-pop-in {
+    animation: none;
+  }
+}
+
+/* ---- Charts: scatter dots swell when read or caught by the zoom box ---- */
+.ui-scatter-mark {
+  transition: scale var(--dur-fast) var(--ease-out);
+}
+.ui-scatter-dot[data-on] .ui-scatter-mark {
+  scale: 1.6;
+}
+.ui-scatter-dot[data-caught] .ui-scatter-mark {
+  scale: 1.45;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-scatter-mark {
+    transition: none;
+  }
+}
+
+/* ---- Charts: the prism donut's slices lift out on a spring ---- */
+.ui-prism-slice {
+  transition: transform var(--dur-slow) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ui-node-halo {
+  animation: ui-halo 1.8s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-prism-slice {
+    transition: none;
+  }
+  .ui-node-halo {
+    animation: none;
+  }
+}
+@keyframes ui-halo {
+  0%,
+  100% {
+    scale: 0.85;
+    opacity: 0.9;
+  }
+  50% {
+    scale: 1.2;
+    opacity: 0.45;
+  }
+}
+
+/* ---- AgentOrb: a sphere of the shader colours; each state is a different rhythm ---- */
+.ui-orb {
+  --orb-speed: 9s;
+  isolation: isolate;
+}
+.ui-orb-core {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 50% 60%, var(--shader-a), var(--brand) 70%);
+  box-shadow:
+    inset 0 -6px 14px var(--scrim),
+    0 0 0 1px var(--border),
+    var(--elev-2);
+  scale: calc(1 + var(--orb-level, 0) * 0.16);
+  transition:
+    scale 90ms var(--ease-out),
+    background var(--dur-slow);
+}
+.ui-orb-blob {
+  position: absolute;
+  inset: -25%;
+  border-radius: 42% 58% 61% 39% / 48% 41% 59% 52%;
+  mix-blend-mode: screen;
+  opacity: 0.85;
+  animation: ui-orb-churn var(--orb-speed) linear infinite;
+}
+.ui-orb-blob-a {
+  background: radial-gradient(circle at 30% 35%, var(--shader-b), transparent 55%);
+}
+.ui-orb-blob-b {
+  background: radial-gradient(circle at 70% 60%, var(--shader-c), transparent 50%);
+  animation-duration: calc(var(--orb-speed) * 1.35);
+  animation-direction: reverse;
+}
+.ui-orb-blob-c {
+  background: radial-gradient(circle at 45% 75%, var(--chart-3), transparent 45%);
+  animation-duration: calc(var(--orb-speed) * 0.8);
+  opacity: 0.6;
+}
+@keyframes ui-orb-churn {
+  0% {
+    rotate: 0deg;
+    border-radius: 42% 58% 61% 39% / 48% 41% 59% 52%;
+  }
+  50% {
+    rotate: 180deg;
+    border-radius: 58% 42% 38% 62% / 39% 60% 40% 61%;
+  }
+  100% {
+    rotate: 360deg;
+    border-radius: 42% 58% 61% 39% / 48% 41% 59% 52%;
+  }
+}
+.ui-orb-gloss {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 34% 24%, var(--seaglass-paper), transparent 34%),
+    radial-gradient(circle at 70% 88%, var(--seaglass-sky), transparent 40%);
+  opacity: 0.55;
+}
+.ui-orb-rim {
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  padding: 2px;
+  opacity: 0;
+  background: conic-gradient(
+    from var(--ui-aura-angle, 0deg),
+    transparent 0turn,
+    var(--brand) 0.15turn,
+    var(--shader-b) 0.3turn,
+    transparent 0.45turn
+  );
+  -webkit-mask:
+    linear-gradient(currentColor 0 0) content-box,
+    linear-gradient(currentColor 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(currentColor 0 0) content-box,
+    linear-gradient(currentColor 0 0);
+  mask-composite: exclude;
+  transition: opacity var(--dur-slow);
+}
+.ui-orb-ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid var(--brand);
+  opacity: 0;
+}
+.ui-orb-mark {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  animation: ui-pop var(--dur-slow) var(--ease-out) both;
+}
+.ui-orb[data-state="idle"] {
+  --orb-speed: 14s;
+}
+.ui-orb[data-state="listening"] .ui-orb-ripple {
+  animation: ui-orb-ripple 1.6s var(--ease-out) infinite;
+}
+.ui-orb[data-state="listening"] .ui-orb-ripple-2 {
+  animation-delay: 0.8s;
+}
+.ui-orb[data-state="thinking"] {
+  --orb-speed: 2.6s;
+}
+.ui-orb[data-state="thinking"] .ui-orb-rim {
+  opacity: 1;
+  animation: ui-aura-spin 1.2s linear infinite;
+}
+.ui-orb[data-state="speaking"] {
+  --orb-speed: 5s;
+}
+.ui-orb[data-state="speaking"] .ui-orb-core {
+  animation: ui-orb-speak 0.9s var(--ease-out) infinite;
+}
+.ui-orb[data-state="done"] .ui-orb-core {
+  background: radial-gradient(circle at 50% 60%, var(--success), var(--success-solid) 70%);
+}
+.ui-orb[data-state="done"] .ui-orb-blob {
+  animation-play-state: paused;
+  opacity: 0.35;
+}
+.ui-orb[data-state="error"] .ui-orb-core {
+  background: radial-gradient(circle at 50% 60%, var(--warning), var(--danger-solid) 75%);
+  animation: ui-orb-shake 0.5s var(--ease-out) 1;
+}
+@keyframes ui-orb-ripple {
+  from {
+    opacity: 0.7;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 1.6;
+  }
+}
+@keyframes ui-orb-speak {
+  0%,
+  100% {
+    scale: 1;
+  }
+  35% {
+    scale: 1.07;
+  }
+  60% {
+    scale: 0.98;
+  }
+}
+@keyframes ui-orb-shake {
+  20%,
+  60% {
+    translate: -3px 0;
+  }
+  40%,
+  80% {
+    translate: 3px 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-orb[data-state] .ui-orb-core,
+  .ui-orb[data-state] .ui-orb-blob,
+  .ui-orb[data-state] .ui-orb-rim,
+  .ui-orb[data-state] .ui-orb-ripple,
+  .ui-orb[data-state] .ui-orb-mark {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* ---- LiveIsland: the shell springs between its measured sizes; content cross-fades ---- */
+.ui-island-shell {
+  transition:
+    width 520ms cubic-bezier(0.32, 1.25, 0.5, 1),
+    height 520ms cubic-bezier(0.32, 1.25, 0.5, 1),
+    border-radius 520ms var(--ease-out);
+}
+.ui-island-shell[data-open] {
+  border-radius: 26px;
+}
+.ui-island-fade {
+  animation: ui-rise 360ms var(--ease-out) 120ms both;
+}
+.ui-island-bubble {
+  animation: ui-pop var(--dur-slow) var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-island-shell {
+    transition: none;
+  }
+  .ui-island-fade,
+  .ui-island-bubble {
+    animation: none;
+  }
+}
+
+/* ---- Coverflow: covers turn away in 3D and spring into place; a reflection on the floor ---- */
+.ui-coverflow-stage {
+  perspective: 900px;
+  perspective-origin: 50% 40%;
+}
+.ui-cover {
+  transform: translateX(-50%) translateX(var(--cf-x)) translateZ(var(--cf-z))
+    rotateY(var(--cf-turn));
+  transition: transform 560ms cubic-bezier(0.25, 1.15, 0.4, 1);
+  -webkit-box-reflect: below 6px linear-gradient(transparent 68%, var(--scrim));
+}
+.ui-coverflow-stage[data-dragging] .ui-cover {
+  transition: none;
+}
+.ui-cover-face {
+  transition: filter var(--dur-slow);
+}
+.ui-cover:not([data-front]) .ui-cover-face {
+  filter: saturate(0.85) brightness(0.92);
+}
+.ui-cover-shine {
+  position: absolute;
+  inset: -30%;
+  background:
+    radial-gradient(circle at 20% 20%, var(--seaglass-paper), transparent 30%),
+    repeating-linear-gradient(135deg, transparent 0 14px, var(--surface-solid) 14px 15px);
+  opacity: 0.35;
+}
+.ui-cover-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, var(--seaglass-paper) 0%, transparent 38%);
+  opacity: 0.25;
+  pointer-events: none;
+}
+.ui-coverflow-caption {
+  animation: ui-rise var(--dur-slow) var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-cover {
+    transform: translateX(-50%) translateX(var(--cf-x)) translateZ(var(--cf-z));
+    transition: none;
+  }
+  .ui-coverflow-caption {
+    animation: none;
+  }
+}
+
+/* ---- FrostReveal: misted glass that clears where it is wiped, then melts ---- */
+.ui-frost-glass {
+  backdrop-filter: blur(18px) saturate(1.2);
+  background: linear-gradient(160deg, var(--overlay), var(--surface));
+  cursor: grab;
+}
+.ui-frost-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--surface-solid);
+  opacity: 0.62;
+}
+.ui-frost-grain {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 25% 30%, var(--seaglass-paper), transparent 40%),
+    repeating-radial-gradient(circle at 60% 40%, transparent 0 3px, var(--surface-solid) 3px 4px);
+  opacity: 0.22;
+}
+.ui-frost-melt {
+  backdrop-filter: blur(14px);
+  animation: ui-frost-melt 700ms var(--ease-out) both;
+}
+@keyframes ui-frost-melt {
+  to {
+    backdrop-filter: blur(0);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-frost-melt {
+    display: none;
+  }
+}
+
+/* ---- Droplet controls: a thumb that stretches like liquid ---- */
+.ui-droplet-fill {
+  width: var(--drop);
+}
+.ui-droplet-thumb {
+  left: var(--drop);
+  translate: -50% -50%;
+  scale: var(--stretch) calc(2 - var(--stretch));
+  transform-origin: calc(50% - var(--lean) * 30%) 50%;
+  box-shadow:
+    0 0 0 3px var(--surface-solid),
+    var(--elev-2);
+  transition: scale 420ms cubic-bezier(0.3, 1.8, 0.45, 1);
+}
+.ui-droplet-gloss {
+  position: absolute;
+  inset: 18% 45% 45% 18%;
+  border-radius: 9999px;
+  background: var(--seaglass-paper);
+  opacity: 0.65;
+}
+.ui-droplet-tag {
+  left: var(--drop);
+  translate: -50% 4px;
+  rotate: -45deg;
+  opacity: 0;
+  scale: 0.6;
+  transform-origin: 0 100%;
+  transition:
+    opacity var(--dur-fast),
+    scale 380ms cubic-bezier(0.3, 1.6, 0.45, 1),
+    translate 380ms cubic-bezier(0.3, 1.6, 0.45, 1);
+}
+.ui-droplet-tag > span {
+  rotate: 45deg;
+}
+.ui-droplet-track:has(input:focus-visible) .ui-droplet-tag,
+.ui-droplet-track:has(input:active) .ui-droplet-tag {
+  opacity: 1;
+  scale: 1;
+  translate: -50% -6px;
+}
+.ui-droplet-track:has(input:focus-visible) .ui-droplet-thumb {
+  box-shadow:
+    0 0 0 3px var(--surface-solid),
+    var(--ring);
+}
+.ui-droplet-sw-fill {
+  opacity: 0;
+  scale: 0.4 1;
+  transform-origin: left;
+  transition:
+    opacity var(--dur-base),
+    scale 380ms var(--ease-out);
+}
+.ui-droplet-sw[data-on] .ui-droplet-sw-fill {
+  opacity: 1;
+  scale: 1;
+}
+.ui-droplet-sw-drop {
+  left: 4px;
+  box-shadow: var(--elev-1);
+  transition: left 380ms cubic-bezier(0.3, 1.5, 0.45, 1);
+}
+.ui-droplet-sw[data-on] .ui-droplet-sw-drop {
+  left: calc(100% - 28px);
+}
+.ui-droplet-go {
+  animation: ui-droplet-stretch 420ms var(--ease-out);
+}
+@keyframes ui-droplet-stretch {
+  0% {
+    width: 1.5rem;
+  }
+  40% {
+    width: 2.4rem;
+    height: 1.25rem;
+    margin-top: 2px;
+  }
+  75% {
+    width: 1.3rem;
+  }
+  100% {
+    width: 1.5rem;
+  }
+}
+.ui-droplet-ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at var(--rip, 70%) 50%,
+    var(--seaglass-paper),
+    transparent 45%
+  );
+  opacity: 0;
+  animation: ui-droplet-ripple 600ms var(--ease-out) 200ms;
+}
+.ui-droplet-sw[data-on] .ui-droplet-ripple {
+  --rip: 75%;
+}
+.ui-droplet-sw:not([data-on]) .ui-droplet-ripple {
+  --rip: 25%;
+}
+@keyframes ui-droplet-ripple {
+  0% {
+    opacity: 0.8;
+    scale: 0.6;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.6;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-droplet-thumb,
+  .ui-droplet-tag,
+  .ui-droplet-sw-fill,
+  .ui-droplet-sw-drop {
+    transition: none;
+  }
+  .ui-droplet-thumb {
+    scale: 1;
+  }
+  .ui-droplet-go,
+  .ui-droplet-ripple {
+    animation: none;
+  }
+}

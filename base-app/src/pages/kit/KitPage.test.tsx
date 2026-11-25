@@ -8,6 +8,7 @@ import { flush, type Rendered, render } from '~/test/render';
 import KitPage from './KitPage';
 
 const SECTION_IDS = [
+  'studio',
   'improved',
   'buttons',
   'inputs',
@@ -99,12 +100,17 @@ describe('KitPage', () => {
 
   it('shows loaded states by default and the busy ones when the preview switch is on', async () => {
     await mount();
-    expect(document.querySelectorAll('[aria-busy="true"]')).toHaveLength(0);
+    // the photo cropper is busy until its image loads, which jsdom never does
+    const busy = () =>
+      [...document.querySelectorAll('[aria-busy="true"]')].filter(
+        (el) => el.getAttribute('data-slot') !== 'image-cropper',
+      );
+    expect(busy()).toHaveLength(0);
 
     await click(getByRole(document.body, 'switch', 'Preview loading states'));
     await flush();
     // a loading region, a KPI skeleton, a loading table and a loading chart card
-    expect(document.querySelectorAll('[aria-busy="true"]').length).toBeGreaterThanOrEqual(4);
+    expect(busy().length).toBeGreaterThanOrEqual(4);
   });
 
   it('the skin and mode switchers drive the shared theme', async () => {
