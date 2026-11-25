@@ -38,6 +38,8 @@ test('sync, check, and every kind of drift', () => {
     // runtime profile: no tests or scripts
     assert.ok(!Object.keys(written.files).some((f) => f.startsWith('ui/tests/')));
     assert.ok(existsSync(join(dir, 'LICENSE.md')));
+    // only what glasswork-ui tracks travels (never build output such as .a11y)
+    assert.ok(!Object.keys(written.files).some((f) => f.includes('/.a11y/')));
     assert.equal(check(dir).status, 0);
 
     // the app's own file is allowed
