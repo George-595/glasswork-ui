@@ -299,3 +299,19 @@ describe('Back to top in an app that scrolls a column', () => {
     expect(colScroll).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
   });
 });
+
+describe('syncThemeColor', () => {
+  it('writes the page canvas role into one theme-color meta and keeps it in step', async () => {
+    const { syncThemeColor } = await import('../src/lib/theme-color');
+    document.head.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
+      m.remove();
+    });
+    document.documentElement.style.setProperty('--canvas', 'test-canvas');
+    syncThemeColor();
+    syncThemeColor();
+    const metas = document.head.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
+    expect(metas).toHaveLength(1);
+    expect(metas[0]?.content).toBe('test-canvas');
+    document.documentElement.style.removeProperty('--canvas');
+  });
+});

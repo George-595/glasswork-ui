@@ -506,7 +506,7 @@ export function Topbar({ title, actions, variant = 'default', leading, brand }: 
   }, [register]);
   return (
     <header
-      className="ui-topbar glass-chrome sticky top-0 z-20 box-border flex min-h-14 items-center gap-3 border-b border-solid border-border bg-bar pt-[calc(0.5rem+env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-2 pl-[max(0.75rem,env(safe-area-inset-left))] md:pr-[max(1.25rem,env(safe-area-inset-right))] md:pl-[max(1.25rem,env(safe-area-inset-left))] [box-shadow:var(--glass-rim)]"
+      className="ui-topbar glass-chrome sticky top-0 z-20 box-border flex min-h-14 items-center gap-3 max-[359px]:gap-2 border-b border-solid border-border bg-bar pt-[calc(0.5rem+env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-2 pl-[max(0.75rem,env(safe-area-inset-left))] md:pr-[max(1.25rem,env(safe-area-inset-right))] md:pl-[max(1.25rem,env(safe-area-inset-left))] [box-shadow:var(--glass-rim)]"
       data-variant={variant}
     >
       {shell?.hasSidebar && !shell.hasBottomNav && variant !== 'flow' && (
@@ -549,7 +549,10 @@ export function Topbar({ title, actions, variant = 'default', leading, brand }: 
             // one size for every icon button on a phone (a 44px target at least; 48px with a touch
             // screen, which this descendant rule would otherwise shrink the buttons' own 48px to)
             'max-md:gap-1 max-md:[&_button]:min-h-11 max-md:[&_button]:min-w-11',
-            'max-md:pointer-coarse:[&_button]:min-h-12 max-md:pointer-coarse:[&_button]:min-w-12',
+            // ...except on the narrowest phones (320px, and WCAG's reflow width), where six 48px
+            // buttons do not fit beside the title: 44px there, still above every target minimum
+            'min-[360px]:max-md:pointer-coarse:[&_button]:min-h-12 min-[360px]:max-md:pointer-coarse:[&_button]:min-w-12',
+            'max-[359px]:pointer-coarse:[&_button]:size-11',
           )}
         >
           {actions}

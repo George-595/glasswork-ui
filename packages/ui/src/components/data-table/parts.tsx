@@ -112,7 +112,7 @@ export function TableSearch({
   };
 
   return (
-    <div className={cn('ui-table-search relative inline-flex items-center', className)}>
+    <div className={cn('ui-table-search relative inline-flex max-w-full items-center', className)}>
       <Label htmlFor={id} className="sr-only">
         {label}
       </Label>
@@ -128,7 +128,7 @@ export function TableSearch({
         placeholder={placeholder}
         autoComplete="off"
         spellCheck={false}
-        className="min-h-8 min-w-52 pr-8 pl-8 [&::-webkit-search-cancel-button]:appearance-none"
+        className="min-h-8 max-w-full min-w-0 pr-8 pl-8 sm:min-w-52 [&::-webkit-search-cancel-button]:appearance-none"
         onChange={(e) => type(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
