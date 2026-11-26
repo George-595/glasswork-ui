@@ -83,11 +83,17 @@ export const AssistantLayout = forwardRef<ChatThreadHandle, AssistantLayoutProps
                   suggestions && suggestions.length > 0 ? (
                     <ul
                       aria-label="Suggestions"
-                      className="m-0 flex list-none flex-wrap justify-center gap-2 p-0"
+                      className="m-0 flex max-w-full min-w-0 list-none flex-wrap justify-center gap-2 p-0"
                     >
                       {suggestions.map((s) => (
-                        <li key={s}>
-                          <Button variant="outline" size="sm" onClick={() => onSuggestion?.(s)}>
+                        <li key={s} className="max-w-full min-w-0">
+                          {/* a long suggestion wraps instead of pushing past a phone's edge */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-auto max-w-full text-left whitespace-normal"
+                            onClick={() => onSuggestion?.(s)}
+                          >
                             {s}
                           </Button>
                         </li>

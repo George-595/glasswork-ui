@@ -199,7 +199,7 @@ export function EmptyState({
         </p>
       )}
       {(action || secondaryAction) && (
-        <div className="ui-empty-state-action mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
+        <div className="ui-empty-state-action mt-2 flex max-w-full min-w-0 flex-wrap items-center justify-center gap-x-3 gap-y-2">
           {action}
           {secondaryAction && (
             <span className="ui-empty-state-secondary text-[13px] text-fg-muted">

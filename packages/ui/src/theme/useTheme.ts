@@ -1,4 +1,5 @@
 import { useCallback, useContext, useEffect, useState } from 'react';
+import { syncThemeColor } from '../lib/theme-color';
 import {
   readStoredPrefs,
   readThemeCookie,
@@ -124,9 +125,11 @@ export function useTheme(seedProp?: ThemePrefs) {
   useEffect(() => {
     if (mode === 'system' && !checked) return;
     document.documentElement.setAttribute('data-theme', theme);
+    syncThemeColor(); // the phone's status bar follows the page (lib/theme-color.ts)
   }, [theme, mode, checked]);
   useEffect(() => {
     document.documentElement.setAttribute('data-skin', skin);
+    syncThemeColor();
   }, [skin]);
   // the cookie a server reads: kept in step with what is shown
   useEffect(() => {
