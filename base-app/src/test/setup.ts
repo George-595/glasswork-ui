@@ -1,6 +1,12 @@
 /* Vitest setup for the web project (jsdom). Fills the gaps jsdom leaves and
    resets global state before every test, so tests can't leak into each other. */
-import { beforeEach, vi } from 'vitest';
+import { preloadToaster } from '@apps/ui';
+import { beforeAll, beforeEach, vi } from 'vitest';
+
+/* The Toaster fetches its view with a dynamic import after the first render. A test that saves and then
+   looks for the toast would race that import (it lost on a busy machine), so every file starts with the
+   view already here, as preloadToaster's own comment intends. */
+beforeAll(() => preloadToaster());
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
