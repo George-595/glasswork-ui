@@ -69,7 +69,7 @@ export function SnapDrawer({
       <DrawerBackdrop className="ui-drawer-backdrop fixed inset-0 z-40 bg-scrim" />
       <DrawerContent
         className={cn(
-          'ui-snap-drawer fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col border border-b-0 border-solid border-border bg-raised text-fg [box-shadow:var(--elev-3)] glass-chrome outline-none',
+          'ui-snap-drawer fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[calc(100dvh-max(1.5rem,env(safe-area-inset-top)+0.5rem))] w-full max-w-2xl flex-col border border-b-0 border-solid border-border bg-raised text-fg [box-shadow:var(--elev-3)] glass-chrome outline-none',
           className,
         )}
       >

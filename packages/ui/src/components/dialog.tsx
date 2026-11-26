@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useId, useRef } from 'react';
 import { useLiquidGlass } from '../glass/LiquidGlass';
 import { Icon } from '../icons/Icon';
 import { cn } from '../lib/cn';
+import { lockPageScroll } from '../lib/scroll-lock';
 import { prefersTouch } from '../lib/touch';
 import { playSound } from '../sound';
 import { Button } from './button';
@@ -16,6 +17,9 @@ import { useMergedRef } from './useMergedRef';
    the person taps the field they want. With a mouse or keyboard the browser's choice (the
    first control) stands.
    In the glass skin the panel is Liquid Glass over a blurred scrim.
+   On a phone it fits inside the safe area (clear of the notch, status bar and home bar), the
+   title and close button stay put while the body scrolls inside the panel, and the page
+   behind is locked so a swipe never scrolls it instead.
 
    Controlled: the parent owns `open` and hears every close through onClose
    (Esc, the close button, a scrim click). */
@@ -93,6 +97,9 @@ export function Dialog({
     }
   }, [open]);
 
+  // while open, the page behind does not scroll (iOS scrolls it through a modal dialog)
+  useEffect(() => (open ? lockPageScroll() : undefined), [open]);
+
   // the native close event covers Esc and form[method=dialog]; tell the parent
   // and put focus back where it was
   useEffect(() => {
@@ -139,7 +146,15 @@ export function Dialog({
       style={glass.props.style}
       className={cn(
         glass.props.className,
-        'ui-dialog m-auto box-border max-h-[calc(100dvh-32px)] w-[min(32rem,calc(100vw-32px))] p-6',
+        // inset to the safe area: with viewport-fit=cover a centred panel as tall as the screen
+        // would put its title under the status bar and its foot under the home bar
+        'ui-dialog m-auto box-border flex-col overflow-hidden overscroll-contain open:flex p-6',
+        'top-[env(safe-area-inset-top,0px)] bottom-[env(safe-area-inset-bottom,0px)] left-[env(safe-area-inset-left,0px)] right-[env(safe-area-inset-right,0px)]',
+        'max-h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-32px)]',
+        'w-[min(32rem,calc(100vw-env(safe-area-inset-left,0px)-env(safe-area-inset-right,0px)-32px))]',
+        'pointer-coarse:max-sm:p-5',
+        // the Liquid Glass rim sits inside the clipped panel
+        '[&>.ui-lg-layer]:inset-0',
         'rounded-lg border border-solid border-border bg-overlay text-fg glass-chrome',
         '[box-shadow:var(--elev-3)]',
         'backdrop:bg-scrim',
@@ -150,7 +165,7 @@ export function Dialog({
       aria-describedby={description ? descId : undefined}
     >
       {glass.layers}
-      <div className="ui-dialog-header mb-4 flex flex-col gap-1.5 pr-8">
+      <div className="ui-dialog-header mb-4 flex shrink-0 flex-col gap-1.5 pr-8">
         <h2
           ref={titleRef}
           id={titleId}
@@ -167,8 +182,10 @@ export function Dialog({
           </p>
         )}
       </div>
-      {children}
-      {footer && <div className={dialogFooterClasses}>{footer}</div>}
+      <div className="ui-dialog-body -mx-1 min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-1">
+        {children}
+      </div>
+      {footer && <div className={cn(dialogFooterClasses, 'shrink-0')}>{footer}</div>}
       <Button
         variant="ghost"
         size="icon"
