@@ -58,8 +58,10 @@ export interface SheetProps {
 }
 
 const SIDE: Record<SheetSide, string> = {
-  right: 'inset-y-0 right-0 h-full w-[min(26rem,100vw)] border-l',
-  left: 'inset-y-0 left-0 h-full w-[min(26rem,100vw)] border-r',
+  // full-height sides clear the notch, status bar and home bar (viewport-fit=cover)
+  right:
+    'inset-y-0 right-0 h-full w-[min(26rem,100vw)] border-l pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[max(1.5rem,env(safe-area-inset-bottom))]',
+  left: 'inset-y-0 left-0 h-full w-[min(26rem,100vw)] border-r pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] pl-[max(1.5rem,env(safe-area-inset-left))]',
   bottom: 'inset-x-0 bottom-0 max-h-[85vh] w-full rounded-t-lg border-t',
 };
 
@@ -173,7 +175,13 @@ export function Sheet({
             <Button
               variant="ghost"
               size="icon"
-              className="ui-sheet-close absolute top-3.5 right-3.5 pointer-coarse:top-2 pointer-coarse:right-2"
+              className={cn(
+                'ui-sheet-close absolute top-3.5 right-3.5 pointer-coarse:top-2 pointer-coarse:right-2',
+                side !== 'bottom' &&
+                  'top-[calc(0.875rem+env(safe-area-inset-top))] pointer-coarse:top-[calc(0.5rem+env(safe-area-inset-top))]',
+                side === 'right' &&
+                  'right-[calc(0.875rem+env(safe-area-inset-right))] pointer-coarse:right-[calc(0.5rem+env(safe-area-inset-right))]',
+              )}
               aria-label="Close"
             />
           }
