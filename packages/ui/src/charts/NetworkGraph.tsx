@@ -48,6 +48,71 @@ const PAD = 28;
 /* Room under the lowest node for its label, so a name is never cut off at the foot. */
 const PAD_BOTTOM = PAD + 22;
 
+/** A node's marker size, from its number of links. */
+const markerSize = (degree: number) => 5 + Math.min(7, degree * 1.2);
+/** The width of a node's label pill. */
+const labelWidth = (label: string) => label.length * 6.6 + 12;
+/** Where a label pill sits across: under its node, but never past either edge of the plane. */
+const labelX = (x: number, w: number, width: number) =>
+  Math.max(w / 2 + 2, Math.min(width - w / 2 - 2, x));
+
+/* Push apart any two nodes whose marker-and-label footprints overlap, so no name sits on another
+   name or on a dot (a phone is narrow and the names are long). Each footprint runs from the top of
+   the marker to the foot of the label pill; a pinned node stays where it is. */
+function separate(
+  nodes: readonly NetworkNode[],
+  pos: Pos,
+  size: (id: string) => number,
+  w: number,
+  h: number,
+  pinned?: string,
+  passes = 40,
+) {
+  const box = nodes.map((nd) => {
+    const s = size(nd.id);
+    return { id: nd.id, hw: Math.max(s + 4, labelWidth(nd.label) / 2), top: s + 2, foot: s + 25 };
+  });
+  const clamp = (id: string, hw: number) => {
+    const p = pos[id] as { x: number; y: number };
+    const side = Math.min(w / 2, Math.max(PAD, hw + 2));
+    p.x = Math.max(side, Math.min(w - side, p.x));
+    p.y = Math.max(PAD, Math.min(h - PAD_BOTTOM, p.y));
+  };
+  for (let pass = 0; pass < passes; pass++) {
+    let moved = false;
+    for (let i = 0; i < box.length; i++) {
+      const a = box[i] as (typeof box)[number];
+      const pa = pos[a.id] as { x: number; y: number };
+      for (let j = i + 1; j < box.length; j++) {
+        const b = box[j] as (typeof box)[number];
+        const pb = pos[b.id] as { x: number; y: number };
+        const dx = pb.x - pa.x;
+        // compare the boxes' centres: a box's centre sits (foot - top) / 2 below its node
+        const dy = pb.y + (b.foot - b.top) / 2 - (pa.y + (a.foot - a.top) / 2);
+        const ox = a.hw + b.hw + 6 - Math.abs(dx);
+        const oy = (a.top + a.foot + b.top + b.foot) / 2 + 2 - Math.abs(dy);
+        if (ox <= 0 || oy <= 0) continue;
+        moved = true;
+        // move along the shorter overlap; split it, unless one side is pinned
+        const wa = a.id === pinned ? 0 : b.id === pinned ? 1 : 0.5;
+        const wb = 1 - wa;
+        if (ox / Math.max(1, a.hw + b.hw) < oy / Math.max(1, a.foot + b.foot)) {
+          const sx = dx === 0 ? (i % 2 ? 1 : -1) : Math.sign(dx);
+          pa.x -= sx * ox * wa;
+          pb.x += sx * ox * wb;
+        } else {
+          const sy = dy === 0 ? 1 : Math.sign(dy);
+          pa.y -= sy * oy * wa;
+          pb.y += sy * oy * wb;
+        }
+        clamp(a.id, a.hw);
+        clamp(b.id, b.hw);
+      }
+    }
+    if (!moved) break;
+  }
+}
+
 /** Fruchterman–Reingold in a w × h box. `pinned` nodes keep their place. Deterministic. */
 function relax(
   nodes: readonly NetworkNode[],
@@ -111,6 +176,20 @@ function relax(
       p.y = Math.max(PAD, Math.min(h - PAD_BOTTOM, p.y + (dd.y / len) * Math.min(len, t)));
     }
   }
+  const degree = new Map<string, number>();
+  for (const l of links) {
+    degree.set(l.source, (degree.get(l.source) ?? 0) + 1);
+    degree.set(l.target, (degree.get(l.target) ?? 0) + 1);
+  }
+  separate(
+    nodes,
+    pos,
+    (id) => markerSize(degree.get(id) ?? 0),
+    w,
+    h,
+    pinned,
+    iterations < 10 ? 6 : 60,
+  );
   return pos;
 }
 
@@ -342,11 +421,12 @@ export function NetworkGraph({
                 const p = pos[nd.id];
                 if (!p) return null;
                 const g = nd.group ?? 0;
-                const s = 5 + Math.min(7, degree(nd.id) * 1.2);
+                const s = markerSize(degree(nd.id));
                 const dim = lit !== null && !near.has(nd.id);
                 const isLit = nd.id === lit;
                 const showLabel = labelAll ? !dim : near.has(nd.id);
-                const w = nd.label.length * 6.6 + 12;
+                const w = labelWidth(nd.label);
+                const lx = labelX(p.x, w, width);
                 const nbs = (neighbours.get(nd.id) ?? []).map(nameOf);
                 return (
                   // biome-ignore lint/a11y/useSemanticElements: SVG has no list element
@@ -394,7 +474,7 @@ export function NetworkGraph({
                     {showLabel && (
                       <g {...HIDDEN} className="pointer-events-none">
                         <rect
-                          x={p.x - w / 2}
+                          x={lx - w / 2}
                           y={p.y + s + 5}
                           width={w}
                           height={18}
@@ -403,7 +483,7 @@ export function NetworkGraph({
                           fillOpacity={isLit ? 1 : 0.92}
                         />
                         <text
-                          x={p.x}
+                          x={lx}
                           y={p.y + s + 18}
                           textAnchor="middle"
                           className={
