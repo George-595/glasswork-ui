@@ -33,6 +33,7 @@ import {
   StatTile,
   useTheme,
 } from '../src/index';
+import { DEFAULT_PREFS } from '../src/theme/themeCookie';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -172,7 +173,8 @@ describe('useTheme', () => {
     render(<Probe />);
     const html = document.documentElement;
     expect(html.getAttribute('data-theme')).toBe('dark');
-    expect(html.getAttribute('data-skin')).toBe('enterprise');
+    // the default skin: enterprise here, but an app may set another in its own themeCookie.ts
+    expect(html.getAttribute('data-skin')).toBe(DEFAULT_PREFS.skin);
 
     act(() => (host.querySelector('#toggle') as HTMLButtonElement).click());
     act(() => (host.querySelector('#glass') as HTMLButtonElement).click());
@@ -185,7 +187,7 @@ describe('useTheme', () => {
   it('ignores a stored value it does not know', () => {
     localStorage.setItem('ui-skin', 'neon');
     render(<Probe />);
-    expect(document.documentElement.getAttribute('data-skin')).toBe('enterprise');
+    expect(document.documentElement.getAttribute('data-skin')).toBe(DEFAULT_PREFS.skin);
   });
 });
 
