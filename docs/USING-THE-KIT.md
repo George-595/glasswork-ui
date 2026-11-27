@@ -49,7 +49,9 @@ bumps its pin, so one change can never break every app at once.
    the tarballs here, without npm, **and merges it** (George, 27 Nov 2026: "If it works in
    Glasswork, it should work in all the other repos"). So test a release here before merging it.
    If the kit adds or moves a third-party dependency the pull request is left open with a note,
-   and needs one `npm install` first. An app can opt out with `"merge": false` in
+   and needs one `npm install` first. It is also left open when the release newly exports a
+   name the app exports itself next to `export * from '@apps/ui'` (that typechecks but blanks
+   the page at runtime: Vite's "conflicting star exports"). An app can opt out with `"merge": false` in
    `kit-apps.json`. To re-run it, start "Kit bump PRs" by hand from the Actions tab. To run
    the same thing locally: `node scripts/kit-bump.mjs <app-dir>`.
 

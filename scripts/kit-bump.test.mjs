@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { bumpApp, releaseFacts, rewritePins, tarballUrl } from './kit-bump.mjs';
+import { bumpApp, exportClashes, releaseFacts, rewritePins, tarballUrl } from './kit-bump.mjs';
 
 const RELEASES = new URL('../releases/', import.meta.url).pathname;
 
@@ -96,7 +96,33 @@ test('an app without the kit is left alone', () => {
       files: [],
       lockfiles: [],
       needsInstall: false,
+      clashes: [],
     });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a new kit export that the app also star-exports is reported as a clash', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'kit-bump-test-'));
+  try {
+    const deps = {
+      '@apps/colors': tarballUrl('colors', '1.0.5'),
+      '@apps/ui': tarballUrl('ui', '1.0.5'),
+    };
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'app', dependencies: deps }));
+    mkdirSync(join(dir, 'src', 'ui'), { recursive: true });
+    writeFileSync(
+      join(dir, 'src', 'ui', 'index.ts'),
+      "export * from '@apps/ui';\nexport * from './own';\n",
+    );
+    writeFileSync(
+      join(dir, 'src', 'ui', 'own.tsx'),
+      'export function PointerPredict() {}\nexport const Unrelated = 1;\n',
+    );
+    const report = bumpApp(dir, '1.0.6', RELEASES);
+    assert.deepEqual(report.clashes, ['PointerPredict']);
+    assert.deepEqual(exportClashes(dir, RELEASES, ['1.0.6'], '1.0.6'), []);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
