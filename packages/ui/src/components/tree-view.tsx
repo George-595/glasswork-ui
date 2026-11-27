@@ -18,7 +18,8 @@ import { cn } from '../lib/cn';
    The look: thin guide lines run down from each open folder to its children, so depth reads
    without counting indents; a folder's icon opens when it does; the selected row is a soft
    brand pill with a brand bar at its edge; branches grow and shrink from their measured
-   height. `badge` puts a count or a short tag at the row's end ("3", "New"). `checkable`
+   height. Folders start as `defaultExpanded` says (closed when it is left out), or are controlled
+   with `expanded` and `onExpandedChange`. `badge` puts a count or a short tag at the row's end ("3", "New"). `checkable`
    gives each row a tri-state checkbox (a folder is mixed while only part of it is checked),
    kept apart from the selection. */
 export interface TreeNode {
@@ -35,6 +36,9 @@ export interface TreeViewProps {
   /** Names the tree: "Project files". */
   label: string;
   defaultExpanded?: readonly string[];
+  /** The open folders, to control them (open the selected row's folder from outside). */
+  expanded?: readonly string[];
+  onExpandedChange?: (ids: string[]) => void;
   defaultValue?: string;
   value?: string | null;
   onValueChange?: (id: string | null) => void;
@@ -103,12 +107,13 @@ function Rows({ nodes, checkable }: { nodes: readonly TreeNode[]; checkable: boo
           >
             {branch ? (
               <>
-                <Icon name="folder" size={15} className="group-data-expanded/ti:hidden" />
-                <Icon
-                  name="folder-open"
-                  size={15}
-                  className="hidden group-data-expanded/ti:inline-block"
-                />
+                {/* wrapped: .ui-icon's own display would beat `hidden` and show both */}
+                <span className="inline-flex group-data-expanded/ti:hidden">
+                  <Icon name="folder" size={15} />
+                </span>
+                <span className="hidden group-data-expanded/ti:inline-flex">
+                  <Icon name="folder-open" size={15} />
+                </span>
               </>
             ) : (
               <Icon name={n.icon ?? 'file'} size={15} />
@@ -139,6 +144,8 @@ export function TreeView({
   items,
   label,
   defaultExpanded,
+  expanded,
+  onExpandedChange,
   defaultValue,
   value,
   onValueChange,
@@ -152,11 +159,16 @@ export function TreeView({
     <Tree
       aria-label={label}
       defaultExpanded={defaultExpanded ? [...defaultExpanded] : undefined}
+      expanded={expanded ? [...expanded] : undefined}
+      onExpandedChange={onExpandedChange ? (ids) => onExpandedChange(ids) : undefined}
       defaultValue={defaultValue}
       value={value}
       onValueChange={(v) => onValueChange?.(typeof v === 'string' ? v : null)}
       onAction={onAction ? (id) => onAction(id) : undefined}
       checkable={checkable}
+      // closed folders keep their rows mounted (hidden), so the co-pilot can choose a row
+      // inside one; the tree opens the way to it
+      keepMounted
       defaultChecked={defaultChecked ? [...defaultChecked] : undefined}
       onCheckedChange={(ids) => onCheckedChange?.(ids)}
       className={cn('ui-tree m-0 flex w-full min-w-0 flex-col gap-px p-1', className)}
