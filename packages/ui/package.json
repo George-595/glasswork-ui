@@ -1,7 +1,7 @@
 {
   "name": "@apps/ui",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "description": "Glasswork UI: React components on its own design tokens, two skins (enterprise, glass), light and dark, WCAG 2.2 AA.",
   "exports": {
@@ -24,7 +24,7 @@
     "react-dom": "19.3.1"
   },
   "dependencies": {
-    "@apps/colors": "1.0.1",
+    "@apps/colors": "1.0.2",
     "@tanstack/charts": "1.5.0",
     "@ui-sdk/core": "0.1.0-beta.17",
     "@ui-sdk/react": "0.1.0-beta.17",
