@@ -60,6 +60,8 @@ export {
   type ScatterPoint,
   type ScatterSeries,
 } from './charts/ScatterChart';
+/* ---- Documents, sketch figures and pointer effects (moved up from george595.dev) ---- */
+export { SketchFlow, type SketchFlowProps } from './charts/SketchFlow';
 export { Sparkline, type SparklineProps } from './charts/Sparkline';
 export { type Rect, squarify } from './charts/squarify';
 export { fitLabel, Treemap, type TreemapProps } from './charts/Treemap';
@@ -217,8 +219,15 @@ export {
 } from './components/empty-state';
 export { ErrorBoundary, type ErrorBoundaryProps } from './components/error-boundary';
 export { ErrorState, type ErrorStateProps } from './components/error-state';
+export {
+  buildFileTree,
+  FileTree,
+  type FileTreeNode,
+  type FileTreeProps,
+} from './components/file-tree';
 export { HistogramRange, type HistogramRangeProps } from './components/histogram-range';
 export { HoverCard, type HoverCardProps, ProfilePreview } from './components/hover-card';
+export { HtmlFrame, type HtmlFrameProps } from './components/html-frame';
 export { IconCircle, type IconCircleProps, type IconCircleSize } from './components/icon-circle';
 export { fieldClasses, Input, Label, type LabelProps, Textarea } from './components/input';
 /* ---- Inputs: dates, choices, chips, numbers, files, confirm (tests/inputs.test.tsx) ---- */
@@ -328,6 +337,7 @@ export {
   ResizablePane,
   type ResizablePaneProps,
 } from './components/resizable';
+export { Scribble, type ScribbleProps } from './components/scribble';
 export {
   type DockItem,
   Pebble,
@@ -357,6 +367,11 @@ export {
   skeletonVariants,
 } from './components/skeleton';
 export {
+  SketchMark,
+  type SketchMarkProps,
+  type SketchMarkStroke,
+} from './components/sketch-mark';
+export {
   RangeSlider,
   type RangeSliderProps,
   Slider,
@@ -364,6 +379,11 @@ export {
 } from './components/slider';
 export { SnapDrawer, type SnapDrawerProps } from './components/snap-drawer';
 export { type Direction, StatTile, type StatTileProps } from './components/stat-tile';
+export {
+  StateTimeline,
+  type StateTimelineProps,
+  type StateTimelineRow,
+} from './components/state-timeline';
 export { Switch, type SwitchProps } from './components/switch';
 export { type TabItem, Tabs, type TabsProps } from './components/tabs';
 export {
@@ -420,6 +440,7 @@ export { TEXT_TONE, type TextTone } from './components/typography/tones';
 export * from './controls';
 export * from './display';
 export * from './effects';
+export { PointerPredict, type PointerPredictProps } from './effects/PointerPredict';
 export {
   type GlassFill,
   type GlassMaterialName,
@@ -437,6 +458,19 @@ export {
   type TimeInput,
 } from './lib/relative-time';
 export { COARSE_POINTER, prefersTouch, useInitialFocus } from './lib/touch';
+export {
+  MarkdownDocument,
+  type MarkdownDocumentProps,
+  type ResolvedLink,
+} from './markdown/MarkdownDocument';
+export {
+  inlineText,
+  type MdBlock,
+  type MdDocument,
+  type MdInline,
+  parseMarkdownDocument,
+  slugify,
+} from './markdown/parse';
 export { type BottomTab, BottomTabBar, type BottomTabBarProps } from './nav/BottomTabBar';
 export { matchSection, type SectionDef, SectionNav, type SectionNavProps } from './nav/SectionNav';
 /* ---- Patterns: page-level compositions (tests/patterns.test.tsx) ---- */
