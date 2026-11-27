@@ -29,6 +29,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
+import { stripTypeScriptTypes } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -74,6 +75,21 @@ export function releaseManifest(pkg, version) {
   return out;
 }
 
+/* @apps/colors is also imported by app servers (mail templates, share pages), which run on Node's
+   own type stripping, and Node refuses to strip types inside node_modules. So the release carries
+   a plain-JS copy of src/ in node/ for Node, while bundlers and TypeScript keep reading src/. */
+const NODE_ENTRY = { types: './src/index.ts', node: './node/index.js', default: './src/index.ts' };
+function nodeBuild(dir) {
+  for (const rel of walk(join(dir, 'src')).filter((f) => f.endsWith('.ts'))) {
+    const js = stripTypeScriptTypes(readFileSync(join(dir, 'src', rel), 'utf8'), {
+      mode: 'strip',
+    }).replace(/(from\s+['"]\.{1,2}\/[^'"]+)\.ts(['"])/g, '$1.js$2');
+    const out = join(dir, 'node', rel.replace(/\.ts$/, '.js'));
+    mkdirSync(dirname(out), { recursive: true });
+    writeFileSync(out, js);
+  }
+}
+
 function stage(name, version) {
   const src = join(ROOT, PACKAGES[name]);
   const dir = mkdtempSync(join(tmpdir(), `glasswork-${name}-`));
@@ -83,6 +99,10 @@ function stage(name, version) {
   }
   for (const f of ['LICENSE.md', 'NOTICE']) copyFileSync(join(ROOT, f), join(dir, f));
   const manifest = releaseManifest(readJson(join(src, 'package.json')), version);
+  if (name === 'colors') {
+    nodeBuild(dir);
+    manifest.exports = { ...manifest.exports, '.': NODE_ENTRY };
+  }
   writeFileSync(join(dir, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   return dir;
 }
