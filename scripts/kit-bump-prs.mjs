@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 // kit-bump-prs — after a kit release lands on main, opens one version-bump pull request in every
-// app listed in .github/kit-apps.json. Run by .github/workflows/kit-bump.yml; never merges.
+// app listed in .github/kit-apps.json, and merges it (George, 27 Nov 2026: "If it works in
+// Glasswork, it should work in all the other repos"). Run by .github/workflows/kit-bump.yml.
+// A PR is left open, not merged, only when the lockfile needs an `npm install` first, when the
+// app sets "merge": false, or when GitHub refuses the merge.
 //
 //   KIT_BUMP_TOKEN=… node scripts/kit-bump-prs.mjs [version] [--dry-run]
 //
@@ -67,7 +70,9 @@ function prBody(app, report, version) {
     );
   lines.push(
     '',
-    'Opened automatically by the kit-bump workflow in glasswork-ui. It never merges: check the screens in a session, then merge.',
+    report.needsInstall
+      ? 'Opened by the kit-bump workflow in glasswork-ui and left open until that install is done.'
+      : 'Opened and merged automatically by the kit-bump workflow in glasswork-ui.',
   );
   if (app.note) lines.push('', app.note);
   return lines.join('\n');
@@ -130,7 +135,23 @@ export async function run({ version, token, dryRun = false, log = console.log })
         body: prBody(app, before, version),
         maintainer_can_modify: false,
       });
-      results.push({ repo: app.repo, outcome: `opened ${pr.html_url}` });
+      if (before.needsInstall || app.merge === false) {
+        results.push({ repo: app.repo, outcome: `opened ${pr.html_url} (left open)` });
+        continue;
+      }
+      try {
+        await api(token, 'PUT', `/repos/${app.repo}/pulls/${pr.number}/merge`, {
+          merge_method: 'squash',
+          sha: git('rev-parse', 'HEAD'),
+        });
+        await api(token, 'DELETE', `/repos/${app.repo}/git/refs/heads/${branch}`).catch(() => {});
+        results.push({ repo: app.repo, outcome: `merged ${pr.html_url}` });
+      } catch (err) {
+        results.push({
+          repo: app.repo,
+          outcome: `FAILED to merge ${pr.html_url}: ${String(err.message).split('\n')[0]}`,
+        });
+      }
     } catch (err) {
       // Only git's or the API's message: neither ever echoes the token.
       results.push({ repo: app.repo, outcome: `FAILED: ${String(err.message).split('\n')[0]}` });
