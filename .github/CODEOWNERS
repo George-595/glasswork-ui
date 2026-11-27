@@ -1,0 +1,5 @@
+# Every change, and above all anything that runs in GitHub Actions, is George's to approve.
+*                @George-595
+/.github/        @George-595
+/scripts/kit-*   @George-595
+/releases/       @George-595

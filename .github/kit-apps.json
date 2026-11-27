@@ -1,0 +1,15 @@
+{
+  "$comment": "Every app that installs the kit. kit-bump.yml opens one pull request in each after a release. The workflow's token must be granted exactly these repositories.",
+  "apps": [
+    { "repo": "George-595/chevy_collection", "base": "main" },
+    { "repo": "George-595/markets", "base": "main" },
+    { "repo": "George-595/glasswork-templates", "base": "main" },
+    { "repo": "George-595/george-595.dev", "base": "main" },
+    {
+      "repo": "George-595/Furniture-Friends-Inventory",
+      "base": "dev",
+      "note": "Targets `dev`. Merging deploys the dev site only; production waits for George's \"deploy to prod\"."
+    },
+    { "repo": "George-595/home-os", "base": "main" }
+  ]
+}

@@ -40,8 +40,31 @@ bumps its pin, so one change can never break every app at once.
    UI is internal, so its releases are exempt (George, 27 Nov 2026); `check:deps` accepts a
    Glasswork release URL as an exact pin. Its own dependencies (React, motion, …) still follow
    the rule.
-5. **Releasing costs no Actions minutes.** It is done from a session and lands by pull request;
-   no workflow and no registry account is involved.
+5. **Releasing is done from a session** and lands by pull request; no registry account is
+   involved.
+6. **Every app gets a bump pull request on its own.** When a release (a new
+   `releases/apps-ui-*.tgz`) lands on `main`, `.github/workflows/kit-bump.yml` opens one pull
+   request per app listed in `.github/kit-apps.json` (`kit/v<version>`, against that app's base:
+   `dev` for Furniture Friends). `scripts/kit-bump.mjs` rewrites the pins and the lockfile from
+   the tarballs here, without npm. It never merges: check the screens in a session, then merge.
+   If the kit adds or moves a third-party dependency the pull request says so, and needs one
+   `npm install` first. To re-run it, start "Kit bump PRs" by hand from the Actions tab. To run
+   the same thing locally: `node scripts/kit-bump.mjs <app-dir>`.
+
+## Security of the bump workflow
+
+The repo is public, so the workflow is built so that no one but George can make it run, and
+it never runs anyone else's code:
+
+- It runs only on George's own pushes to `main`, or by his hand. Never on pull requests or
+  forks (no `pull_request_target`), and it uses no third-party actions.
+- The built-in `GITHUB_TOKEN` gets no permissions. The app token, `KIT_BUMP_TOKEN`, is a
+  fine-grained token limited to the repos in `kit-apps.json` with Contents and Pull requests
+  write, stored as a secret of the `kit-bump` environment, which only `main` may use.
+- `main` is protected by a ruleset (no force-push, no deletion, changes by pull request),
+  workflow runs from outside contributors need approval, Actions may only run this repo's own
+  workflows, and `CODEOWNERS` makes George the owner of everything, `.github/` above all.
+- Public repos cost no Actions minutes.
 
 ## An app's own extensions
 
