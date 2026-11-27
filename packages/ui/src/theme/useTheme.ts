@@ -1,6 +1,7 @@
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { syncThemeColor } from '../lib/theme-color';
 import {
+  DEFAULT_PREFS,
   readStoredPrefs,
   readThemeCookie,
   SKINS,
@@ -77,8 +78,8 @@ export function initialTheme(): Theme {
 }
 
 export function initialSkin(): Skin {
-  if (typeof window === 'undefined') return 'enterprise';
-  return stored().skin ?? 'enterprise';
+  if (typeof window === 'undefined') return DEFAULT_PREFS.skin;
+  return stored().skin ?? DEFAULT_PREFS.skin;
 }
 
 export function initialMode(): ThemeMode {
