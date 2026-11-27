@@ -1,47 +1,60 @@
 # Using the kit in an app
 
-Every app built on Glasswork takes `@apps/ui` and `@apps/colors` the same way: a copy made by
-`scripts/kit-sync.mjs`, never by hand. The copy records the glasswork-ui commit it came from
-and the hash of every file, and the app's own check proves nothing in it was edited.
+Every app built on Glasswork installs `@apps/ui` and `@apps/colors` as packages, pinned to one
+released version. Nothing is copied into the app: a kit change reaches an app only when that app
+bumps its pin, so one change can never break every app at once.
 
 ```text
-┌─ glasswork-ui ──────────────┐   kit-sync    ┌─ an app ───────────────────────┐
-│ packages/ui                 │ ────────────▶ │ vendor/ui      (exact copy)    │
-│ packages/colors             │               │ vendor/colors  (exact copy)    │
-│   fix or add here first     │               │ glasswork.json (commit+hashes) │
-└─────────────────────────────┘               │ kit-check.mjs  (drift check)   │
-                                              └────────────────────────────────┘
+┌─ glasswork-ui ───────────────────┐  kit-release  ┌─ releases/ (in this repo) ──┐
+│ packages/ui, packages/colors     │ ────────────▶ │ apps-ui-1.0.0.tgz           │
+│   fix or add here first          │               │ apps-colors-1.0.0.tgz       │
+└──────────────────────────────────┘               └──────────────┬──────────────┘
+                                                                   │ npm install (pinned URL,
+                                                                   ▼ sha512 in the lockfile)
+                                                   ┌─ an app ────────────────────┐
+                                                   │ node_modules/@apps/ui       │
+                                                   │ node_modules/@apps/colors   │
+                                                   └─────────────────────────────┘
 ```
 
 ## Rules
 
-1. **Change the kit here, never in an app.** A bug found in an app (a component, a layout piece,
-   a colour) is fixed in glasswork-ui, merged, then synced to every app that uses it.
-2. **Sync, do not copy.** `node ~/glasswork-ui/scripts/kit-sync.mjs <app>/<dir>/glasswork.json`
-   from a clean, merged glasswork-ui `main`. Then `npm install` in the app and its checks.
-3. **The app's checks include the drift check.** `node <dir>/kit-check.mjs` fails on any edited,
-   extra or missing kit file.
-4. **`local` is the exception list.** A file in glasswork.json's `local` is the app's own: kept on
-   sync, skipped by the check. Every entry is a fork carried by hand, so keep it short and move
-   generic work upstream.
+1. **Change the kit here, never in an app.** A bug found in an app is fixed in glasswork-ui and
+   merged, then each app that wants it bumps its pin.
+2. **Every change to what an app ships is a new version.** Raise `version` in both
+   `packages/ui/package.json` and `packages/colors/package.json` (they move together), run
+   `node scripts/kit-release.mjs`, and commit the two new tarballs in `releases/` with the change.
+   A released tarball is never overwritten; `npm run check` (`kit-release.mjs --check`) fails if
+   the packages differ from their current release.
+3. **An app pins an exact release** in its `package.json`:
 
-## glasswork.json
+   ```json
+   "@apps/colors": "https://raw.githubusercontent.com/George-595/glasswork-ui/main/releases/apps-colors-1.0.0.tgz",
+   "@apps/ui": "https://raw.githubusercontent.com/George-595/glasswork-ui/main/releases/apps-ui-1.0.0.tgz"
+   ```
 
-```json
-{
-  "targets": { "ui": "ui", "colors": "colors" },
-  "profile": "runtime",
-  "local": []
-}
-```
+   To update, change the version in both lines and run `npm install`. The lockfile records each
+   tarball's sha512, so the bytes cannot change under the app. Railway, Vercel and Docker builds
+   fetch it like any other dependency: the repo is public, no token is needed.
+4. **No cooldown for the kit.** The 7-day release-age rule is for outside packages. Glasswork
+   UI is internal, so its releases are exempt (George, 27 Nov 2026); `check:deps` accepts a
+   Glasswork release URL as an exact pin. Its own dependencies (React, motion, …) still follow
+   the rule.
+5. **Releasing costs no Actions minutes.** It is done from a session and lands by pull request;
+   no workflow and no registry account is involved.
 
-- `targets`: where each package goes, relative to glasswork.json.
-- `profile`: `runtime` copies what an app imports and ships (src, css, manifests, docs, notices);
-  `full` copies the whole package, tests and scripts included (for an app that runs the kit's
-  own tests).
-- `local`: the app's own files inside the copy.
+## An app's own extensions
 
-The sync fills in `upstream`, `commit` and `files`.
+An app that needs a piece the kit does not have, and that is not generic enough to go upstream,
+keeps it in its own small workspace package (george595.dev's `packages/site-ui`) and builds it on
+the kit's public exports. Kit internals it needs (`cn`, `useReducedMotion`, …) import from
+`@apps/ui/src/<path>.ts`; that path is not a stable API, so a kit bump may need those imports
+fixed.
+
+## Tailwind
+
+The kit's `styles.css` already tells Tailwind to scan the kit's own sources, wherever it is
+installed. An app's CSS adds `@source` for its own folders only.
 
 ## The app frame
 

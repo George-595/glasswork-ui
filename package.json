@@ -16,7 +16,7 @@
     "build": "npm run build --workspace @apps/base-app",
     "lint": "oxlint",
     "format": "biome format --write . && npm run format --workspace @apps/base-app",
-    "check": "biome check . && node scripts/check-oxlint-mirror.mjs && oxlint packages && npm run check:colours && npm run check:pages && npm run check:craft && npm run check:colors --workspace @apps/colors && npm run check --workspace @apps/base-app",
+    "check": "node scripts/kit-release.mjs --check && biome check . && node scripts/check-oxlint-mirror.mjs && oxlint packages && npm run check:colours && npm run check:pages && npm run check:craft && npm run check:colors --workspace @apps/colors && npm run check --workspace @apps/base-app",
     "check:colours": "node scripts/check-colours.mjs --no-legacy",
     "check:pages": "node scripts/check-pages.mjs --strict",
     "check:craft": "node scripts/check-craft.mjs --strict",
@@ -27,7 +27,8 @@
     "verify": "npm run browsers && npm run check && npm run check:deps && npm run typecheck && npm run test && npm run a11y && npm run check:budget",
     "check:budget": "npm run check:budget --workspace @apps/base-app",
     "check:deps": "node base-app/scripts/check-release-age.mjs",
-    "start": "npm run start --workspace @apps/base-app"
+    "start": "npm run start --workspace @apps/base-app",
+    "release": "node scripts/kit-release.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.7",
