@@ -16,6 +16,11 @@
 //   npm <name>@<version> <YYYY-MM-DD granted> <George's words>
 // An entry exempts that one version from the age rule only (it must still be an
 // exact pin). Only George grants one; the check says when an entry can go.
+//
+// Glasswork UI's own packages (@apps/ui, @apps/colors) are exempt from the age rule: they are
+// George's internal packages, installed from a released tarball in the glasswork-ui repo, not
+// from the registry (George, 27 Nov 2026: "Version bumping should bypass my 7d standard pins as
+// its an internal package"). Their pin must still name one exact released version.
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,6 +45,10 @@ const lock = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
 
 const problems = [];
 const notes = [];
+
+// an exact Glasswork UI release (scripts/kit-release.mjs in glasswork-ui): pinned, but not aged
+const GLASSWORK =
+  /^https:\/\/raw\.githubusercontent\.com\/George-595\/glasswork-ui\/main\/releases\/apps-(ui|colors)-\d+\.\d+\.\d+\.tgz$/;
 
 const allowFile = join(root, 'dep-quarantine-allowlist');
 const allowed = new Set(
@@ -70,7 +79,7 @@ for (const m of manifests) {
     'optionalDependencies',
   ]) {
     for (const [name, spec] of Object.entries(pkg[field] ?? {})) {
-      if (!/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(spec))
+      if (!/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(spec) && !GLASSWORK.test(spec))
         problems.push(`${m}: ${field}.${name} is "${spec}", not an exact version`);
     }
   }
