@@ -42,13 +42,15 @@ bumps its pin, so one change can never break every app at once.
    the rule.
 5. **Releasing is done from a session** and lands by pull request; no registry account is
    involved.
-6. **Every app gets a bump pull request on its own.** When a release (a new
+6. **Every app is bumped on its own.** When a release (a new
    `releases/apps-ui-*.tgz`) lands on `main`, `.github/workflows/kit-bump.yml` opens one pull
    request per app listed in `.github/kit-apps.json` (`kit/v<version>`, against that app's base:
    `dev` for Furniture Friends). `scripts/kit-bump.mjs` rewrites the pins and the lockfile from
-   the tarballs here, without npm. It never merges: check the screens in a session, then merge.
-   If the kit adds or moves a third-party dependency the pull request says so, and needs one
-   `npm install` first. To re-run it, start "Kit bump PRs" by hand from the Actions tab. To run
+   the tarballs here, without npm, **and merges it** (George, 27 Nov 2026: "If it works in
+   Glasswork, it should work in all the other repos"). So test a release here before merging it.
+   If the kit adds or moves a third-party dependency the pull request is left open with a note,
+   and needs one `npm install` first. An app can opt out with `"merge": false` in
+   `kit-apps.json`. To re-run it, start "Kit bump PRs" by hand from the Actions tab. To run
    the same thing locally: `node scripts/kit-bump.mjs <app-dir>`.
 
 ## Security of the bump workflow
