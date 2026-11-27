@@ -58,6 +58,12 @@ export const DEFAULT_PREFS: ThemePrefs = {
   resolved: 'dark',
 };
 
+/** The skin a first visit gets is enterprise unless an app says otherwise: call this once, before
+    anything renders, in both the browser and the server entry (an app whose look is glass). */
+export function setDefaultSkin(skin: Skin) {
+  DEFAULT_PREFS.skin = skin;
+}
+
 const isTheme = (v: unknown): v is Theme => v === 'light' || v === 'dark';
 const isSkin = (v: unknown): v is Skin => v === 'enterprise' || v === 'glass';
 

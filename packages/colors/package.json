@@ -1,7 +1,7 @@
 {
   "name": "@apps/colors",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "description": "Every colour in apps/: one palette, semantic roles for enterprise and glass in light and dark, generated CSS + Tailwind theme, and a contrast gate on the role table.",
   "exports": {

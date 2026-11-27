@@ -492,6 +492,7 @@ export {
   DEFAULT_PREFS,
   parseThemeCookie,
   serializeThemePrefs,
+  setDefaultSkin,
   THEME_COOKIE,
   type ThemePrefs,
   themeFromCookie,
