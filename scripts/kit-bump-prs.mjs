@@ -3,7 +3,8 @@
 // app listed in .github/kit-apps.json, and merges it (George, 27 Nov 2026: "If it works in
 // Glasswork, it should work in all the other repos"). Run by .github/workflows/kit-bump.yml.
 // A PR is left open, not merged, only when the lockfile needs an `npm install` first, when the
-// app sets "merge": false, or when GitHub refuses the merge.
+// release newly exports a name the app also exports (a runtime clash), when the app sets
+// "merge": false, or when GitHub refuses the merge.
 //
 //   KIT_BUMP_TOKEN=… node scripts/kit-bump-prs.mjs [version] [--dry-run]
 //
@@ -63,6 +64,11 @@ function prBody(app, report, version) {
     '',
     `Changed: ${report.files.map((f) => `\`${f}\``).join(', ')}. The lockfile's sha512 is taken from the release tarball itself.`,
   ];
+  if (report.clashes.length)
+    lines.push(
+      '',
+      `**Left open: name clash.** This release newly exports ${report.clashes.map((n) => `\`${n}\``).join(', ')}, which this app also exports itself. Two \`export *\` of the same name break the page at runtime (Vite: "conflicting star exports") even though it typechecks. Remove the app's own copy (or rename it), check the pages, then merge.`,
+    );
   if (report.needsInstall)
     lines.push(
       '',
@@ -70,8 +76,8 @@ function prBody(app, report, version) {
     );
   lines.push(
     '',
-    report.needsInstall
-      ? 'Opened by the kit-bump workflow in glasswork-ui and left open until that install is done.'
+    report.needsInstall || report.clashes.length
+      ? 'Opened by the kit-bump workflow in glasswork-ui and left open until that is done.'
       : 'Opened and merged automatically by the kit-bump workflow in glasswork-ui.',
   );
   if (app.note) lines.push('', app.note);
@@ -135,7 +141,7 @@ export async function run({ version, token, dryRun = false, log = console.log })
         body: prBody(app, before, version),
         maintainer_can_modify: false,
       });
-      if (before.needsInstall || app.merge === false) {
+      if (before.needsInstall || before.clashes.length || app.merge === false) {
         results.push({ repo: app.repo, outcome: `opened ${pr.html_url} (left open)` });
         continue;
       }

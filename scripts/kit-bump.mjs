@@ -12,7 +12,8 @@
 //
 // needsInstall is true when the new kit adds, drops or moves a third-party dependency: the
 // lockfile then needs one `npm install` in a session before `npm ci` will accept it. An app with
-// no kit URL is left untouched (files: []). Used by .github/workflows/kit-bump.yml through
+// no kit URL is left untouched (files: []). clashes lists names this release newly exports that
+// the app exports itself, which can break it at runtime (see exportClashes). Used by .github/workflows/kit-bump.yml through
 // scripts/kit-bump-prs.mjs, and safe to run by hand.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -91,9 +92,127 @@ export function updateLock(lock, facts) {
   return changed;
 }
 
+const EXPORT_DECL =
+  /export\s+(?:declare\s+)?(?:default\s+)?(?:async\s+)?(?:const|let|var|function\*?|class|type|interface|enum)\s+([A-Za-z_$][\w$]*)|export\s*(?:type\s*)?\{([^}]*)\}/g;
+const SOURCE = /\.(?:[cm]?[jt]sx?)$/;
+
+/** Every name a set of source files exports by declaration or export list. */
+export function exportedNames(files, read = (f) => readFileSync(f, 'utf8')) {
+  const names = new Set();
+  for (const f of files) {
+    for (const m of read(f).matchAll(EXPORT_DECL)) {
+      if (m[1]) names.add(m[1]);
+      for (const part of (m[2] ?? '').split(',')) {
+        const name = part
+          .trim()
+          .replace(/^type\s+/, '')
+          .split(/\s+as\s+/)
+          .pop()
+          ?.trim();
+        if (name && /^[A-Za-z_$][\w$]*$/.test(name) && name !== 'default') names.add(name);
+      }
+    }
+  }
+  return names;
+}
+
+const STAR = /export\s*\*\s*from\s*['"]([^'"]+)['"]/g;
+const EXTS = ['', '.ts', '.tsx', '.js', '.jsx', '.mjs', '/index.ts', '/index.tsx', '/index.js'];
+
+function resolveLocal(from, spec) {
+  if (!spec.startsWith('.')) return null;
+  const base = join(dirname(from), spec);
+  for (const ext of EXTS) {
+    const f = base + ext;
+    try {
+      if (statSync(f).isFile()) return f;
+    } catch {}
+  }
+  return null;
+}
+
+/** Names a module exports, following its local `export * from` chain. Package re-exports are
+    reported in `packages` instead of being followed. */
+export function moduleNames(file, seen = new Set(), packages = new Set(), workspace = {}) {
+  const names = new Set();
+  if (seen.has(file)) return names;
+  seen.add(file);
+  const text = readFileSync(file, 'utf8');
+  for (const n of exportedNames([file], () => text)) names.add(n);
+  for (const [, spec] of text.matchAll(STAR)) {
+    const local = resolveLocal(file, spec) ?? workspace[spec];
+    if (local) for (const n of moduleNames(local, seen, packages, workspace)) names.add(n);
+    else packages.add(spec);
+  }
+  return names;
+}
+
+/** The app's own workspace packages (name -> entry file), so `export * from '@site/ui'` is
+    followed like a local file. The kit's own packages are never among them. */
+function workspaceEntries(appDir) {
+  const out = {};
+  for (const file of walk(appDir, (f) => f === 'package.json')) {
+    try {
+      const pkg = JSON.parse(readFileSync(file, 'utf8'));
+      if (!pkg.name || pkg.name.startsWith('@apps/')) continue;
+      const dot = typeof pkg.exports === 'string' ? pkg.exports : pkg.exports?.['.'];
+      const entry = typeof dot === 'string' ? dot : (dot?.types ?? dot?.default ?? pkg.main);
+      if (entry) out[pkg.name] = join(dirname(file), entry);
+    } catch {}
+  }
+  return out;
+}
+
+function kitNames(releasesDir, version) {
+  const out = new Set();
+  for (const name of NAMES) {
+    const dir = mkdtempSync(join(tmpdir(), 'kit-names-'));
+    try {
+      execFileSync('tar', ['-xzf', join(releasesDir, `apps-${name}-${version}.tgz`), '-C', dir]);
+      const pkg = JSON.parse(readFileSync(join(dir, 'package', 'package.json'), 'utf8'));
+      const dot = pkg.exports?.['.'];
+      const entry = typeof dot === 'string' ? dot : (dot?.types ?? dot?.default);
+      if (entry) for (const n of moduleNames(join(dir, 'package', entry))) out.add(n);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  return out;
+}
+
+/* A release that adds a public name the app also exports can break the app at runtime even
+   though it typechecks: a module that does `export * from '@apps/ui'` next to the app's own
+   `export *` gives Vite "conflicting star exports" and the page goes blank (george-595.dev,
+   kit 1.0.6). So find every app module that star-exports the kit, list the names its other
+   star-exports and declarations add, and report the release's new public names among them.
+   The workflow leaves such a bump open for a session instead of merging it. */
+export function exportClashes(appDir, releasesDir, from, to) {
+  const before = new Set();
+  for (const v of from) for (const n of kitNames(releasesDir, v)) before.add(n);
+  const added = [...kitNames(releasesDir, to)].filter((n) => !before.has(n));
+  if (!added.length) return [];
+  const own = new Set();
+  const workspace = workspaceEntries(appDir);
+  for (const file of walk(appDir, (f) => SOURCE.test(f))) {
+    const text = readFileSync(file, 'utf8');
+    const stars = [...text.matchAll(STAR)].map((m) => m[1]);
+    if (!stars.some((spec) => spec.startsWith('@apps/'))) continue;
+    const packages = new Set();
+    for (const n of moduleNames(file, new Set(), packages, workspace)) own.add(n);
+  }
+  return added.filter((n) => own.has(n)).toSorted();
+}
+
 export function bumpApp(appDir, version, releasesDir = join(ROOT, 'releases')) {
   const facts = Object.fromEntries(NAMES.map((n) => [n, releaseFacts(releasesDir, n, version)]));
-  const report = { from: [], to: version, files: [], lockfiles: [], needsInstall: false };
+  const report = {
+    from: [],
+    to: version,
+    files: [],
+    lockfiles: [],
+    needsInstall: false,
+    clashes: [],
+  };
   const from = new Set();
   const manifests = walk(appDir, (n) => n === 'package.json');
   const locks = walk(appDir, (n) => n === 'package-lock.json');
@@ -115,6 +234,8 @@ export function bumpApp(appDir, version, releasesDir = join(ROOT, 'releases')) {
     }
   }
   report.from = [...from].toSorted();
+  if (report.files.length)
+    report.clashes = exportClashes(appDir, releasesDir, report.from, version);
   return report;
 }
 
