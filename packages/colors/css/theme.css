@@ -12,6 +12,7 @@
   --color-overlay: var(--overlay);
   --color-bar: var(--bar);
   --color-scrim: var(--scrim);
+  --color-scrim-strong: var(--scrim-strong);
   --color-hover: var(--hover);
   --color-pressed: var(--pressed);
   --color-selected: var(--selected);
@@ -97,6 +98,18 @@
   --color-avatar-5-edge: var(--avatar-5-edge);
   --color-avatar-6: var(--avatar-6);
   --color-avatar-6-edge: var(--avatar-6-edge);
+  --color-swatch-1: var(--swatch-1);
+  --color-swatch-2: var(--swatch-2);
+  --color-swatch-3: var(--swatch-3);
+  --color-swatch-4: var(--swatch-4);
+  --color-swatch-5: var(--swatch-5);
+  --color-swatch-6: var(--swatch-6);
+  --color-swatch-7: var(--swatch-7);
+  --color-swatch-8: var(--swatch-8);
+  --color-swatch-9: var(--swatch-9);
+  --color-swatch-10: var(--swatch-10);
+  --color-qr-ink: var(--qr-ink);
+  --color-qr-ground: var(--qr-ground);
   --color-backdrop-1: var(--backdrop-1);
   --color-backdrop-2: var(--backdrop-2);
   --color-backdrop-3: var(--backdrop-3);

@@ -17,6 +17,7 @@ import {
   formatRelativeTime,
   groupNotifications,
   NotificationBell,
+  NotificationBellPlaceholder,
   type NotificationEntry,
   NotificationList,
   PasswordStrength,
@@ -286,6 +287,22 @@ describe('NotificationList', () => {
     render(<NotificationList items={[]} />);
     expect(host.textContent).toContain("You're all caught up");
     expect($$('li').length).toBe(0);
+  });
+});
+
+describe('NotificationBellPlaceholder', () => {
+  it('is the bell button at the real bell size, named Notifications and disabled', () => {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const root = createRoot(el);
+    act(() => root.render(<NotificationBellPlaceholder />));
+    const b = el.querySelector('button') as HTMLButtonElement;
+    expect(b.getAttribute('aria-label')).toBe('Notifications');
+    expect(b.disabled).toBe(true);
+    expect(b.className).toContain('min-h-8');
+    expect(b.className).toContain('min-w-8');
+    act(() => root.unmount());
+    el.remove();
   });
 });
 

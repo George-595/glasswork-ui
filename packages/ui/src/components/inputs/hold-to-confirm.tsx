@@ -2,7 +2,7 @@
    hold-and-fill idea, rebuilt without a motion library: a CSS transition on our tokens, a
    timer for the commit, and a two-press keyboard alternative. */
 import { useEffect, useId, useRef, useState } from 'react';
-import { Icon } from '../../icons/Icon';
+import { Icon, type IconName } from '../../icons/Icon';
 import { cn } from '../../lib/cn';
 import { Button, type ButtonLevel } from '../button';
 import { Glyph } from './glyph';
@@ -33,7 +33,11 @@ export interface HoldToConfirmProps {
   /** Hold time in ms. */
   duration?: number;
   variant?: ButtonLevel;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** The icon before the label (default: a trash can). */
+  icon?: IconName;
+  /** What holding will do, read after the hold instructions: "Everyone in the household will be told." */
+  description?: string;
   disabled?: boolean;
   /** Controls the done state; omit to let the button keep its own. */
   confirmed?: boolean;
@@ -62,6 +66,8 @@ export function HoldToConfirm({
   duration = 1200,
   variant = 'danger',
   size = 'md',
+  icon,
+  description,
   disabled,
   confirmed,
   className,
@@ -71,6 +77,7 @@ export function HoldToConfirm({
   const [holding, setHolding] = useState(false);
   const [armed, setArmed] = useState(false);
   const hintId = useId();
+  const descId = useId();
   const hold = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const arm = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const source = useRef<'pointer' | 'key' | null>(null);
@@ -138,7 +145,7 @@ export function HoldToConfirm({
         )}
         disabled={disabled}
         aria-disabled={done || undefined}
-        aria-describedby={done ? undefined : hintId}
+        aria-describedby={done ? undefined : description ? `${hintId} ${descId}` : hintId}
         data-state={done ? 'done' : holding ? 'holding' : armed ? 'armed' : 'idle'}
         onPointerDown={(e) => {
           if (e.button > 0) return;
@@ -183,13 +190,24 @@ export function HoldToConfirm({
           />
         </span>
         <span className="relative inline-flex items-center gap-1.5">
-          {done ? <Icon name="check" size={14} /> : <Glyph name="trash" size={14} />}
+          {done ? (
+            <Icon name="check" size={size === 'xl' ? 20 : 14} />
+          ) : icon ? (
+            <Icon name={icon} size={size === 'xl' ? 20 : 14} />
+          ) : (
+            <Glyph name="trash" size={size === 'xl' ? 20 : 14} />
+          )}
           {text}
         </span>
       </Button>
       <span id={hintId} className="sr-only">
         {`Press and hold for ${seconds} seconds to confirm. With a keyboard, hold Space or Enter, or press it twice.`}
       </span>
+      {description && (
+        <span id={descId} className="sr-only">
+          {description}
+        </span>
+      )}
       <span role="status" className="sr-only">
         {done ? confirmedLabel : holding ? holdingLabel : armed ? 'Press again to confirm' : ''}
       </span>

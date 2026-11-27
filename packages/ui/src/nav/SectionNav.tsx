@@ -35,6 +35,12 @@ export interface SectionNavProps {
   /** Show each link's title as a tooltip (hover and keyboard focus). For the sidebar's
       icon rail, where the text is visually hidden. */
   tooltips?: boolean;
+  /** In the sidebar's icon rail keep each title visible under its icon (a touch screen has no tooltips). */
+  railLabels?: boolean;
+  /** `'distance'`: a rail read from a distance (a screen across a room): the label at least 14px, the icon 24px,
+      each item at least 64px square and taller when its label takes a second line, never truncated. Only with
+      `railLabels`. Default `'normal'`. */
+  railSize?: 'normal' | 'distance';
 }
 
 /* shadcn's navigation-menu link look, on roles. Rest is `fg-muted`, hover `bg-hover` +
@@ -52,6 +58,8 @@ const linkClasses = cn(
   'aria-[current=page]:bg-selected aria-[current=page]:text-fg',
   'glass:aria-[current=page]:[box-shadow:var(--glass-rim)]',
   'group-data-[collapsed]/shell:md:min-h-9 group-data-[collapsed]/shell:md:min-w-9 group-data-[collapsed]/shell:md:justify-center group-data-[collapsed]/shell:md:px-0',
+  // a touch screen (the wall tablet's rail): a 64px square, the target a finger in passing needs
+  'group-data-[collapsed]/shell:md:pointer-coarse:min-h-16 group-data-[collapsed]/shell:md:pointer-coarse:min-w-16',
 );
 
 export function SectionNav({
@@ -62,7 +70,10 @@ export function SectionNav({
   className,
   onNavigate,
   tooltips = false,
+  railLabels = false,
+  railSize = 'normal',
 }: SectionNavProps) {
+  const distance = railLabels && railSize === 'distance';
   const horizontal = orientation === 'horizontal';
   return (
     <nav className={cn('ui-nav', className)} aria-label={label} data-orientation={orientation}>
@@ -77,6 +88,12 @@ export function SectionNav({
             <a
               className={cn(
                 linkClasses,
+                railLabels &&
+                  !distance &&
+                  'group-data-[collapsed]/shell:md:w-14 group-data-[collapsed]/shell:md:flex-col group-data-[collapsed]/shell:md:gap-0.5 group-data-[collapsed]/shell:md:px-0.5 group-data-[collapsed]/shell:md:py-1',
+                // read from a distance: 88px wide, at least 64px tall, growing with a second line of label
+                distance &&
+                  'group-data-[collapsed]/shell:md:h-auto group-data-[collapsed]/shell:md:min-h-16 group-data-[collapsed]/shell:md:w-22 group-data-[collapsed]/shell:md:flex-col group-data-[collapsed]/shell:md:gap-1 group-data-[collapsed]/shell:md:px-1 group-data-[collapsed]/shell:md:py-2',
                 horizontal
                   ? cn(
                       'rounded-pill text-[12.5px]',
@@ -93,8 +110,19 @@ export function SectionNav({
                 onNavigate(s);
               }}
             >
-              {s.icon && <Icon name={s.icon} size={15} />}
-              <span className="ui-nav-text group-data-[collapsed]/shell:md:sr-only">{s.title}</span>
+              {s.icon && <Icon name={s.icon} size={distance ? 24 : 15} />}
+              <span
+                className={cn(
+                  'ui-nav-text',
+                  distance
+                    ? 'group-data-[collapsed]/shell:md:text-[14px] group-data-[collapsed]/shell:md:leading-[1.15] group-data-[collapsed]/shell:md:text-center group-data-[collapsed]/shell:md:[overflow-wrap:anywhere]'
+                    : railLabels
+                      ? 'group-data-[collapsed]/shell:md:text-[10px] group-data-[collapsed]/shell:md:leading-[1.1] group-data-[collapsed]/shell:md:text-center'
+                      : 'group-data-[collapsed]/shell:md:sr-only',
+                )}
+              >
+                {s.title}
+              </span>
             </a>
           );
           return (

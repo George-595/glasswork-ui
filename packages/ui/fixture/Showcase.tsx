@@ -98,6 +98,8 @@ import {
 import { BadgeMatrix, ButtonMatrix, InputStates, ToggleStates } from './ControlsMatrix';
 import { AccountShowcase } from './ShowcaseAccount';
 import { AiSection } from './ShowcaseAi';
+import { ControlsShowcase } from './ShowcaseControls';
+import { ShowcaseDisplay } from './ShowcaseDisplay';
 import { InputsShowcase } from './ShowcaseInputs';
 import { StudioShowcase } from './ShowcaseStudio';
 import { VizShowcase } from './VizShowcase';
@@ -383,6 +385,8 @@ export function Showcase() {
           <ToggleStates />
           <InputStates />
           <InputsShowcase />
+          <ControlsShowcase />
+          <ShowcaseDisplay />
           <AccountShowcase />
 
           <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>

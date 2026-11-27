@@ -363,6 +363,207 @@ const ICONS = {
     <path key="a" d="m12 2 10 5-10 5L2 7Z" />,
     <path key="b" d="m2 17 10 5 10-5M2 12l10 5 10-5" />,
   ],
+  /* Controls: lights, locks, climate, media, power, status (Lucide, ISC). */
+  lightbulb: [
+    <path
+      key="a"
+      d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"
+    />,
+    <path key="b" d="M9 18h6M10 22h4" />,
+  ],
+  lock: [
+    <rect key="a" x="3" y="11" width="18" height="11" rx="2" ry="2" />,
+    <path key="b" d="M7 11V7a5 5 0 0 1 10 0v4" />,
+  ],
+  'lock-open': [
+    <rect key="a" x="3" y="11" width="18" height="11" rx="2" ry="2" />,
+    <path key="b" d="M7 11V7a5 5 0 0 1 9.9-1" />,
+  ],
+  'door-open': [
+    <path key="a" d="M13 4h3a2 2 0 0 1 2 2v14M2 20h3M13 20h9M10 12v.01" />,
+    <path
+      key="b"
+      d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"
+    />,
+  ],
+  'door-closed': [<path key="a" d="M18 20V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v14M2 20h20M14 12v.01" />],
+  window: [
+    <rect key="a" x="3" y="3" width="18" height="18" rx="2" />,
+    <path key="b" d="M12 3v18M3 12h18" />,
+  ],
+  blinds: [
+    <path key="a" d="M3 3h18M20 7H8M20 11H8M10 19h10M8 15h12M4 3v14" />,
+    <circle key="b" cx="4" cy="19" r="2" />,
+  ],
+  thermometer: [<path key="a" d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z" />],
+  droplet: [
+    <path
+      key="a"
+      d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"
+    />,
+  ],
+  droplets: [
+    <path
+      key="a"
+      d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"
+    />,
+    <path
+      key="b"
+      d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"
+    />,
+  ],
+  flame: [
+    <path
+      key="a"
+      d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"
+    />,
+  ],
+  wind: [
+    <path
+      key="a"
+      d="M12.8 19.6A2 2 0 1 0 14 16H2M17.5 8a2.5 2.5 0 1 1 2 4H2M9.8 4.4A2 2 0 1 1 11 8H2"
+    />,
+  ],
+  plug: [
+    <path key="a" d="M12 22v-5M9 8V2M15 8V2" />,
+    <path key="b" d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z" />,
+  ],
+  tv: [
+    <rect key="a" x="2" y="7" width="20" height="15" rx="2" ry="2" />,
+    <path key="b" d="m17 2-5 5-5-5" />,
+  ],
+  speaker: [
+    <rect key="a" x="4" y="2" width="16" height="20" rx="2" />,
+    <circle key="b" cx="12" cy="14" r="4" />,
+    <path key="c" d="M12 6h.01" />,
+  ],
+  volume: [
+    <path
+      key="a"
+      d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"
+    />,
+    <path key="b" d="M16 9a5 5 0 0 1 0 6M19.364 18.364a9 9 0 0 0 0-12.728" />,
+  ],
+  'volume-off': [
+    <path key="a" d="M11 5 6 9H2v6h4l5 4z" />,
+    <path key="b" d="m22 9-6 6M16 9l6 6" />,
+  ],
+  'skip-forward': [
+    <path key="a" d="M21 4v16" />,
+    <path
+      key="b"
+      d="M6.029 4.285A2 2 0 0 0 3 6v12a2 2 0 0 0 3.029 1.715l9.997-5.998a2 2 0 0 0 .003-3.432z"
+    />,
+  ],
+  'skip-back': [
+    <path
+      key="a"
+      d="M17.971 4.285A2 2 0 0 1 21 6v12a2 2 0 0 1-3.029 1.715l-9.997-5.998a2 2 0 0 1-.003-3.432z"
+    />,
+    <path key="b" d="M3 20V4" />,
+  ],
+  power: [<path key="a" d="M12 2v10M18.4 6.6a9 9 0 1 1-12.77.04" />],
+  battery: [
+    <rect key="a" x="2" y="7" width="16" height="10" rx="2" ry="2" />,
+    <path key="b" d="M22 11v2" />,
+  ],
+  'battery-low': [
+    <rect key="a" x="2" y="7" width="16" height="10" rx="2" ry="2" />,
+    <path key="b" d="M22 11v2M6 11v2" />,
+  ],
+  activity: [
+    <path
+      key="a"
+      d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"
+    />,
+  ],
+  siren: [
+    <path key="a" d="M7 18v-6a5 5 0 1 1 10 0v6" />,
+    <path key="b" d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z" />,
+    <path key="c" d="M21 12h1M18.5 4.5 18 5M2 12h1M12 2v1m-7.071 1.929.707.707M12 12v6" />,
+  ],
+  'shield-check': [
+    <path
+      key="a"
+      d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+    />,
+    <path key="b" d="m9 12 2 2 4-4" />,
+  ],
+  'shield-alert': [
+    <path
+      key="a"
+      d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+    />,
+    <path key="b" d="M12 8v4M12 16h.01" />,
+  ],
+  key: [
+    <path key="a" d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />,
+    <path key="b" d="m21 2-9.6 9.6" />,
+    <circle key="c" cx="7.5" cy="15.5" r="5.5" />,
+  ],
+  cpu: [
+    <rect key="a" x="4" y="4" width="16" height="16" rx="2" />,
+    <rect key="b" x="9" y="9" width="6" height="6" rx="1" />,
+    <path key="c" d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2" />,
+  ],
+  router: [
+    <rect key="a" x="2" y="14" width="20" height="8" rx="2" />,
+    <path
+      key="b"
+      d="M6.01 18H6M10.01 18H10M15 10v4M17.84 7.17a4 4 0 0 0-5.66 0M20.66 4.34a8 8 0 0 0-11.31 0"
+    />,
+  ],
+  plane: [
+    <path
+      key="a"
+      d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"
+    />,
+  ],
+  cloud: [<path key="a" d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />],
+  video: [
+    <path key="a" d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />,
+    <rect key="b" x="2" y="6" width="14" height="12" rx="2" />,
+  ],
+  history: [
+    <path key="a" d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />,
+    <path key="b" d="M3 3v5h5M12 7v5l4 2" />,
+  ],
+  sliders: [
+    <path key="a" d="M10 5H3M12 19H3M14 3v4M16 17v4M21 12h-9M21 19h-5M21 5h-7M8 10v4M8 12H3" />,
+  ],
+  refresh: [
+    <path key="a" d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />,
+    <path key="b" d="M21 3v5h-5" />,
+    <path key="c" d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />,
+    <path key="d" d="M8 16H3v5" />,
+  ],
+  fan: [
+    <path
+      key="a"
+      d="M10.827 16.379a6.082 6.082 0 0 1-8.618-7.002l5.412 1.45a6.082 6.082 0 0 1 7.002-8.618l-1.45 5.412a6.082 6.082 0 0 1 8.618 7.002l-5.412-1.45a6.082 6.082 0 0 1-7.002 8.618l1.45-5.412Z"
+    />,
+    <path key="b" d="M12 12v.01" />,
+  ],
+  'washing-machine': [
+    <path key="a" d="M3 6h3M17 6h.01" />,
+    <rect key="b" x="3" y="2" width="18" height="20" rx="2" />,
+    <circle key="c" cx="12" cy="13" r="5" />,
+    <path key="d" d="M12 18a2.5 2.5 0 0 0 0-5 2.5 2.5 0 0 1 0-5" />,
+  ],
+  smartphone: [
+    <rect key="a" x="5" y="2" width="14" height="20" rx="2" ry="2" />,
+    <path key="b" d="M12 18h.01" />,
+  ],
+  'layout-grid': [
+    <rect key="a" x="3" y="3" width="7" height="7" rx="1" />,
+    <rect key="b" x="14" y="3" width="7" height="7" rx="1" />,
+    <rect key="c" x="14" y="14" width="7" height="7" rx="1" />,
+    <rect key="d" x="3" y="14" width="7" height="7" rx="1" />,
+  ],
+  'circle-dot': [
+    <circle key="a" cx="12" cy="12" r="10" />,
+    <circle key="b" cx="12" cy="12" r="1" />,
+  ],
 } satisfies Record<string, ReactElement[]>;
 
 export type IconName = keyof typeof ICONS;

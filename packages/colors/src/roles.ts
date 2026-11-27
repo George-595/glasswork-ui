@@ -13,6 +13,7 @@ import {
   seaGlass,
   sky,
   slate,
+  swatch,
   teal,
   violet,
   white,
@@ -34,6 +35,7 @@ import {
    - data       chart-1 … chart-8       categorical series, >= 3:1 on canvas and surface
    - ramp       heat-0 … heat-4         one hue in four steps; heat-1..4 >= 3:1 on canvas and surface
    - identity   avatar-1 … avatar-6     a fill and an edge per avatar hue
+   - swatches   swatch-1 … swatch-10    red … pink, one value in every theme; edged by border-input (3:1)
    - scenes     backdrop-*, shader-*    the animated and static page backdrops (see `scene` below)
    - sea glass  seaglass-*              the SeaGlass material: paper, sun, sky, glass tints
    - effects    shadow-* … sheen        the coloured parts of shadows and materials
@@ -52,6 +54,7 @@ export const ROLES = [
   'overlay',
   'bar',
   'scrim',
+  'scrim-strong',
   'hover',
   'pressed',
   'selected',
@@ -145,6 +148,20 @@ export const ROLES = [
   'avatar-5-edge',
   'avatar-6',
   'avatar-6-edge',
+  // swatches: ten named hues to pick between, the same in every theme
+  'swatch-1',
+  'swatch-2',
+  'swatch-3',
+  'swatch-4',
+  'swatch-5',
+  'swatch-6',
+  'swatch-7',
+  'swatch-8',
+  'swatch-9',
+  'swatch-10',
+  // a QR code: dark modules on a light ground in every theme (many scanners do not read an inverted code)
+  'qr-ink',
+  'qr-ground',
   // scenes: the page backdrops (static washes, shader palette + scrim), see `scene`
   'backdrop-1',
   'backdrop-2',
@@ -284,6 +301,23 @@ const seaglass = (mode: 'light' | 'dark') => {
   } satisfies Partial<Record<Role, string>>;
 };
 
+/* Swatches (SwatchPicker, @apps/ui): ten named hues, red to pink, one value per hue in every
+   skin and mode, so "Red" is the same colour whatever the theme. They read as their names, so a fill
+   cannot be 3:1 on both pages; each is edged by the `border-input` ring (3:1, gated). */
+const qr = { 'qr-ink': g[950], 'qr-ground': white } as const;
+const swatches = {
+  'swatch-1': swatch.red,
+  'swatch-2': swatch.orange,
+  'swatch-3': swatch.amber,
+  'swatch-4': swatch.yellow,
+  'swatch-5': swatch.green,
+  'swatch-6': swatch.teal,
+  'swatch-7': swatch.blue,
+  'swatch-8': swatch.indigo,
+  'swatch-9': swatch.violet,
+  'swatch-10': swatch.pink,
+} satisfies Partial<Record<Role, string>>;
+
 /* ---- ENTERPRISE · dark ------------------------------------------------------------- */
 const enterpriseDark: Theme = {
   roles: {
@@ -295,6 +329,7 @@ const enterpriseDark: Theme = {
     overlay: g[900],
     bar: g[940],
     scrim: rgb(black, 0.6),
+    'scrim-strong': rgb(black, 0.9),
     hover: g[875],
     pressed: g[800],
     selected: rgb(azure[500], 0.16),
@@ -374,6 +409,8 @@ const enterpriseDark: Theme = {
     ...avatars([azure[400], teal[300], amber[400], rose[300], lime[300], violet[300]], 0.16),
     ...scene(g[950], [azure[400], teal[300], amber[400]], 'dark'),
     ...seaglass('dark'),
+    ...swatches,
+    ...qr,
   },
   effects: {
     'shadow-sm': `0 1px 2px ${rgb(black, 0.5)}`,
@@ -405,6 +442,7 @@ const enterpriseLight: Theme = {
     overlay: g[0],
     bar: g[0],
     scrim: rgb(g[950], 0.45),
+    'scrim-strong': rgb(g[950], 0.9),
     hover: g[100],
     pressed: g[150],
     selected: rgb(azure[500], 0.1),
@@ -484,6 +522,8 @@ const enterpriseLight: Theme = {
     ...avatars([azure[600], teal[700], amber[700], rose[700], lime[700], violet[700]], 0.1),
     ...scene(g[50], [azure[600], teal[700], amber[700]], 'light'),
     ...seaglass('light'),
+    ...swatches,
+    ...qr,
   },
   effects: {
     'shadow-sm': `0 1px 2px ${rgb(g[950], 0.06)}`,
@@ -519,6 +559,7 @@ const glassDark: Theme = {
     overlay: rgb(g[900], 0.92),
     bar: rgb(g[900], 0.9),
     scrim: rgb(black, 0.5),
+    'scrim-strong': rgb(black, 0.9),
     hover: rgb(white, 0.07),
     pressed: rgb(white, 0.12),
     selected: rgb(azure[500], 0.22),
@@ -598,6 +639,8 @@ const glassDark: Theme = {
     ...avatars([azure[400], teal[300], amber[400], rose[300], lime[300], violet[300]], 0.18),
     ...scene(g[990], [azure[400], teal[300], amber[400]], 'dark'),
     ...seaglass('dark'),
+    ...swatches,
+    ...qr,
   },
   effects: {
     'shadow-sm': `0 2px 8px -3px ${rgb(black, 0.55)}`,
@@ -631,6 +674,7 @@ const glassLight: Theme = {
     overlay: rgb(white, 0.92),
     bar: rgb(white, 0.88),
     scrim: rgb(g[950], 0.3),
+    'scrim-strong': rgb(g[950], 0.9),
     hover: rgb(g[950], 0.05),
     pressed: rgb(g[950], 0.09),
     selected: rgb(azure[500], 0.12),
@@ -710,6 +754,8 @@ const glassLight: Theme = {
     ...avatars([azure[600], teal[700], amber[700], rose[700], lime[700], violet[700]], 0.1),
     ...scene(mist, [azure[600], teal[700], amber[700]], 'light'),
     ...seaglass('light'),
+    ...swatches,
+    ...qr,
   },
   effects: {
     'shadow-sm': `0 2px 8px -3px ${rgb(g[950], 0.12)}`,

@@ -7,6 +7,7 @@ export {
 } from './AvatarPicker';
 export { Banner, type BannerProps, type BannerTone } from './Banner';
 export { NotificationBell, type NotificationBellProps } from './NotificationBell';
+export { NotificationBellPlaceholder } from './NotificationBellPlaceholder';
 export {
   groupNotifications,
   isUnread,

@@ -46,6 +46,7 @@ colours.
 | `overlay` | dialogs and sheets | a card |
 | `bar` | the top bar, sidebar and sticky bars | content |
 | `scrim` | the dimmer behind a modal | anything visible as content |
+| `scrim-strong` | the heavier dimmer behind a screen that takes over (the `Screensaver`'s default); its content sits on a solid chip (`surface-solid`) | text drawn straight on it |
 | `hover` | a hovered row or item | selection |
 | `pressed` | a pressed row or item | hover |
 | `selected` | a chosen control (toggle on, current segment) | a selected table row |
@@ -127,6 +128,19 @@ filled steps are each at least 3:1 on `canvas` and `surface`. For counts per cel
 
 `avatar-1` … `avatar-6` are a soft fill and `avatar-N-edge` an edge per hue. Initials are
 `fg`, so they keep contrast whatever the hue.
+
+### QR code
+
+`qr-ink` and `qr-ground` are the two colours of `QrCode`: dark modules on a light ground in all four themes, the same value in each (many scanners cannot read an inverted code). The gate holds the pair to 7:1.
+
+### Swatches
+
+`swatch-1` … `swatch-10` are ten colours that read as their names: red, orange, amber, yellow,
+green, teal, blue, indigo, violet, pink. One value in all four themes, so a swatch means the same
+colour on any page. For a colour **choice** (`SwatchPicker`), never for status or data. A swatch is
+not held to a contrast ratio as a fill (a true yellow cannot be 3:1 on both a white and a black page):
+it is told from the page by its ring in `border-input` (3:1 on `canvas` and `surface`, gated), and
+by its name, never by its hue alone.
 
 ### Sea glass
 

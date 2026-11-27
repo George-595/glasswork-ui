@@ -58,7 +58,9 @@ function measure(known, target, linkTarget) {
     // a text input inside a field shell (a combobox, a chip box) is the shell: it takes the click
     const label = toggles ? el.closest('label') || el.labels?.[0] : el.closest('.ui-field-shell');
     // a slider's range input is clipped to nothing inside its thumb (the UI SDK slider): the thumb is the target
-    const thumb = el.matches('input[type=range]') ? el.closest('.ui-slider-thumb') : null;
+    const thumb = el.matches('input[type=range]')
+      ? el.closest('.ui-slider-thumb, .ui-level-slider-thumb')
+      : null;
     const r = label ? label.getBoundingClientRect() : (thumb ?? el).getBoundingClientRect();
     // an inline link inside a sentence is exempt
     const inSentence =

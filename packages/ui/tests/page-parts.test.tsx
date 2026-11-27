@@ -200,6 +200,26 @@ describe('layout and shell bits', () => {
     expect($('.ui-app .ui-page-enter').textContent).toBe('page');
   });
 
+  it('AppRoot kiosk turns text selection, the long-press callout and double-tap zoom off, and only then', () => {
+    render(
+      <>
+        <AppRoot kiosk data-testid="kiosk">
+          <input aria-label="Name" />
+        </AppRoot>
+        <AppRoot data-testid="plain">x</AppRoot>
+      </>,
+    );
+    const kiosk = $('[data-testid="kiosk"]');
+    expect(kiosk.className).toContain('select-none');
+    expect(kiosk.className).toContain('touch-manipulation');
+    expect(kiosk.className).toContain('[-webkit-touch-callout:none]');
+    expect(kiosk.className).toContain('[&_input]:select-text'); // a text field stays selectable
+    expect(kiosk.getAttribute('data-kiosk')).toBe('true');
+    const plain = $('[data-testid="plain"]');
+    expect(plain.className).not.toContain('select-none');
+    expect(plain.hasAttribute('data-kiosk')).toBe(false);
+  });
+
   it('ShaderHero draws a centred host, with the accent only while active', () => {
     render(<ShaderHero active={false}>Hero</ShaderHero>);
     expect($('.ui-shader-host').textContent).toBe('Hero');

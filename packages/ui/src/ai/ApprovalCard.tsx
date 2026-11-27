@@ -65,6 +65,8 @@ export interface ApprovalCardProps extends Omit<HTMLAttributes<HTMLDivElement>, 
   expiresAt?: number;
   /** Called once when `expiresAt` passes undecided. */
   onExpire?: () => void;
+  /** The reader may not decide: no Approve or Deny is drawn (the request, its details and who asked still are). */
+  readOnly?: boolean;
 }
 
 function useCountdown(until: number | undefined, live: boolean, start: number) {
@@ -98,6 +100,7 @@ export function ApprovalCard({
   shortcuts = false,
   expiresAt,
   onExpire,
+  readOnly = false,
   className,
   ...props
 }: ApprovalCardProps) {
@@ -129,7 +132,7 @@ export function ApprovalCard({
   const keys = useRef<(e: globalThis.KeyboardEvent) => void>(() => {});
   useEffect(() => {
     keys.current = (e) => {
-      if (!shortcuts || decision || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (!shortcuts || readOnly || decision || e.ctrlKey || e.metaKey || e.altKey) return;
       const target = e.target as HTMLElement;
       if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
       const key = e.key.toLowerCase();
@@ -247,7 +250,7 @@ export function ApprovalCard({
           </span>
           {resolvedNote && <span className="text-fg-muted">{resolvedNote}</span>}
         </div>
-      ) : (
+      ) : readOnly ? null : (
         <div className="flex flex-wrap justify-end gap-2">
           <Button
             variant="neutral"

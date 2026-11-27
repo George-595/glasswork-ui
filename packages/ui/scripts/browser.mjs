@@ -29,8 +29,8 @@ export function defaultChrome() {
   return headlessShell() ?? CANDIDATES.find((path) => existsSync(path));
 }
 
-/** For checks that need a full Chrome (rendering, WebAuthn, service workers): CHROME_PATH, else the
-    installed Chrome or Chromium, never the headless shell. */
+/** For checks that need a full Chrome (WebAuthn, service workers, push: the headless shell has no
+    `navigator.credentials`): CHROME_PATH, else the installed Chrome or Chromium, never the headless shell. */
 export function fullChrome() {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
   return CANDIDATES.find((path) => existsSync(path));
@@ -73,6 +73,7 @@ export const localBrowser = {
     hasTouch,
     args = [],
     port,
+    serviceWorkers,
     guardOptions,
   } = {}) {
     const guard = guardClones(guardOptions);
@@ -87,6 +88,7 @@ export const localBrowser = {
         viewport: viewport ?? null,
         deviceScaleFactor,
         hasTouch,
+        ...(serviceWorkers ? { serviceWorkers } : {}),
       });
       return {
         browser,
