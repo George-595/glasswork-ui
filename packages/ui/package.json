@@ -1,7 +1,7 @@
 {
   "name": "@apps/ui",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "description": "Glasswork UI: React components on its own design tokens, two skins (enterprise, glass), light and dark, WCAG 2.2 AA.",
   "exports": {

@@ -3,6 +3,7 @@ import { createHistory } from '@ui-sdk/react/history';
 import { elementOf, type ObservedChange } from '@ui-sdk/react/observe';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Button } from '../components/button';
+import { Input } from '../components/input';
 import { Icon } from '../icons/Icon';
 import { cn } from '../lib/cn';
 import { playSound } from '../sound';
@@ -27,8 +28,10 @@ import { TextShimmer } from './TextShimmer';
      reads before its next turn (the bridge's subscribe);
    - "What it can see" opens the bridge's snapshot: each control, its value and its actions.
 
-   The prompts are plans the app hands in (`plans`), or a function that turns a prompt into
-   steps (`onPrompt`, where a model can plug in). Steps name controls by their label. */
+   The prompts are plans the app hands in (`plans`), and, with `onPrompt`, a box to type your
+   own: the app turns the words into steps (a few rules, or a model) and the agent runs them the
+   same way. Nothing back means it says so and changes nothing. Steps name controls by their
+   label. */
 export interface CopilotStep {
   /** The control's label (or a snapshot ref). */
   ref: string;
@@ -52,6 +55,12 @@ export interface AgentCopilotProps {
   name?: string;
   /** Milliseconds between steps, so a person can follow. Default 700. */
   pace?: number;
+  /** Turns a typed request into steps; when given, a box to type in appears. */
+  onPrompt?: (
+    text: string,
+  ) => readonly CopilotStep[] | null | Promise<readonly CopilotStep[] | null>;
+  /** The typed box's example: "Mattresses waiting over a month". */
+  placeholder?: string;
   /** A note under the prompts. */
   hint?: ReactNode;
   className?: string;
@@ -107,6 +116,8 @@ export function AgentCopilot({
   confirm = [],
   name = 'Co-pilot',
   pace = 700,
+  onPrompt,
+  placeholder = 'Ask for what you want to see',
   hint,
   className,
 }: AgentCopilotProps) {
@@ -137,6 +148,35 @@ export function AgentCopilot({
     if (asking) allowRef.current?.focus();
   }, [asking]);
   const panelId = useId();
+  const [typed, setTyped] = useState('');
+  const asked = useRef(0);
+
+  const ask = async (text: string) => {
+    const words = text.trim();
+    if (!words || busy || !onPrompt) return;
+    asked.current += 1;
+    const id = `typed-${asked.current}`;
+    let steps: readonly CopilotStep[] | null = null;
+    try {
+      steps = await onPrompt(words);
+    } catch {
+      steps = null;
+    }
+    if (!steps?.length) {
+      playSound('error');
+      setLines([
+        {
+          id,
+          text: `I couldn't work out "${words}"`,
+          state: 'failed',
+          note: 'Nothing changed',
+        },
+      ]);
+      return;
+    }
+    setTyped('');
+    await run({ id, prompt: words, steps });
+  };
 
   // the bridge, its history and the person's changes, in the browser only
   useEffect(() => {
@@ -303,6 +343,33 @@ export function AgentCopilot({
           </button>
         ))}
       </fieldset>
+      {onPrompt && (
+        <form
+          className="relative flex min-w-0 gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void ask(typed);
+          }}
+        >
+          <label htmlFor={`${panelId}-ask`} className="sr-only">
+            Ask the {name.toLowerCase()}
+          </label>
+          <Input
+            id={`${panelId}-ask`}
+            className="min-w-0 flex-1"
+            value={typed}
+            placeholder={placeholder}
+            autoComplete="off"
+            enterKeyHint="go"
+            disabled={busy}
+            onChange={(e) => setTyped(e.currentTarget.value)}
+          />
+          <Button type="submit" size="sm" disabled={busy || !typed.trim()} className="shrink-0">
+            <Icon name="sparkles" size={14} />
+            Go
+          </Button>
+        </form>
+      )}
       {hint && <p className="relative m-0 font-sans text-[12px] text-fg-muted">{hint}</p>}
 
       {lines.length > 0 && (
