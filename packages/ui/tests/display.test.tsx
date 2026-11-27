@@ -176,8 +176,8 @@ describe('MediaTile', () => {
     expect(text($('[role="status"]'))).toBe('Unavailable · Offline since 14:02');
     expect($('[data-slot="live"]')).toBeNull();
 
-    render(<MediaTile title="Hall" poster={poster} state="off" stateText="Turned off by George" />);
-    expect(text($('[data-slot="state-chip"]'))).toBe('Off · Turned off by George');
+    render(<MediaTile title="Hall" poster={poster} state="off" stateText="Turned off by Sam" />);
+    expect(text($('[data-slot="state-chip"]'))).toBe('Off · Turned off by Sam');
 
     render(<MediaTile title="Hall" poster={poster} state="off" />);
     expect(text($('[data-slot="state-chip"]'))).toBe('Off');

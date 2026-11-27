@@ -132,7 +132,7 @@ export function ShowcaseDisplay() {
           title="Hall"
           poster={{ src: null, alt: 'No picture of the hall' }}
           state="off"
-          stateText="Turned off by George"
+          stateText="Turned off by Sam"
           ratio="4/3"
         />
         <MediaTile
