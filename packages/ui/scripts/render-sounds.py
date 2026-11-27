@@ -52,6 +52,26 @@ SOUNDS = {
     ),
     'reply': ([('pluck/kalimba_soft', 0.0, {'pitch': 'E5', 'dur': 0.6})], -27.0),
     'approval': ([('pro_notify/ding_2167', 0.0, {})], -25.0),
+    # the two attention sounds, for a device that has chosen to be told (a wall tablet). Both are the loudest
+    # in the kit. `chime`: a two-note door chime, high then low, about 0.5 s (the render trims the tail). `alarm`: a short, urgent two-tone pulse of
+    # four dings alternating two pitches, about 0.8 s, deliberately not a siren.
+    'chime': (
+        [
+            ('pro_notify/ding_2296', 0.0, {}),
+            # starts as the first ends (about 0.26 s): at 0.45 s the audit found 190 ms of digital silence between the two
+            ('pro_notify/ding_1822', 0.24, {}),
+        ],
+        -17.0,
+    ),
+    'alarm': (
+        [
+            ('pro_notify/ding_2296', 0.0, {}),
+            ('pro_notify/ding_1930', 0.17, {}),
+            ('pro_notify/ding_2296', 0.4, {}),
+            ('pro_notify/ding_1930', 0.57, {}),
+        ],
+        -16.0,
+    ),
 }
 
 

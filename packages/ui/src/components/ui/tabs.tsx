@@ -32,7 +32,7 @@ const TabsTrigger = React.forwardRef<
   <TabsTab
     ref={ref}
     className={cn(
-      'inline-flex min-h-7 pointer-coarse:min-h-12 cursor-pointer items-center justify-center whitespace-nowrap rounded-md border border-solid border-transparent bg-transparent px-3 py-1 font-sans text-[13px] font-medium text-fg-muted transition-[color,background-color,box-shadow] duration-(--dur-fast) ease-(--ease-out) hover:bg-hover hover:text-fg focus-visible:outline-none focus-visible:[box-shadow:var(--ring-inset)] active:bg-pressed disabled:pointer-events-none disabled:text-disabled-fg data-disabled:text-disabled-fg motion-reduce:transition-none',
+      'inline-flex min-h-7 pointer-coarse:min-h-12 pointer-coarse:min-w-12 cursor-pointer items-center justify-center whitespace-nowrap rounded-md border border-solid border-transparent bg-transparent px-3 py-1 font-sans text-[13px] font-medium text-fg-muted transition-[color,background-color,box-shadow] duration-(--dur-fast) ease-(--ease-out) hover:bg-hover hover:text-fg focus-visible:outline-none focus-visible:[box-shadow:var(--ring-inset)] active:bg-pressed disabled:pointer-events-none disabled:text-disabled-fg data-disabled:text-disabled-fg motion-reduce:transition-none',
       'data-selected:border-brand data-selected:bg-selected data-selected:font-semibold data-selected:text-fg',
       'forced-colors:data-selected:[outline:2px_solid_Highlight]',
       className,

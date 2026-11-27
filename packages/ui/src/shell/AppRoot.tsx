@@ -18,9 +18,16 @@ import { useSoundEnabled } from '../sound';
    device. */
 export interface AppRootProps extends HTMLAttributes<HTMLDivElement> {
   power?: PowerPreference;
+  /** A shared, always-on screen that many people tap in passing (a wall tablet): text selection, the long-press
+      callout and double-tap zoom are off, so a stray touch never selects, copies or zooms. Inputs and text fields
+      stay selectable. Default false. */
+  kiosk?: boolean;
 }
 
-export function AppRoot({ className, power = 'auto', ...props }: AppRootProps) {
+const KIOSK =
+  'select-none touch-manipulation [-webkit-touch-callout:none] [&_input]:select-text [&_textarea]:select-text';
+
+export function AppRoot({ className, power = 'auto', kiosk = false, ...props }: AppRootProps) {
   // while sounds are on, load them on the first gesture (never at page load)
   useSoundEnabled();
   useEffect(() => {
@@ -32,5 +39,11 @@ export function AppRoot({ className, power = 'auto', ...props }: AppRootProps) {
       setPowerPreference('auto');
     };
   }, [power]);
-  return <div {...props} className={cn('ui-app', className)} />;
+  return (
+    <div
+      {...props}
+      data-kiosk={kiosk || undefined}
+      className={cn('ui-app', kiosk && KIOSK, className)}
+    />
+  );
 }

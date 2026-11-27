@@ -69,6 +69,9 @@ interface ShellState {
   /** True while the sidebar shows only icons (collapsed, on the desktop layout). */
   rail: boolean;
   /** A bottom tab bar is present (phones): the topbar hides its drawer button. */
+  /** The rail shows each title under its icon. */
+  railLabels: boolean;
+  railSize: 'normal' | 'distance';
   hasBottomNav: boolean;
   /** There is a sidebar at all (a one-page app has none: no menu button, brand always shown). */
   hasSidebar: boolean;
@@ -119,6 +122,14 @@ export interface AppShellProps {
       shell keeps the choice itself (localStorage `ui-sidebar-collapsed`). */
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
+  /** False takes the desktop collapse button away, for a rail that is always an icon rail (a wall
+      screen where nobody is meant to widen it). Default true. */
+  collapsible?: boolean;
+  /** Keep each rail item's title visible under its icon (a touch screen has no tooltips). Default false. */
+  railLabels?: boolean;
+  /** `'distance'`: a rail read from a distance (a screen across a room): the labels 14px, the icons 24px, every item
+      at least 64px square, the rail wider to hold them. Only with `railLabels`. Default `'normal'`. */
+  railSize?: 'normal' | 'distance';
   /** The phone's bottom navigation, usually a <BottomTabBar> (UX K1). Shown under 768px only,
       fixed to the bottom above the safe area; <main> is padded so nothing hides behind it, and
       the topbar's drawer button is hidden while it is there (the tab bar's More is the way to
@@ -162,6 +173,9 @@ export function AppShell({
   floating,
   backToTop = true,
   live,
+  collapsible = true,
+  railLabels = false,
+  railSize = 'normal',
 }: AppShellProps) {
   const skin = useDocumentSkin();
   const [preferred] = useBackdrop();
@@ -253,12 +267,14 @@ export function AppShell({
   const registerMenuButton = useCallback((el: HTMLButtonElement | null) => {
     menuButton.current = el;
   }, []);
-  const rail = collapsed && desktop;
+  const hasSidebar = sidebar !== null && sidebar !== undefined && sidebar !== false;
+  const rail = hasSidebar && collapsed && desktop;
   const hasBottomNav = bottomNav !== undefined && bottomNav !== null && bottomNav !== false;
-  const hasSidebar = sidebar !== undefined && sidebar !== null && sidebar !== false;
   const ctx = useMemo(
     () => ({
       rail,
+      railLabels,
+      railSize,
       hasBottomNav,
       hasSidebar,
       sidebarId,
@@ -266,7 +282,17 @@ export function AppShell({
       setDrawerOpen,
       registerMenuButton,
     }),
-    [rail, hasBottomNav, hasSidebar, sidebarId, drawerOpen, setDrawerOpen, registerMenuButton],
+    [
+      rail,
+      railLabels,
+      railSize,
+      hasBottomNav,
+      hasSidebar,
+      sidebarId,
+      drawerOpen,
+      setDrawerOpen,
+      registerMenuButton,
+    ],
   );
   const homeLabel = home?.label ?? 'Hub';
   const trail: readonly BreadcrumbItem[] | undefined =
@@ -288,7 +314,10 @@ export function AppShell({
       <FloatingRoot>
         <div
           className={cn(
-            'ui-shell group/shell relative isolate grid min-h-dvh overflow-clip grid-cols-[minmax(0,1fr)] [--bottom-nav-h:64px] [--sidebar-w:240px] data-[collapsed]:md:[--sidebar-w:64px]',
+            'ui-shell group/shell relative isolate grid min-h-dvh overflow-clip grid-cols-[minmax(0,1fr)] [--bottom-nav-h:64px] [--sidebar-w:240px]',
+            railLabels && railSize === 'distance'
+              ? 'data-[collapsed]:md:[--sidebar-w:104px]'
+              : 'data-[collapsed]:md:[--sidebar-w:64px]',
             hasSidebar && 'md:grid-cols-[var(--sidebar-w)_minmax(0,1fr)]',
           )}
           data-collapsed={(hasSidebar && collapsed) || undefined}
@@ -335,7 +364,7 @@ export function AppShell({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="ui-sidebar-collapse max-md:hidden"
+                  className={cn('ui-sidebar-collapse max-md:hidden', !collapsible && 'md:hidden')}
                   aria-label="Full sidebar"
                   aria-expanded={!collapsed}
                   aria-controls={sidebarId}
@@ -449,6 +478,8 @@ export interface SidebarProps {
 
 export function Sidebar({ sections, current, onNavigate }: SidebarProps) {
   const rail = useContext(ShellContext)?.rail ?? false;
+  const railLabels = useContext(ShellContext)?.railLabels ?? false;
+  const railSize = useContext(ShellContext)?.railSize ?? 'normal';
   return (
     <div className="ui-sidebar-groups flex flex-col gap-4.5">
       {sections.map((g, i) => (
@@ -464,7 +495,9 @@ export function Sidebar({ sections, current, onNavigate }: SidebarProps) {
             current={current}
             label={g.label ?? (i === 0 ? 'Main' : `Section group ${i + 1}`)}
             orientation="vertical"
-            tooltips={rail}
+            tooltips={rail && !railLabels}
+            railLabels={railLabels}
+            railSize={railSize}
             onNavigate={onNavigate}
           />
         </div>

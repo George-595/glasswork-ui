@@ -8,11 +8,16 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Legend } from '../src/charts/ChartFrame';
 import {
+  Breadcrumbs,
   BulkActionBar,
   Button,
   Card,
   CommandPaletteButton,
+  Composer,
+  DataTable,
   Dialog,
+  FeedItem,
+  FeedList,
   Input,
   KpiRow,
   KpiTile,
@@ -26,6 +31,7 @@ import {
   SaveBar,
   SegmentedControl,
   Sheet,
+  Slider,
   Switch,
   Textarea,
   Toggle,
@@ -376,5 +382,69 @@ describe('BulkActionBar sticky', () => {
     expect(bar.className).toContain('sticky');
     expect(bar.className).toContain('--bottom-nav-h');
     expect(bar.className).toContain('safe-area-inset-bottom');
+  });
+});
+
+/* The wall tablet's 48px rule on every route (ui-11): the small controls the pages reach, under a coarse pointer. */
+describe('48px targets on a touch screen', () => {
+  it('a Breadcrumbs link and a FeedItem row reach 48px', () => {
+    render(
+      <>
+        <Breadcrumbs items={[{ label: 'Patrols', href: '/patrols' }, { label: 'One' }]} />
+        <FeedList aria-label="Events">
+          <FeedItem title="Door" href="/x" />
+        </FeedList>
+      </>,
+    );
+    expect($('.ui-breadcrumb a').className).toContain('pointer-coarse:min-h-12');
+    expect($('.ui-breadcrumb a').className).toContain('pointer-coarse:min-w-12');
+    expect($('.ui-feed-item a').className).toContain('pointer-coarse:min-h-12');
+  });
+
+  it('the data table row-open button, in the cell and as its own, reaches 48px', () => {
+    const rows = [{ id: 'a', name: 'Ada' }];
+    const columns = [{ key: 'name', header: 'Name' }];
+    render(
+      <>
+        <DataTable
+          caption="One"
+          columns={columns}
+          rows={rows}
+          rowKey={(r) => r.id}
+          onRowClick={() => {}}
+        />
+        <DataTable
+          caption="Two"
+          columns={columns}
+          rows={rows}
+          rowKey={(r) => r.id}
+          onRowClick={() => {}}
+          rowOpenButton
+        />
+      </>,
+    );
+    const buttons = Array.from(document.querySelectorAll('button.ui-row-open'));
+    expect(buttons).toHaveLength(2);
+    for (const b of buttons) expect(b.className).toContain('pointer-coarse:min-h-12');
+  });
+
+  it('the Slider thumb is its own 48px target under a coarse pointer', () => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    render(<Slider label="Volume" defaultValue={0.5} min={0} max={1} step={0.1} />);
+    // the thumb stays 24px but gains a 52px invisible press area (24 + 2 x 14)
+    expect($('.ui-slider-thumb').className).toContain('pointer-coarse:before:-inset-3.5');
+    vi.unstubAllGlobals();
+  });
+
+  it('the Composer field reaches 48px', () => {
+    render(<Composer onSend={() => {}} />);
+    expect($('textarea').className).toContain('pointer-coarse:min-h-12');
   });
 });

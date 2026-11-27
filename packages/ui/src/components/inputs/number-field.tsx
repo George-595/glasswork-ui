@@ -61,6 +61,22 @@ const decimalsOf = (n: number) => {
 
 const round = (n: number, places: number) => Number(n.toFixed(Math.min(places, 20)));
 
+/** One step up or down from `from`, kept inside [min, max] and rounded to the decimals of the
+    step and of the starting figure, so 0.1 + 0.2 comes out 0.3 and not 0.30000000000000004. */
+export function stepValue(
+  from: number,
+  direction: 1 | -1,
+  size: number,
+  limits: { min?: number; max?: number } = {},
+): number {
+  const next = from + direction * size;
+  const clamped = Math.min(
+    limits.max ?? Number.POSITIVE_INFINITY,
+    Math.max(limits.min ?? Number.NEGATIVE_INFINITY, next),
+  );
+  return round(clamped, Math.max(decimalsOf(size), decimalsOf(from)));
+}
+
 export const NumberField = forwardRef<HTMLInputElement, NumberFieldProps>(function NumberField(
   {
     value,

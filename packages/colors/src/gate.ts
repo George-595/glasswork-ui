@@ -126,6 +126,14 @@ const CHECKS: readonly Check[] = [
     [`heat-${n}` as Role, ['canvas'], 3] as const,
     [`heat-${n}` as Role, ['surface'], 3] as const,
   ]),
+  // swatches: a swatch's fill is its colour and is not held to a ratio; its edge is the
+  // `border-input` ring, which the boundary entries above hold to 3:1 on canvas and surface
+  // the text drawn on the screensaver's solid chip (surface-solid), which sits over the
+  // `scrim-strong` dim; the scrim itself is a dimmer, not a text background, and is not gated
+  ['fg', ['surface-solid'], 4.5],
+  ['fg-muted', ['surface-solid'], 4.5],
+  // a QR code: its dark modules on its own light ground (a scanner needs far more than 3:1)
+  ['qr-ink', ['qr-ground'], 7],
   // chart series
   ...([1, 2, 3, 4, 5, 6, 7, 8] as const).flatMap((n) => [
     [`chart-${n}` as Role, ['canvas'], 3] as const,

@@ -496,7 +496,7 @@ export function DataTableView<T>({
                                 <button
                                   type="button"
                                   data-row-open=""
-                                  className="ui-row-open -mx-1 min-h-6 cursor-pointer rounded-xs border-0 bg-transparent px-1 text-left [font:inherit] text-inherit underline-offset-4 hover:underline focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]"
+                                  className="ui-row-open -mx-1 min-h-6 pointer-coarse:min-h-12 cursor-pointer rounded-xs border-0 bg-transparent px-1 text-left [font:inherit] text-inherit underline-offset-4 hover:underline focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]"
                                 >
                                   {content}
                                 </button>
@@ -512,7 +512,7 @@ export function DataTableView<T>({
                               type="button"
                               data-row-open=""
                               aria-label={`Open ${name}`}
-                              className="ui-row-open inline-flex min-h-6 cursor-pointer items-center rounded-xs border-0 bg-transparent px-1.5 [font:var(--t-small)] text-brand underline-offset-4 hover:underline focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]"
+                              className="ui-row-open inline-flex min-h-6 pointer-coarse:min-h-12 pointer-coarse:min-w-12 pointer-coarse:justify-center cursor-pointer items-center rounded-xs border-0 bg-transparent px-1.5 [font:var(--t-small)] text-brand underline-offset-4 hover:underline focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]"
                             >
                               Open
                             </button>

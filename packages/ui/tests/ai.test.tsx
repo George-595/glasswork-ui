@@ -262,6 +262,18 @@ describe('ApprovalCard', () => {
     expect(onDeny).toHaveBeenCalledTimes(1);
   });
 
+  it('readOnly draws the request and its details and no Approve or Deny', () => {
+    render(
+      <ApprovalCard
+        readOnly
+        title="Send the invoice"
+        details={[{ term: 'Amount', detail: '120 pounds' }]}
+      />,
+    );
+    expect($('dl').textContent).toContain('120 pounds');
+    expect($$('button')).toHaveLength(0);
+  });
+
   it('uses the danger level when destructive', () => {
     render(<ApprovalCard destructive title="Delete 3 files" approveLabel="Delete" />);
     expect($$('button')[1]?.getAttribute('data-variant')).toBe('danger');

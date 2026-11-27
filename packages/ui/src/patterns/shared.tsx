@@ -45,7 +45,7 @@ export function renderTarget(p: TargetProps, className: string, children: ReactN
 
 /** The classes of a row: a roomy target. */
 export const ROW_TARGET =
-  'flex w-full min-h-11 items-center gap-3 rounded-md border-0 bg-transparent px-2 py-2 text-start font-sans text-fg no-underline';
+  'flex w-full min-h-11 pointer-coarse:min-h-12 items-center gap-3 rounded-md border-0 bg-transparent px-2 py-2 text-start font-sans text-fg no-underline';
 /** Added when the row is interactive: role hover and pressed, the focus ring. */
 export const ROW_INTERACTIVE =
   'cursor-pointer transition-colors duration-(--dur-fast) ease-(--ease-out) hover:bg-hover active:bg-pressed motion-reduce:transition-none focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]';

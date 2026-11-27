@@ -11,6 +11,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { Icon, type IconName } from '../icons/Icon';
 import { cn } from '../lib/cn';
 import { playSound } from '../sound';
 
@@ -24,12 +25,17 @@ import { playSound } from '../sound';
    segment's box, so it follows any width). It is switched off under
    prefers-reduced-motion, and until it is measured the segment paints its own
    fill, so the server-rendered markup and the first paint are already right.
-   Glass: the track is the glass material and the pill a lifted glass chip. */
-export type SegmentedControlSize = 'sm' | 'md';
+   Glass: the track is the glass material and the pill a lifted glass chip.
+
+   `size` "lg" is a 56px segment with the icon above the label, for a wall or a thumb; `icon`
+   on an option adds a decorative icon (the label is always present: the icon never names it). */
+export type SegmentedControlSize = 'sm' | 'md' | 'lg';
 
 export interface SegmentedOption {
   value: string;
   label: ReactNode;
+  /** A decorative icon beside the label (above it at size lg). The label stays. */
+  icon?: IconName;
   disabled?: boolean;
   /** Needed when `label` is not text (an icon alone). */
   'aria-label'?: string;
@@ -138,7 +144,7 @@ export function SegmentedControl({
         <SegmentedControlItem
           key={o.value}
           value={o.value}
-          disabled={o.disabled}
+          disabled={disabled || o.disabled}
           aria-label={o['aria-label']}
           className={cn(
             'ui-segmented-item relative z-[1] inline-flex min-w-6 pointer-coarse:min-w-12 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-solid border-transparent bg-transparent font-sans font-medium text-fg-muted',
@@ -149,12 +155,13 @@ export function SegmentedControl({
             'data-checked:border-brand data-checked:bg-selected',
             'group-data-[ready]:data-checked:border-transparent group-data-[ready]:data-checked:bg-transparent',
             // a 48px target on a touch screen, a thin one with a mouse
-            size === 'sm'
-              ? 'min-h-6 px-2.5 py-0.5 text-[12px] pointer-coarse:min-h-12'
-              : 'min-h-7 px-3 py-1 text-[13px] pointer-coarse:min-h-12',
+            size === 'sm' && 'min-h-6 px-2.5 py-0.5 text-[12px] pointer-coarse:min-h-12',
+            size === 'md' && 'min-h-7 px-3 py-1 text-[13px] pointer-coarse:min-h-12',
+            size === 'lg' && 'min-h-14 flex-col gap-0.5 px-4 py-1.5 text-[14px]',
             fullWidth && 'flex-1',
           )}
         >
+          {o.icon && <Icon name={o.icon} size={size === 'lg' ? 22 : 14} />}
           {o.label}
         </SegmentedControlItem>
       ))}

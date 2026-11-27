@@ -129,6 +129,24 @@ export const seaGlass = {
   },
 } as const;
 
+/* ---- Swatches: ten named hues a person picks between (SwatchPicker) -------------------
+   Colours that read as their names, one value for all four themes, so a swatch means the same
+   colour whatever the skin or mode. A fill this bright cannot be 3:1 on both a white and a black
+   page (a true yellow is nearly white), so the swatch is told from the page by its RING, the
+   `border-input` role, which the gate holds to 3:1 on canvas and surface in every theme. */
+export const swatch = {
+  red: '#ef4444',
+  orange: '#f97316',
+  amber: '#f59e0b',
+  yellow: '#fde047',
+  green: '#22c55e',
+  teal: '#14b8a6',
+  blue: '#3b82f6',
+  indigo: '#6366f1',
+  violet: '#8b5cf6',
+  pink: '#ec4899',
+} as const;
+
 /* ---- Absolutes ---------------------------------------------------------------------- */
 export const white = '#ffffff';
 export const black = '#000000';

@@ -417,6 +417,8 @@ export {
   type TextTag,
 } from './components/typography/Text';
 export { TEXT_TONE, type TextTone } from './components/typography/tones';
+export * from './controls';
+export * from './display';
 export * from './effects';
 export {
   type GlassFill,

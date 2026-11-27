@@ -121,6 +121,13 @@ describe('Tabs', () => {
     { id: 'b', label: 'Beta', content: 'B body' },
     { id: 'c', label: 'Gamma', content: 'C body' },
   ];
+  it('is a 48 px target both ways on a touch screen, even for a short label', () => {
+    render(<Tabs tabs={[{ id: 'a', label: 'All', content: 'x' }]} label="Demo" />);
+    const cls = $('[role="tab"]').className;
+    expect(cls).toContain('pointer-coarse:min-h-12');
+    expect(cls).toContain('pointer-coarse:min-w-12');
+  });
+
   it('keeps one tab in the tab order and moves with the arrow keys, Home and End', async () => {
     render(<Tabs tabs={TABS} label="Demo" />);
     const tabs = $$('[role="tab"]');
@@ -586,6 +593,96 @@ describe('AppShell', () => {
     click($('.ui-sidebar-close'));
     expect(inertAtFocus).toEqual([false]);
     expect(document.activeElement).toBe(menu);
+  });
+
+  it('collapsible={false} takes the desktop collapse button away and keeps a controlled rail', () => {
+    render(
+      <AppShell
+        brand="App"
+        sidebar={<p>Nav</p>}
+        topbar={<Topbar title="Home" />}
+        collapsed
+        collapsible={false}
+      >
+        <p>Body</p>
+      </AppShell>,
+    );
+    expect($('.ui-sidebar-collapse').className).toContain('md:hidden');
+    expect($('.ui-shell').hasAttribute('data-collapsed')).toBe(true);
+  });
+
+  it('sidebar={null} draws no sidebar, no drawer scrim and no menu button, and keeps main', () => {
+    render(
+      <AppShell brand="App" sidebar={null} topbar={<Topbar title="Visitor" />}>
+        <h1>Page</h1>
+      </AppShell>,
+    );
+    expect(document.querySelector('.ui-sidebar')).toBeNull();
+    expect(document.querySelector('.ui-drawer-scrim')).toBeNull();
+    expect(document.querySelector('.ui-topbar-menu')).toBeNull();
+    expect($('main#main').textContent).toBe('Page');
+    expect($('.ui-shell').className).not.toContain('md:grid-cols-[var(--sidebar-w)');
+  });
+
+  it('railLabels keeps each title visible under its icon in the collapsed rail; without it the title is for screen readers only', () => {
+    const rail = (labels: boolean) => (
+      <AppShell
+        brand="App"
+        collapsed
+        railLabels={labels}
+        sidebar={
+          <Sidebar
+            current="home"
+            sections={[{ items: [{ id: 'home', title: 'Home', href: '#/' }] }]}
+          />
+        }
+        topbar={<Topbar title="Home" />}
+      >
+        <p>Body</p>
+      </AppShell>
+    );
+    render(rail(true));
+    expect($('.ui-nav-text').className).not.toContain('sr-only');
+    act(() => root.unmount());
+    root = createRoot(host);
+    render(rail(false));
+    expect($('.ui-nav-text').className).toContain('sr-only');
+  });
+
+  it('railSize="distance": a rail read from a distance has 14px labels, 24px icons, 64px items and a wider rail; the normal one is unchanged', () => {
+    const rail = (size: 'normal' | 'distance') => (
+      <AppShell
+        brand="App"
+        collapsed
+        railLabels
+        railSize={size}
+        sidebar={
+          <Sidebar
+            current="home"
+            sections={[
+              { items: [{ id: 'home', title: 'Home', href: '#/', icon: 'home' as const }] },
+            ]}
+          />
+        }
+        topbar={<Topbar title="Home" />}
+      >
+        <p>Body</p>
+      </AppShell>
+    );
+    render(rail('distance'));
+    expect($('.ui-nav-text').className).toContain('md:text-[14px]');
+    expect($('.ui-nav-text').className).not.toContain('text-[10px]');
+    expect($('.ui-nav-link').className).toContain('md:min-h-16');
+    expect($('.ui-nav-link').className).toContain('md:w-22');
+    expect($('.ui-nav-link svg').getAttribute('width')).toBe('24');
+    expect($('.ui-shell').className).toContain('[--sidebar-w:104px]');
+    act(() => root.unmount());
+    root = createRoot(host);
+    render(rail('normal'));
+    expect($('.ui-nav-text').className).toContain('text-[10px]');
+    expect($('.ui-nav-text').className).not.toContain('text-[14px]');
+    expect($('.ui-nav-link svg').getAttribute('width')).toBe('15');
+    expect($('.ui-shell').className).toContain('[--sidebar-w:64px]');
   });
 
   it('remembers the collapsed sidebar', () => {

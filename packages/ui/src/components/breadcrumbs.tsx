@@ -46,7 +46,7 @@ export function Breadcrumbs({
               ) : (
                 <a
                   href={item.href}
-                  className="inline-flex min-h-6 items-center rounded-xs text-brand underline-offset-4 hover:underline focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]"
+                  className="inline-flex min-h-6 pointer-coarse:min-h-12 pointer-coarse:min-w-12 items-center pointer-coarse:justify-center rounded-xs text-brand underline-offset-4 hover:underline focus-visible:outline-none focus-visible:[box-shadow:var(--ring)]"
                 >
                   {item.label}
                 </a>

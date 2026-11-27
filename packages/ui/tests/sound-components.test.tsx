@@ -17,7 +17,7 @@ import {
   toast,
 } from '../src/index';
 import { resetSoundEngine } from '../src/sound/engine';
-import { resetSoundStore } from '../src/sound/store';
+import { resetDeviceSoundStore, resetSoundStore } from '../src/sound/store';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -72,6 +72,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   localStorage.clear();
   resetSoundStore();
+  resetDeviceSoundStore();
   resetSoundEngine();
   heard.length = 0;
   host = document.createElement('div');
@@ -278,5 +279,28 @@ describe("kit sounds on a person's action", () => {
     render(<Button sound="success">Loud</Button>);
     act60(() => $('button').click());
     expect(heard).toEqual([]);
+  });
+
+  it('no kit component plays an attention sound: only a device that asked for them hears chime or alarm, and then only from the app', () => {
+    // even with the switch on, a press, a switch and a dialog answer with their own interface sounds
+    localStorage.setItem('ui-attention-sounds', 'on');
+    render(
+      <>
+        <Button sound="success">Loud</Button>
+        <Switch label="S" checked={false} onCheckedChange={() => {}} />
+      </>,
+    );
+    act60(() => $('button').click());
+    act60(() => $('button[role="switch"]').click());
+    expect(heard).toEqual(['success', 'toggle-on']);
+    expect(heard.filter((n) => n === 'chime' || n === 'alarm')).toEqual([]);
+  });
+
+  it('the attention sounds are off by default and have no switch among the interface sounds', () => {
+    localStorage.setItem('ui-sounds', 'on');
+    render(<Button sound="success">Loud</Button>);
+    act60(() => $('button').click());
+    expect(localStorage.getItem('ui-attention-sounds')).toBeNull();
+    expect(heard).toEqual(['success']);
   });
 });

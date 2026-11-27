@@ -291,7 +291,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
         aria-activedescendant={suggesting ? `${listId}-${active}` : undefined}
         onKeyDown={keyDown}
         className={cn(
-          'ui-input ui-textarea min-h-9 min-w-0 flex-1 resize-none px-3 py-[7px]',
+          'ui-input ui-textarea min-h-9 pointer-coarse:min-h-12 min-w-0 flex-1 resize-none px-3 py-[7px]',
           seaGlass
             ? 'border-0 bg-transparent text-fg outline-none placeholder:text-fg-muted'
             : fieldClasses,
