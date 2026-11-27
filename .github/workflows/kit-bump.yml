@@ -15,13 +15,13 @@ name: Kit bump PRs
 on:
   push:
     branches: [main]
-    paths: ['releases/apps-ui-*.tgz']
+    paths: ["releases/apps-ui-*.tgz"]
   workflow_dispatch:
     inputs:
       version:
-        description: 'Kit version to roll out (blank = the version in packages/ui)'
+        description: "Kit version to roll out (blank = the version in packages/ui)"
         required: false
-        default: ''
+        default: ""
 
 permissions: {}
 
