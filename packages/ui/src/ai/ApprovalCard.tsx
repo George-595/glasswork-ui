@@ -67,8 +67,8 @@ export interface ApprovalCardProps extends Omit<HTMLAttributes<HTMLDivElement>, 
   onExpire?: () => void;
 }
 
-function useCountdown(until: number | undefined, live: boolean) {
-  const [now, setNow] = useState(() => Date.now());
+function useCountdown(until: number | undefined, live: boolean, start: number) {
+  const [now, setNow] = useState(start);
   useEffect(() => {
     if (until === undefined || !live) return;
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -104,8 +104,11 @@ export function ApprovalCard({
   const titleId = useId();
   const receipt = useRef<HTMLDivElement>(null);
   const hadFocus = useRef(false);
-  const left = useCountdown(expiresAt, !decision);
-  const [span] = useState(() => (expiresAt === undefined ? 0 : expiresAt - Date.now()));
+  // one clock reading for the countdown's first value and its full span, so the bar starts at
+  // exactly 100% (two readings put it a hair over, and the server and client disagreed)
+  const [start] = useState(() => Date.now());
+  const left = useCountdown(expiresAt, !decision, start);
+  const span = expiresAt === undefined ? 0 : expiresAt - start;
   const expired = useRef(false);
   useEffect(() => {
     if (left === 0 && !decision && !expired.current) {
@@ -221,7 +224,7 @@ export function ApprovalCard({
                 'block h-full rounded-pill transition-[width] duration-1000 ease-linear motion-reduce:transition-none',
                 left < 15_000 ? 'bg-warning' : 'bg-brand',
               )}
-              style={{ width: `${span > 0 ? (left / span) * 100 : 0}%` }}
+              style={{ width: `${span > 0 ? Math.min(100, (left / span) * 100) : 0}%` }}
             />
           </span>
         </div>
