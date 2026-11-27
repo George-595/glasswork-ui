@@ -61,9 +61,10 @@ it never runs anyone else's code:
 - The built-in `GITHUB_TOKEN` gets no permissions. The app token, `KIT_BUMP_TOKEN`, is a
   fine-grained token limited to the repos in `kit-apps.json` with Contents and Pull requests
   write, stored as a secret of the `kit-bump` environment, which only `main` may use.
-- `main` is protected by a ruleset (no force-push, no deletion, changes by pull request),
-  workflow runs from outside contributors need approval, Actions may only run this repo's own
-  workflows, and `CODEOWNERS` makes George the owner of everything, `.github/` above all.
+- `main` is protected by the `protect-main` ruleset (no force-push, no deletion), workflow
+  runs from any outside contributor need George's approval, Actions may only use this repo's
+  own actions (`local_only`), the default workflow token is read-only, and `CODEOWNERS` makes
+  George the owner of everything, `.github/` above all. All set 27 Nov 2026.
 - Public repos cost no Actions minutes.
 
 ## An app's own extensions
