@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 // kit-bump-prs — after a kit release lands on main, opens one version-bump pull request in every
-// app listed in .github/kit-apps.json. Run by .github/workflows/kit-bump.yml; never merges.
+// app listed in .github/kit-apps.json and merges it straight away (George, 27 Nov 2026: if a
+// release works in Glasswork it works in the apps, so nobody merges bumps by hand). Run by
+// .github/workflows/kit-bump.yml.
 //
 //   KIT_BUMP_TOKEN=… node scripts/kit-bump-prs.mjs [version] [--dry-run]
 //
 // For each app: a shallow fetch of its base branch, scripts/kit-bump.mjs on it (no npm, nothing
 // from the app runs), a commit on kit/v<version>, a push and a pull request against that base.
-// An app that is already on this version (or newer), has no kit URL yet, or already has the
-// branch is skipped. The token only ever travels in a git environment header and an
+// The pull request is squash-merged and its branch deleted, except when the release changes a
+// third-party dependency (the lockfile then needs an `npm install`): that one stays open. An app
+// that is already on this version (or newer) or has no kit URL yet is skipped; one that already
+// has the branch gets its open bump pull request merged instead. The token only ever travels in a git environment header and an
 // Authorization header; it is never printed or written to disk.
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -52,6 +56,28 @@ async function api(token, method, path, body) {
   return data;
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Squash-merges a bump pull request and deletes its branch. GitHub can answer 405/409 for a few
+// seconds after a pull request is opened while it works out mergeability, so retry briefly.
+async function mergePr(token, repo, number, branch) {
+  let last;
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      await api(token, 'PUT', `/repos/${repo}/pulls/${number}/merge`, { merge_method: 'squash' });
+      await api(token, 'DELETE', `/repos/${repo}/git/refs/heads/${branch}`).catch(() => {});
+      return;
+    } catch (err) {
+      last = err;
+      if (!/: (405|409) /.test(err.message)) break;
+      await sleep(5000);
+    }
+  }
+  throw last;
+}
+
+const NEEDS_INSTALL = 'Needs one `npm install` before merging';
+
 function prBody(app, report, version) {
   const lines = [
     `Moves this app onto Glasswork kit **${version}** (from ${report.from.join(', ')}).`,
@@ -63,11 +89,13 @@ function prBody(app, report, version) {
   if (report.needsInstall)
     lines.push(
       '',
-      '**Needs one `npm install` before merging:** this kit release changes a third-party dependency, so the lockfile is not complete yet.',
+      `**${NEEDS_INSTALL}:** this kit release changes a third-party dependency, so the lockfile is not complete yet.`,
     );
   lines.push(
     '',
-    'Opened automatically by the kit-bump workflow in glasswork-ui. It never merges: check the screens in a session, then merge.',
+    report.needsInstall
+      ? 'Opened automatically by the kit-bump workflow in glasswork-ui. Left open because of the install above.'
+      : 'Opened and merged automatically by the kit-bump workflow in glasswork-ui.',
   );
   if (app.note) lines.push('', app.note);
   return lines.join('\n');
@@ -88,7 +116,18 @@ export async function run({ version, token, dryRun = false, log = console.log })
       git('init', '-q');
       git('remote', 'add', 'origin', `https://github.com/${app.repo}.git`);
       if (git('ls-remote', '--heads', 'origin', branch)) {
-        results.push({ repo: app.repo, outcome: `skipped: ${branch} already exists` });
+        const owner = app.repo.split('/')[0];
+        const [open] = await api(token, 'GET', `/repos/${app.repo}/pulls?state=open&head=${owner}:${branch}`);
+        if (!open) {
+          results.push({ repo: app.repo, outcome: `skipped: ${branch} already exists` });
+        } else if ((open.body ?? '').includes(NEEDS_INSTALL)) {
+          results.push({ repo: app.repo, outcome: `left open (needs npm install) ${open.html_url}` });
+        } else if (dryRun) {
+          results.push({ repo: app.repo, outcome: `would merge ${open.html_url}` });
+        } else {
+          await mergePr(token, app.repo, open.number, branch);
+          results.push({ repo: app.repo, outcome: `merged ${open.html_url}` });
+        }
         continue;
       }
       git('fetch', '-q', '--depth', '1', 'origin', app.base);
@@ -108,7 +147,7 @@ export async function run({ version, token, dryRun = false, log = console.log })
         continue;
       }
       if (dryRun) {
-        results.push({ repo: app.repo, outcome: `would open: ${before.files.join(', ')}` });
+        results.push({ repo: app.repo, outcome: `would open and merge: ${before.files.join(', ')}` });
         continue;
       }
       git('add', '--', ...before.files);
@@ -130,7 +169,12 @@ export async function run({ version, token, dryRun = false, log = console.log })
         body: prBody(app, before, version),
         maintainer_can_modify: false,
       });
-      results.push({ repo: app.repo, outcome: `opened ${pr.html_url}` });
+      if (before.needsInstall) {
+        results.push({ repo: app.repo, outcome: `opened, left open (needs npm install) ${pr.html_url}` });
+      } else {
+        await mergePr(token, app.repo, pr.number, branch);
+        results.push({ repo: app.repo, outcome: `opened and merged ${pr.html_url}` });
+      }
     } catch (err) {
       // Only git's or the API's message: neither ever echoes the token.
       results.push({ repo: app.repo, outcome: `FAILED: ${String(err.message).split('\n')[0]}` });

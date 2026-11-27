@@ -1,5 +1,6 @@
 # Opens a version-bump pull request in every app that installs the kit, after a kit release
-# (a new releases/apps-ui-*.tgz) lands on main. It only opens pull requests; it never merges.
+# (a new releases/apps-ui-*.tgz) lands on main, and merges it straight away (George, 27 Nov 2026).
+# A bump whose release changes a third-party dependency is left open for an `npm install`.
 #
 # Locked down on purpose (George, 27 Nov 2026):
 # - Runs only on George's own pushes to main in this repository, or when he starts it by hand.
@@ -50,7 +51,7 @@ jobs:
           cd kit
           git fetch -q --depth 1 "https://github.com/${REPO}.git" "${SHA}"
           git checkout -q FETCH_HEAD
-      - name: Open the bump pull requests
+      - name: Open and merge the bump pull requests
         working-directory: kit
         env:
           KIT_BUMP_TOKEN: ${{ secrets.KIT_BUMP_TOKEN }}

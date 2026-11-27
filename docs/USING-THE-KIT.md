@@ -46,7 +46,7 @@ bumps its pin, so one change can never break every app at once.
    `releases/apps-ui-*.tgz`) lands on `main`, `.github/workflows/kit-bump.yml` opens one pull
    request per app listed in `.github/kit-apps.json` (`kit/v<version>`, against that app's base:
    `dev` for Furniture Friends). `scripts/kit-bump.mjs` rewrites the pins and the lockfile from
-   the tarballs here, without npm. It never merges: check the screens in a session, then merge.
+   the tarballs here, without npm. It then merges each one itself (a bump that needs an `npm install` is left open).
    If the kit adds or moves a third-party dependency the pull request says so, and needs one
    `npm install` first. To re-run it, start "Kit bump PRs" by hand from the Actions tab. To run
    the same thing locally: `node scripts/kit-bump.mjs <app-dir>`.
