@@ -1,0 +1,58 @@
+# Opens a version-bump pull request in every app that installs the kit, after a kit release
+# (a new releases/apps-ui-*.tgz) lands on main. It only opens pull requests; it never merges.
+#
+# Locked down on purpose (George, 27 Nov 2026):
+# - Runs only on George's own pushes to main in this repository, or when he starts it by hand.
+#   Never on pull requests or forks, so no contributor's code ever runs with the token.
+# - No third-party actions: the repository is fetched with plain git at the exact commit.
+# - The default GITHUB_TOKEN gets no permissions at all.
+# - The app token (KIT_BUMP_TOKEN, a fine-grained token limited to the apps in
+#   .github/kit-apps.json, Contents + Pull requests write) is an environment secret of the
+#   "kit-bump" environment, which only the main branch may use.
+# - Public repository, so it costs no Actions minutes.
+name: Kit bump PRs
+
+on:
+  push:
+    branches: [main]
+    paths: ['releases/apps-ui-*.tgz']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Kit version to roll out (blank = the version in packages/ui)'
+        required: false
+        default: ''
+
+permissions: {}
+
+concurrency:
+  group: kit-bump
+  cancel-in-progress: false
+
+jobs:
+  open-prs:
+    if: >-
+      github.repository == 'George-595/glasswork-ui' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'George-595' &&
+      github.triggering_actor == 'George-595'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: kit-bump
+    permissions: {}
+    steps:
+      - name: Fetch this repository at the triggering commit
+        env:
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          git init -q kit
+          cd kit
+          git fetch -q --depth 1 "https://github.com/${REPO}.git" "${SHA}"
+          git checkout -q FETCH_HEAD
+      - name: Open the bump pull requests
+        working-directory: kit
+        env:
+          KIT_BUMP_TOKEN: ${{ secrets.KIT_BUMP_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: node scripts/kit-bump-prs.mjs ${VERSION:+"$VERSION"}
