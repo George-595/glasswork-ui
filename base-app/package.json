@@ -48,8 +48,8 @@
     "db:verify": "node --env-file-if-exists=.env server/cli/migrate.ts --verify"
   },
   "dependencies": {
-    "@apps/colors": "1.0.6",
-    "@apps/ui": "1.0.6",
+    "@apps/colors": "1.0.7",
+    "@apps/ui": "1.0.7",
     "mysql2": "3.24.6",
     "pg": "8.23.1",
     "react": "19.3.1",
