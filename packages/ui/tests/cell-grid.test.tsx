@@ -31,10 +31,20 @@ const key = (el: Element, k: string, init: KeyboardEventInit = {}) =>
     );
   });
 
-function Harness(
-  props: Partial<CellGridProps> & { start?: number[]; spy?: (v: ReadonlySet<number>) => void },
-) {
-  const { start = [], spy, ...rest } = props;
+function Harness({
+  start = [],
+  spy,
+  ...rest
+}: {
+  start?: number[];
+  spy?: (v: ReadonlySet<number>) => void;
+  columns?: number;
+  rows?: number;
+  aspect?: number;
+  cellName?: CellGridProps['cellName'];
+  disabled?: boolean;
+  readOnly?: boolean;
+}) {
   const [value, setValue] = useState<ReadonlySet<number>>(new Set(start));
   return (
     <CellGrid
@@ -150,7 +160,9 @@ describe('CellGrid', () => {
       act(() => c[0]?.click());
       key(c[0] as Element, ' ');
       expect(spy).not.toHaveBeenCalled();
+      act(() => c[1]?.click());
       expect(c[0]?.getAttribute('aria-selected')).toBe('true');
+      expect(c[1]?.getAttribute('aria-selected')).toBe('false');
       act(() => c[0]?.focus());
       key(c[0] as Element, 'ArrowRight');
       expect(document.activeElement).toBe(cells()[1]);
@@ -159,6 +171,63 @@ describe('CellGrid', () => {
         'true',
       );
     }
+  });
+
+  it('ignores Shift and Ctrl with an arrow, and does not move from the first cell on Home', () => {
+    render(<Harness />);
+    const c = cells();
+    act(() => c[0]?.focus());
+    key(c[0] as Element, 'ArrowRight', { shiftKey: true });
+    key(c[0] as Element, 'ArrowDown', { ctrlKey: true });
+    expect(document.activeElement).toBe(c[0]);
+    key(c[0] as Element, 'Home');
+    expect(document.activeElement).toBe(c[0]);
+    expect(c.filter((x) => x.tabIndex === 0)).toEqual([c[0]]);
+  });
+
+  it('toggles once for a held Space or Enter', () => {
+    const spy = vi.fn<(v: ReadonlySet<number>) => void>();
+    render(<Harness spy={spy} />);
+    const c = cells()[2] as Element;
+    key(c, ' ');
+    key(cells()[2] as Element, ' ', { repeat: true });
+    key(cells()[2] as Element, 'Enter', { repeat: true });
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps one tab stop in range when the grid shrinks under the active cell', () => {
+    render(<Harness rows={8} />);
+    act(() => cells()[90]?.focus());
+    render(<Harness rows={2} />);
+    const c = cells();
+    expect(c).toHaveLength(24);
+    expect(c.filter((x) => x.tabIndex === 0)).toEqual([c[23]]);
+  });
+
+  it('clamps columns and rows to whole numbers of at least 1', () => {
+    render(<Harness columns={0} rows={-3} />);
+    expect(cells()).toHaveLength(1);
+    render(<Harness columns={2.9} rows={Number.NaN} />);
+    expect(cells()).toHaveLength(2 * 8);
+  });
+
+  it('falls back to 16/9 for an aspect of 0, a negative or NaN', () => {
+    for (const aspect of [0, -2, Number.NaN]) {
+      render(<Harness aspect={aspect} />);
+      const box = host.querySelector('.ui-cell-grid > div') as HTMLElement;
+      expect(Number.parseFloat(box.style.aspectRatio)).toBeCloseTo(16 / 9, 3);
+    }
+  });
+
+  it('says nothing extra for a cellName of an empty string', () => {
+    render(<Harness cellName={() => ''} />);
+    expect(cells()[0]?.getAttribute('aria-label')).toBe('Row 1, column 1, off');
+  });
+
+  it('draws a disabled grid dashed and dimmed, not by colour alone', () => {
+    render(<Harness disabled />);
+    expect(cells()[0]?.className).toContain('border-dashed');
+    expect(cells()[0]?.className).toContain('opacity-50');
   });
 
   it('draws a tick on every cell that is on, so state is not colour alone', () => {
@@ -177,10 +246,10 @@ describe('CellGrid', () => {
   it('draws children in place of an image', () => {
     render(
       <CellGrid label="Zones" value={new Set()} onChange={() => {}}>
-        <canvas data-testid="v" />
+        <div data-testid="v" />
       </CellGrid>,
     );
-    expect(host.querySelector('canvas')).not.toBeNull();
+    expect(host.querySelector('[data-testid="v"]')).not.toBeNull();
     expect(host.querySelector('img')).toBeNull();
   });
 });
