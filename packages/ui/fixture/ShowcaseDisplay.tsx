@@ -9,6 +9,7 @@ import { Badge } from '../src/components/badge';
 import { Button } from '../src/components/button';
 import { PanelHeader } from '../src/components/panel-header';
 import { Text } from '../src/components/typography/Text';
+import { CellGrid } from '../src/display/CellGrid';
 import { DirectionPad } from '../src/display/DirectionPad';
 import { MediaTile } from '../src/display/MediaTile';
 import { QrCode } from '../src/display/QrCode';
@@ -87,6 +88,17 @@ export function ShowcaseDisplay() {
   return (
     <section aria-label="Display" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <PanelHeader title="Display" />
+
+      <div style={{ maxWidth: 720 }}>
+        <CellGrid
+          label="Watched areas"
+          src={BLANK}
+          alt="A still of the yard"
+          value={new Set([13, 14, 25, 26, 40])}
+          onChange={noop}
+          cellName={({ column }) => (column < 4 ? 'Left' : column < 8 ? 'Middle' : 'Right')}
+        />
+      </div>
 
       <div style={grid}>
         <MediaTile
